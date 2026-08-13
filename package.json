@@ -12,6 +12,11 @@
     "deploy:vercel": "vercel --prod --confirm",
     "agents:start": "node scripts/orchestrate-agents.js"
   },
+  "dependencies": {
+    "next": "^15.1.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "turbo": "^2.4.0",
     "typescript": "^5.7.0"
