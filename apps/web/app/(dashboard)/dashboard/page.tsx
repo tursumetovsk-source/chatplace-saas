@@ -1,134 +1,195 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { 
-  Users, 
-  MessageSquare, 
-  Workflow, 
-  DollarSign, 
-  Instagram, 
-  Send, 
-  MessageCircle, 
-  Video,
-  ArrowUpRight
+  CheckCircle2, 
+  Circle, 
+  Play, 
+  ArrowRight, 
+  Percent,
+  Sparkles,
+  ChevronRight
 } from 'lucide-react';
 
-export default function DashboardOverview() {
-  const metrics = [
-    { label: 'Всего контактов', value: '14,290', change: '+18.4%', icon: Users, color: 'text-purple-600 bg-purple-50' },
-    { label: 'Обработано диалогов', value: '48,120', change: '+24.1%', icon: MessageSquare, color: 'text-indigo-600 bg-indigo-50' },
-    { label: 'Сработало автоворонок', value: '112,490', change: '+32.8%', icon: Workflow, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Выручка (₸ KZT)', value: '18,450,000 ₸', change: '+15.2%', icon: DollarSign, color: 'text-amber-600 bg-amber-50' }
-  ];
+export default function DashboardHome() {
+  const [activeStep, setActiveStep] = useState(1);
 
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div>
-        <h2 className="font-display-extended text-2xl font-bold text-[#0C0C0C] tracking-tight">Обзор показателей платформы</h2>
-        <p className="text-sm text-[#727272] mt-1">Сводная аналитика по всем 4 социальным каналам и автоворонкам</p>
+    <div className="space-y-8 max-w-[1100px] text-[#000000] font-body">
+      {/* 1. Top Promo Banner Card (Exact Match to Screenshot 5) */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#21162B] via-[#432349] to-[#7A4050] text-white p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-md">
+        {/* Background Decorative Watermark % Symbols */}
+        <div className="absolute right-32 top-1/2 -translate-y-1/2 opacity-15 text-9xl font-extrabold select-none pointer-events-none flex gap-4">
+          <Percent className="w-32 h-32 text-white" />
+          <Percent className="w-32 h-32 text-white" />
+        </div>
+
+        <div className="space-y-3 z-10 max-w-2xl">
+          {/* Timer Countdown Pill */}
+          <div className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold font-mono">
+            Осталось 2д 7ч 18м 41с
+          </div>
+
+          <h2 className="font-display-extended text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            Тариф Creator со скидкой 50%
+          </h2>
+
+          <p className="text-xs md:text-sm text-zinc-200 leading-relaxed">
+            Полный доступ к Virale и всем функциям ChatPlace, а также <strong>10 уроков по ИИ-контенту</strong>
+          </p>
+        </div>
+
+        <Link
+          href="/settings"
+          className="z-10 px-6 py-3 rounded-lg bg-white text-[#000000] font-bold text-sm hover:bg-zinc-100 transition shadow-md shrink-0"
+        >
+          Подключить
+        </Link>
       </div>
 
-      {/* Metrics Cards (24px Radius) */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((m, i) => {
-          const Icon = m.icon;
-          return (
-            <div key={i} className="p-6 rounded-[24px] bg-white border border-zinc-200/80 shadow-subtle hover:shadow-soft transition">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#727272]">{m.label}</span>
-                <div className={`p-2.5 rounded-2xl ${m.color}`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-baseline justify-between">
-                <span className="text-2xl font-extrabold text-[#0C0C0C] tracking-tight">{m.value}</span>
-                <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                  {m.change}
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </span>
+      {/* 2. "Быстрый старт" Quick Start Checklist (Exact Match to Screenshot 5) */}
+      <div className="space-y-6 pt-2">
+        <div>
+          <h2 className="font-display-extended text-2xl font-bold text-[#000000] tracking-tight">
+            Быстрый старт
+          </h2>
+          <p className="text-xs text-[#737378] mt-1 font-medium">
+            Персональная настройка · 1 / 4
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {/* Step 1 (Active / Expanded) */}
+          <div className="p-5 rounded-xl border border-[#E7E7E7] bg-white space-y-4 shadow-subtle">
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full border-2 border-dashed border-zinc-400 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[#000000]">
+                  Создать чат-бота на кодовое слово
+                </h3>
+                <p className="text-xs text-[#737378]">
+                  Чат-бот с автоматической выдачей материала — проверенный инструмент роста
+                </p>
               </div>
             </div>
-          );
-        })}
-      </div>
 
-      {/* Channel Breakdown & End-to-End Attribution Milestone */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-7 rounded-[24px] bg-white border border-zinc-200/80 shadow-subtle space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-display-extended text-base font-bold text-[#0C0C0C]">Сквозная атрибуция конверсий (End-to-End)</h3>
-            <span className="text-xs px-3 py-1 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold">
-              Активный пайплайн
+            {/* Step 1 Action Buttons */}
+            <div className="pl-8 flex flex-wrap items-center gap-4 pt-1">
+              <Link
+                href="/automations"
+                className="px-5 py-2.5 rounded-lg bg-[#1E5CFB] text-white text-xs font-bold hover:bg-[#184AC9] transition shadow-sm"
+              >
+                Настроить за 5 минут
+              </Link>
+
+              <button className="flex items-center gap-1.5 text-xs font-semibold text-[#1E5CFB] hover:underline">
+                <div className="w-4 h-4 rounded-full border border-[#1E5CFB] flex items-center justify-center">
+                  <Play className="w-2.5 h-2.5 fill-[#1E5CFB] text-[#1E5CFB] ml-0.5" />
+                </div>
+                <span>Смотреть видео по настройке</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="p-4 rounded-xl border border-[#E7E7E7] bg-white flex items-center gap-3 hover:bg-[#F2F2F7] cursor-pointer transition">
+            <div className="w-5 h-5 rounded-full border-2 border-dashed border-zinc-300 shrink-0" />
+            <span className="text-xs font-bold text-[#000000]">
+              Активировать пробный период
             </span>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4.5 rounded-2xl bg-[#F6F5F8] border border-zinc-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600">
-                  <Instagram className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-[#0C0C0C]">Reels #143 (ПРАЙС)</div>
-                  <div className="text-xs text-[#727272]">12 433 комментария → 4 180 диалогов → 821 лид</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-base font-extrabold text-[#0C0C0C]">8 150 000 ₸</div>
-                <div className="text-xs text-emerald-600 font-semibold">163 продажи</div>
-              </div>
-            </div>
+          {/* Step 3 (Completed) */}
+          <div className="p-4 rounded-xl border border-[#E7E7E7] bg-white flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+            <span className="text-xs font-semibold text-[#737378] line-through">
+              Посмотреть мини-курс
+            </span>
+          </div>
 
-            <div className="p-4.5 rounded-2xl bg-[#F6F5F8] border border-zinc-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-sky-600">
-                  <Send className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-[#0C0C0C]">Telegram Канал Анонс</div>
-                  <div className="text-xs text-[#727272]">3 120 кликов → 1 450 диалогов → 310 лидов</div>
-                </div>
+          {/* Step 4 */}
+          <div className="p-4 rounded-xl border border-[#E7E7E7] bg-white flex items-center gap-3 hover:bg-[#F2F2F7] cursor-pointer transition">
+            <div className="w-5 h-5 rounded-full border-2 border-dashed border-zinc-300 shrink-0" />
+            <span className="text-xs font-bold text-[#000000]">
+              Ознакомиться с шаблонами чат-ботов
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. "Мини-курс" Video Lessons Grid (Exact Match to Screenshot 5) */}
+      <div className="space-y-4 pt-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display-extended text-xl font-bold text-[#000000]">
+            Мини-курс
+          </h2>
+          <Link href="/education" className="text-xs font-bold text-[#737378] hover:text-[#000000] transition">
+            Все уроки
+          </Link>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Video Lesson 1 */}
+          <div className="group rounded-2xl overflow-hidden border border-[#E7E7E7] bg-[#261930] text-white cursor-pointer hover:shadow-md transition">
+            <div className="h-44 bg-gradient-to-tr from-purple-900 via-indigo-900 to-[#261930] relative p-5 flex flex-col justify-between">
+              <div className="self-end px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold font-mono">
+                5 мин
               </div>
-              <div className="text-right">
-                <div className="text-base font-extrabold text-[#0C0C0C]">6 200 000 ₸</div>
-                <div className="text-xs text-emerald-600 font-semibold">94 продажи</div>
+              <div>
+                <span className="text-[10px] font-extrabold text-[#BEFF53] tracking-wider uppercase">Урок #1</span>
+                <h3 className="font-display-extended text-sm font-extrabold text-white mt-1 leading-tight">
+                  VIRALE: REELS И КАРУСЕЛИ ЗА МИНУТЫ
+                </h3>
+              </div>
+              {/* Play Button Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
+                <div className="w-12 h-12 rounded-full bg-white/90 text-[#000000] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                  <Play className="w-5 h-5 fill-black ml-0.5" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Channels Health */}
-        <div className="p-7 rounded-[24px] bg-white border border-zinc-200/80 shadow-subtle space-y-4">
-          <h3 className="font-display-extended text-base font-bold text-[#0C0C0C]">Статус подключений</h3>
-          <div className="space-y-3">
-            <div className="p-3.5 rounded-2xl bg-[#F6F5F8] border border-zinc-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Instagram className="w-4 h-4 text-pink-600" />
-                <span className="text-xs font-bold text-[#0C0C0C]">Instagram Direct</span>
+          {/* Video Lesson 2 */}
+          <div className="group rounded-2xl overflow-hidden border border-[#E7E7E7] bg-[#261930] text-white cursor-pointer hover:shadow-md transition">
+            <div className="h-44 bg-gradient-to-tr from-pink-900 via-purple-900 to-[#261930] relative p-5 flex flex-col justify-between">
+              <div className="self-end px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold font-mono">
+                7 мин
               </div>
-              <span className="text-xs font-extrabold text-emerald-600">ПОДКЛЮЧЕН</span>
+              <div>
+                <span className="text-[10px] font-extrabold text-[#BEFF53] tracking-wider uppercase">Урок #2</span>
+                <h3 className="font-display-extended text-sm font-extrabold text-white mt-1 leading-tight">
+                  INSTAGRAM-БОТ С ПРОВЕРКОЙ ПОДПИСКИ
+                </h3>
+              </div>
+              {/* Play Button Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
+                <div className="w-12 h-12 rounded-full bg-white/90 text-[#000000] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                  <Play className="w-5 h-5 fill-black ml-0.5" />
+                </div>
+              </div>
             </div>
-            <div className="p-3.5 rounded-2xl bg-[#F6F5F8] border border-zinc-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Send className="w-4 h-4 text-sky-500" />
-                <span className="text-xs font-bold text-[#0C0C0C]">Telegram Bot</span>
+          </div>
+
+          {/* Video Lesson 3 */}
+          <div className="group rounded-2xl overflow-hidden border border-[#E7E7E7] bg-[#261930] text-white cursor-pointer hover:shadow-md transition">
+            <div className="h-44 bg-gradient-to-tr from-blue-900 via-indigo-900 to-[#261930] relative p-5 flex flex-col justify-between">
+              <div className="self-end px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold font-mono">
+                10 мин
               </div>
-              <span className="text-xs font-extrabold text-emerald-600">ПОДКЛЮЧЕН</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-[#F6F5F8] border border-zinc-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <MessageCircle className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold text-[#0C0C0C]">WhatsApp Business</span>
+              <div>
+                <span className="text-[10px] font-extrabold text-[#BEFF53] tracking-wider uppercase">Урок #3</span>
+                <h3 className="font-display-extended text-sm font-extrabold text-white mt-1 leading-tight">
+                  ИИ-АГЕНТ ДЛЯ ОТВЕТОВ НА СООБЩЕНИЯ И ПРОДАЖ
+                </h3>
               </div>
-              <span className="text-xs font-extrabold text-emerald-600">ПОДКЛЮЧЕН</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-[#F6F5F8] border border-zinc-200/60 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Video className="w-4 h-4 text-zinc-900" />
-                <span className="text-xs font-bold text-[#0C0C0C]">TikTok Business</span>
+              {/* Play Button Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
+                <div className="w-12 h-12 rounded-full bg-white/90 text-[#000000] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                  <Play className="w-5 h-5 fill-black ml-0.5" />
+                </div>
               </div>
-              <span className="text-xs font-extrabold text-emerald-600">ПОДКЛЮЧЕН</span>
             </div>
           </div>
         </div>
