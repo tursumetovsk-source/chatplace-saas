@@ -193,8 +193,8 @@ export default function LandingPage() {
           </div>
 
           <h1 className="font-display-extended text-3xl sm:text-6xl md:text-7xl font-extrabold text-[#0C0C0C] tracking-tight leading-[1.05]">
-            Automate your work. <br className="hidden sm:inline" />
-            <span className="text-[#1E5CFB]">Focus on what matters.</span>
+            Автоматизируйте работу. <br className="hidden sm:inline" />
+            <span className="text-[#1E5CFB]">Сфокусируйтесь на главном.</span>
           </h1>
 
           <p className="text-base sm:text-xl text-[#727272] max-w-2xl mx-auto leading-normal">
@@ -222,8 +222,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* PRODUCT FEATURE MOSAIC */}
-        <section aria-label="Product feature overview" className="w-full max-w-[1374px] mx-auto">
+        {/* PRODUCT FEATURE MOSAIC (IN RUSSIAN) */}
+        <section aria-label="Обзор возможностей Virale AI" className="w-full max-w-[1374px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-4 items-stretch">
             
             {/* CARD 1 — NOTIFICATION (.notif) */}
@@ -244,11 +244,11 @@ export default function LandingPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-xs font-extrabold text-[#0d0d0d] leading-tight">Automation completed!</div>
-                      <div className="text-[11px] text-[#2b2b2b] leading-tight mt-0.5 max-w-[170px]">Weekly client report sent automatically</div>
+                      <div className="text-xs font-extrabold text-[#0d0d0d] leading-tight">Автоматизация завершена!</div>
+                      <div className="text-[11px] text-[#2b2b2b] leading-tight mt-0.5 max-w-[180px]">Еженедельный отчёт клиенту отправлен автоматически</div>
                     </div>
                   </div>
-                  <div className="text-[10px] font-medium text-[#8b8489] shrink-0 font-mono">2:34 PM</div>
+                  <div className="text-[10px] font-medium text-[#8b8489] shrink-0 font-mono">14:34</div>
                 </div>
               </div>
             </div>
@@ -257,11 +257,11 @@ export default function LandingPage() {
             <div className="md:col-span-8 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 sm:p-8 min-h-[300px] bg-[radial-gradient(90%_70%_at_6%_0%,rgba(226,236,200,0.9)_0%,rgba(226,236,200,0)_70%),linear-gradient(168deg,#e2ebc9_0%,#e9f0c4_48%,#f0f4b8_78%,#f3f5b0_100%)] flex flex-col justify-between">
               <div className="z-10 space-y-2 max-w-xl">
                 <h2 className="font-display-extended text-2xl sm:text-4xl font-extrabold text-[#15201a] leading-tight">
-                  <span className="text-[#5f8b3e]">Automate</span> your work.<br />
-                  Focus on what matters.
+                  <span className="text-[#5f8b3e]">Автоматизируйте</span> работу.<br />
+                  Сфокусируйтесь на главном.
                 </h2>
                 <p className="text-xs sm:text-sm text-[#1e2a1b] font-normal">
-                  AI-powered workflows that save teams hours every week.
+                  ИИ-сценарии, экономящие командам десятки часов каждую неделю.
                 </p>
               </div>
 
@@ -291,7 +291,7 @@ export default function LandingPage() {
                   <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   </div>
-                  <span className="text-xs font-bold text-[#151515]">Workflow Automated</span>
+                  <span className="text-xs font-bold text-[#151515]">Сценарий автоматизирован</span>
                 </div>
 
                 <div className="absolute left-2 bottom-4 p-2.5 rounded-xl bg-white shadow-md border border-black/5 flex items-center gap-2.5 z-20">
@@ -310,10 +310,10 @@ export default function LandingPage() {
             <div className="md:col-span-4 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 bg-[linear-gradient(180deg,#fcfdfd_0%,#f4f7f9_30%,#e2ebef_66%,#cedce4_100%)] flex flex-col justify-between min-h-[300px]">
               <div>
                 <h2 className="font-display-extended text-2xl font-extrabold text-[#0c0c0c] leading-tight">
-                  Connect your<br />Tools Now.
+                  Подключайте сервисы<br />мгновенно.
                 </h2>
                 <p className="text-xs text-[#1c1c1c] font-medium mt-2">
-                  120+ integrations available
+                  Доступно 120+ интеграций
                 </p>
               </div>
 
@@ -358,25 +358,25 @@ export default function LandingPage() {
             <div className="md:col-span-4 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 bg-[radial-gradient(115%_70%_at_22%_0%,#fdf2e5_0%,rgba(253,242,229,0)_68%),linear-gradient(180deg,#f9f1e8_0%,#f7efe6_100%)] flex flex-col justify-between min-h-[300px]">
               <div>
                 <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-white to-[#fdeadb] border border-white/90 shadow-sm text-[11px] font-bold text-[#111] mb-3">
-                  Productivity Insights
+                  Аналитика продуктивности
                 </div>
                 <h2 className="font-display-extended text-3xl font-extrabold text-[#0b0b0b] tracking-tight">
-                  48 hours
+                  48 часов
                 </h2>
                 <p className="text-xs text-[#1d1d1d] font-medium mt-1">
-                  saved this week!
+                  сэкономлено за эту неделю!
                 </p>
               </div>
 
               <div className="mt-6 flex items-end justify-between gap-1.5 h-44 pt-4 border-t border-amber-200/50">
                 {[
-                  { day: 'MON', h: 'h-10', label: '2h', bg: 'bg-[#e9e3da]' },
-                  { day: 'TUE', h: 'h-16', label: '6h', bg: 'bg-[#e9e3da]' },
-                  { day: 'WED', h: 'h-24', label: '12h', bg: 'bg-[#e9e3da]' },
-                  { day: 'THU', h: 'h-28', label: '20h', bg: 'bg-[#e9e3da]' },
-                  { day: 'FRI', h: 'h-32', label: '31h', bg: 'bg-[#e9e3da]' },
-                  { day: 'SAT', h: 'h-36', label: '40h', bg: 'bg-[#e9e3da]' },
-                  { day: 'SUN', h: 'h-40', label: 'bg-gradient-to-b from-[#f2b705] via-[#a8a422] to-[#3d7a3e] text-white shadow-md' }
+                  { day: 'ПН', h: 'h-10', label: '2 ч', bg: 'bg-[#e9e3da]' },
+                  { day: 'ВТ', h: 'h-16', label: '6 ч', bg: 'bg-[#e9e3da]' },
+                  { day: 'СР', h: 'h-24', label: '12 ч', bg: 'bg-[#e9e3da]' },
+                  { day: 'ЧТ', h: 'h-28', label: '20 ч', bg: 'bg-[#e9e3da]' },
+                  { day: 'ПТ', h: 'h-32', label: '31 ч', bg: 'bg-[#e9e3da]' },
+                  { day: 'СБ', h: 'h-36', label: '40 ч', bg: 'bg-[#e9e3da]' },
+                  { day: 'ВС', h: 'h-40', label: 'bg-gradient-to-b from-[#f2b705] via-[#a8a422] to-[#3d7a3e] text-white shadow-md' }
                 ].map((col, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
                     <span className="text-[9px] font-bold text-[#727272] font-mono">{col.label}</span>
@@ -390,7 +390,7 @@ export default function LandingPage() {
             {/* CARD 5 — SEARCH (.search) */}
             <div className="md:col-span-4 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 bg-[linear-gradient(103deg,#eae9f5_0%,#e2e0f1_34%,#cfcdea_72%,#c2c0e6_100%)] flex flex-col justify-between min-h-[160px]">
               <h2 className="font-display-extended text-2xl font-extrabold text-[#0d0d10] leading-tight">
-                Find anything<br />instantly
+                Находите всё<br />мгновенно
               </h2>
 
               <div className="mt-4 w-full p-2 rounded-full bg-white shadow-md border border-black/5 flex items-center justify-between gap-3">
@@ -404,7 +404,7 @@ export default function LandingPage() {
                   <input
                     type="text"
                     readOnly
-                    value="Search tasks, docs, workflows..."
+                    value="Поиск задач, документов, сценариев..."
                     className="w-full text-xs text-[#8c8c99] bg-transparent focus:outline-none cursor-pointer truncate font-sans"
                   />
                 </div>
