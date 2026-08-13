@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Автоматизации', href: '/automations', icon: Workflow },
     { label: 'AI-Агенты', href: '/ai-agents', icon: Sparkles },
     { label: 'Шаблоны', href: '/automations', icon: Grid },
-    { label: 'Virale', href: '/ai-agents', icon: Eye },
+    { label: 'Virale AI', href: '/ai-agents', icon: Eye },
     { label: 'Inbox', href: '/inbox', icon: MessageSquare },
     { label: 'Контакты', href: '/contacts', icon: Users },
     { label: 'CRM Сделки', href: '/crm', icon: BarChart3 },
@@ -40,14 +40,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white text-[#000000] font-body">
-      {/* Mobile Top Header (Visible on screens < 768px) */}
+      {/* Mobile Top Header */}
       <header className="md:hidden sticky top-0 z-50 bg-white border-b border-[#E7E7E7] px-4 py-3 flex items-center justify-between shadow-subtle">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs">
-            ПТ
+            VA
           </div>
           <Link href="/dashboard" className="font-display-extended font-extrabold text-lg text-[#000000]">
-            CHATPLACE
+            VIRALE AI
           </Link>
         </div>
 
@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
       </header>
 
-      {/* Mobile Drawer (Visible when toggled on phone) */}
+      {/* Mobile Drawer */}
       {mobileNavOpen && (
         <div className="md:hidden bg-white border-b border-[#E7E7E7] px-4 py-4 space-y-1 animate-in slide-in-from-top-2 duration-150 z-40">
           {navItems.map(item => {
@@ -85,11 +85,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
-      {/* Desktop Left Narrow Vertical Sidebar (Hidden on mobile <768px) */}
+      {/* Desktop Left Narrow Vertical Sidebar */}
       <aside className="hidden md:flex w-16 border-r border-[#E7E7E7] bg-white flex-col justify-between items-center py-4 sticky top-0 h-screen select-none shrink-0 z-40">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow-sm mb-2">
-            ПТ
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow-sm mb-2" title="Virale AI">
+            VA
           </div>
 
           <nav className="flex flex-col items-center gap-1.5">
@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <div className="w-9 h-9 rounded-full bg-sky-400 text-white flex items-center justify-center font-bold text-xs shadow-sm cursor-pointer">
-          C
+          V
         </div>
       </aside>
 
@@ -149,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Floating Intercom/Support Chat Widget */}
       <button 
-        title="Поддержка ChatPlace"
+        title="Поддержка Virale AI"
         className="fixed bottom-16 md:bottom-6 right-4 md:right-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#1E5CFB] text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform z-30"
       >
         <MessageCircle className="w-5 h-5 md:w-6 md:h-6 fill-white" />

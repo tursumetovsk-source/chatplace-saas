@@ -38,7 +38,7 @@ export default function LandingPage() {
     { name: 'Instagram', icon: Instagram, color: 'bg-pink-100 text-pink-600', href: '/automations' },
     { name: 'Telegram', icon: Send, color: 'bg-sky-100 text-sky-500', href: '/automations' },
     { name: 'TikTok', icon: Video, color: 'bg-zinc-100 text-zinc-900', href: '/automations' },
-    { name: 'Virale', icon: Eye, color: 'bg-purple-100 text-purple-600', href: '/ai-agents' },
+    { name: 'Virale AI', icon: Eye, color: 'bg-purple-100 text-purple-600', href: '/ai-agents' },
     { name: 'ИИ-менеджер', icon: Sparkles, color: 'bg-indigo-100 text-indigo-600', href: '/ai-agents' },
     { name: 'Геймификация в Instagram', icon: Trophy, color: 'bg-pink-100 text-pink-600', href: '/automations' },
     { name: 'Геймификация в Telegram', icon: Trophy, color: 'bg-sky-100 text-sky-500', href: '/automations' }
@@ -52,7 +52,7 @@ export default function LandingPage() {
           {/* Logo & Lang */}
           <div className="flex items-center gap-4 sm:gap-6">
             <Link href="/" className="font-display-extended text-xl sm:text-2xl font-extrabold tracking-tighter text-[#0C0C0C]">
-              CHATPLACE
+              VIRALE AI
             </Link>
 
             <button className="flex items-center gap-1 text-xs sm:text-sm font-medium text-[#727272] hover:text-[#0C0C0C] transition">
@@ -188,7 +188,7 @@ export default function LandingPage() {
         <section className="text-center max-w-4xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#261930] text-white text-xs font-semibold shadow-subtle">
             <span>🚀 НОВОЕ</span>
-            <span className="text-zinc-200">ChatPlace Product Feature Overview Mosaic</span>
+            <span className="text-zinc-200">Virale AI — ИИ-креатор для вирального контента</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#BEFF53]" />
           </div>
 
@@ -198,7 +198,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-base sm:text-xl text-[#727272] max-w-2xl mx-auto leading-normal">
-            ИИ-агенты и чат-боты для автоматизации продаж в Instagram, Telegram и TikTok. Запустите готовые воронки за 5 минут.
+            ИИ-агенты и чат-боты Virale AI для автоматизации продаж в Instagram, Telegram и TikTok. Запустите готовые воронки за 5 минут.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 pt-2">
@@ -222,14 +222,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ============================================================ */}
-        {/* PRODUCT FEATURE MOSAIC (EXACT PROMPT SPECIFICATION MATCH)     */}
-        {/* ============================================================ */}
+        {/* PRODUCT FEATURE MOSAIC */}
         <section aria-label="Product feature overview" className="w-full max-w-[1374px] mx-auto">
-          {/* Responsive Mosaic Grid Layout (Desktop 3-col stage / Mobile 1-col stack) */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-4 items-stretch">
             
-            {/* CARD 1 — NOTIFICATION (.notif) [Desktop: 4 cols] */}
+            {/* CARD 1 — NOTIFICATION (.notif) */}
             <div className="md:col-span-4 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 flex flex-col justify-between min-h-[160px] bg-[radial-gradient(120%_140%_at_92%_100%,rgba(255,236,246,0.95)_0%,rgba(255,236,246,0)_62%),linear-gradient(135deg,#f9d9e9_0%,#fbdfec_55%,#fce6f1_100%)]">
               <div className="text-[10px] font-extrabold uppercase tracking-wider text-pink-700 mb-2">
                 Уведомления автоворонок
@@ -237,13 +234,10 @@ export default function LandingPage() {
 
               {/* Toast Stack */}
               <div className="relative w-full h-[70px]">
-                {/* Toast Ledge Behind */}
                 <div className="absolute left-[24px] right-[20px] top-[15px] h-[45px] rounded-[14px] bg-gradient-to-r from-[#e6e6e6] via-[#e6e3e2] to-[#e4cdcf] shadow-sm opacity-75" />
 
-                {/* Main Toast Card */}
                 <div className="absolute inset-0 h-[70px] rounded-[16px] bg-gradient-to-r from-white via-[#fdeee5] to-[#fce8dd] shadow-md flex items-center justify-between px-3.5 gap-3 border border-white/80">
                   <div className="flex items-center gap-3">
-                    {/* Sparkle SVG Icon */}
                     <div className="w-[34px] h-[34px] rounded-full bg-black flex items-center justify-center shrink-0">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                         <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#BEFF53" />
@@ -259,7 +253,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* CARD 3 — AUTOMATE YOUR WORK (.automate) HERO CENTER [Desktop: 8 cols] */}
+            {/* CARD 3 — AUTOMATE YOUR WORK (.automate) HERO CENTER */}
             <div className="md:col-span-8 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 sm:p-8 min-h-[300px] bg-[radial-gradient(90%_70%_at_6%_0%,rgba(226,236,200,0.9)_0%,rgba(226,236,200,0)_70%),linear-gradient(168deg,#e2ebc9_0%,#e9f0c4_48%,#f0f4b8_78%,#f3f5b0_100%)] flex flex-col justify-between">
               <div className="z-10 space-y-2 max-w-xl">
                 <h2 className="font-display-extended text-2xl sm:text-4xl font-extrabold text-[#15201a] leading-tight">
@@ -271,9 +265,7 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              {/* Splayed OS Windows & AI Badges Illustration */}
               <div className="mt-8 relative h-48 w-full flex items-center justify-center sm:justify-end">
-                {/* Back Window (-7deg lean) */}
                 <div className="absolute left-4 sm:left-12 bottom-0 w-64 sm:w-72 h-36 rounded-xl border-2 border-white bg-[#eaefcd] shadow-lg transform -rotate-6 overflow-hidden">
                   <div className="h-4 bg-[#242424] px-2 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
@@ -283,7 +275,6 @@ export default function LandingPage() {
                   <div className="p-3 text-[10px] font-mono text-[#5f8b3e]">workflow_trigger.js</div>
                 </div>
 
-                {/* Front Window (+4.2deg splay) */}
                 <div className="absolute left-12 sm:left-28 bottom-0 w-64 sm:w-72 h-40 rounded-t-xl border-2 border-white border-b-0 bg-[#f9edfb] shadow-xl transform rotate-3 overflow-hidden z-10">
                   <div className="h-4 bg-[#242424] px-2 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
@@ -296,7 +287,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* "Workflow Automated" Pill */}
                 <div className="absolute right-4 top-2 px-3 py-1.5 rounded-full bg-white shadow-md border border-black/5 flex items-center gap-2 z-20 transform -rotate-1">
                   <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -304,7 +294,6 @@ export default function LandingPage() {
                   <span className="text-xs font-bold text-[#151515]">Workflow Automated</span>
                 </div>
 
-                {/* AI Sparkle Card */}
                 <div className="absolute left-2 bottom-4 p-2.5 rounded-xl bg-white shadow-md border border-black/5 flex items-center gap-2.5 z-20">
                   <div className="w-6 h-6 rounded-lg bg-[#eff4e6] flex items-center justify-center border border-[#4f7433]">
                     <Sparkles className="w-3.5 h-3.5 text-[#4f7433]" />
@@ -317,7 +306,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* CARD 2 — CONNECT YOUR TOOLS (.connect) [Desktop: 4 cols] */}
+            {/* CARD 2 — CONNECT YOUR TOOLS (.connect) */}
             <div className="md:col-span-4 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 bg-[linear-gradient(180deg,#fcfdfd_0%,#f4f7f9_30%,#e2ebef_66%,#cedce4_100%)] flex flex-col justify-between min-h-[300px]">
               <div>
                 <h2 className="font-display-extended text-2xl font-extrabold text-[#0c0c0c] leading-tight">
@@ -328,9 +317,7 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              {/* Integration Chips Floating Container */}
               <div className="mt-8 space-y-2 relative">
-                {/* Row 1 */}
                 <div className="flex items-center gap-2">
                   <div className="px-4 py-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-black/5 flex items-center gap-2 text-xs font-semibold text-[#131313]">
                     <div className="w-4 h-4 rounded bg-purple-600 text-white text-[9px] font-bold flex items-center justify-center">T</div>
@@ -338,7 +325,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Row 2 */}
                 <div className="flex items-center gap-2 pl-3">
                   <div className="px-3.5 py-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-black/5 flex items-center gap-2 text-xs font-semibold text-[#131313]">
                     <div className="w-4 h-4 rounded border border-black flex items-center justify-center font-bold text-[10px]">N</div>
@@ -350,7 +336,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Row 3 */}
                 <div className="flex items-center gap-2">
                   <div className="px-3.5 py-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-black/5 flex items-center gap-2 text-xs font-semibold text-[#131313]">
                     <div className="w-4 h-4 rounded bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center">GD</div>
@@ -362,7 +347,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Floating Tilted Slack Chip (-20deg) */}
                 <div className="absolute right-0 bottom-2 px-4 py-2 rounded-full bg-white shadow-lg border border-black/5 flex items-center gap-2 text-xs font-extrabold text-[#131313] transform -rotate-12 z-20">
                   <div className="w-4 h-4 rounded bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">S</div>
                   <span>Slack</span>
@@ -370,7 +354,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* CARD 4 — PRODUCTIVITY INSIGHTS (.insights) [Desktop: 4 cols] */}
+            {/* CARD 4 — PRODUCTIVITY INSIGHTS (.insights) */}
             <div className="md:col-span-4 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 bg-[radial-gradient(115%_70%_at_22%_0%,#fdf2e5_0%,rgba(253,242,229,0)_68%),linear-gradient(180deg,#f9f1e8_0%,#f7efe6_100%)] flex flex-col justify-between min-h-[300px]">
               <div>
                 <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-white to-[#fdeadb] border border-white/90 shadow-sm text-[11px] font-bold text-[#111] mb-3">
@@ -384,7 +368,6 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              {/* 7 Ascending Bar Chart Columns (MON to SUN) */}
               <div className="mt-6 flex items-end justify-between gap-1.5 h-44 pt-4 border-t border-amber-200/50">
                 {[
                   { day: 'MON', h: 'h-10', label: '2h', bg: 'bg-[#e9e3da]' },
@@ -393,7 +376,7 @@ export default function LandingPage() {
                   { day: 'THU', h: 'h-28', label: '20h', bg: 'bg-[#e9e3da]' },
                   { day: 'FRI', h: 'h-32', label: '31h', bg: 'bg-[#e9e3da]' },
                   { day: 'SAT', h: 'h-36', label: '40h', bg: 'bg-[#e9e3da]' },
-                  { day: 'SUN', h: 'h-40', label: '48h', bg: 'bg-gradient-to-b from-[#f2b705] via-[#a8a422] to-[#3d7a3e] text-white shadow-md' }
+                  { day: 'SUN', h: 'h-40', label: 'bg-gradient-to-b from-[#f2b705] via-[#a8a422] to-[#3d7a3e] text-white shadow-md' }
                 ].map((col, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
                     <span className="text-[9px] font-bold text-[#727272] font-mono">{col.label}</span>
@@ -404,13 +387,12 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* CARD 5 — SEARCH (.search) [Desktop: 4 cols] */}
+            {/* CARD 5 — SEARCH (.search) */}
             <div className="md:col-span-4 rounded-[22px] border-[1.6px] border-white/95 overflow-hidden shadow-md relative p-6 bg-[linear-gradient(103deg,#eae9f5_0%,#e2e0f1_34%,#cfcdea_72%,#c2c0e6_100%)] flex flex-col justify-between min-h-[160px]">
               <h2 className="font-display-extended text-2xl font-extrabold text-[#0d0d10] leading-tight">
                 Find anything<br />instantly
               </h2>
 
-              {/* White Pill Search Bar */}
               <div className="mt-4 w-full p-2 rounded-full bg-white shadow-md border border-black/5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
                   <div className="w-8 h-8 rounded-full bg-[#f1f1f5] flex items-center justify-center shrink-0">
@@ -426,7 +408,6 @@ export default function LandingPage() {
                     className="w-full text-xs text-[#8c8c99] bg-transparent focus:outline-none cursor-pointer truncate font-sans"
                   />
                 </div>
-                {/* Mic SVG */}
                 <div className="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center shrink-0">
                   <svg width="12" height="14" viewBox="0 0 24 24" fill="#141414">
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
@@ -442,7 +423,6 @@ export default function LandingPage() {
         {/* VIBRANT MAGENTA SUBSCRIBER GROWTH SECTION */}
         <section className="relative bg-[#E60067] text-white rounded-[24px] overflow-hidden py-16 sm:py-20 px-6 sm:px-12 shadow-xl">
           <div className="max-w-[1440px] mx-auto grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Copy */}
             <div className="space-y-6">
               <h2 className="font-display-extended text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.05]">
                 Привлекайте больше подписчиков
@@ -473,7 +453,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-white mb-0.5">
-                      Реферальная система
+                      Реферальная система Virale AI
                     </h3>
                     <p className="text-xs sm:text-sm text-pink-100 leading-relaxed">
                       Привлекайте новую аудиторию по рекомендациям подписчиков и партнеров
@@ -483,7 +463,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Side Floating Notification Cards Stack */}
             <div className="relative flex flex-col gap-3.5 items-center lg:items-end">
               <div className="w-full max-w-md p-4 rounded-[22px] bg-white/25 backdrop-blur-md border border-white/20 text-white flex items-center gap-4 opacity-80 shadow-subtle">
                 <div className="w-11 h-11 rounded-full bg-pink-300 flex items-center justify-center font-bold text-pink-900 text-xs">
@@ -516,7 +495,7 @@ export default function LandingPage() {
         <section className="bg-[#261930] text-white py-16 sm:py-20 px-6 rounded-[24px] shadow-xl">
           <div className="max-w-[1440px] mx-auto text-center space-y-6">
             <h2 className="font-display-extended text-2xl sm:text-5xl font-extrabold text-white tracking-tight">
-              Запустите ваших первых ИИ-агентов уже сегодня
+              Запустите ваших первых ИИ-агентов Virale AI уже сегодня
             </h2>
             <p className="text-zinc-300 max-w-xl mx-auto text-xs sm:text-base">
               Начните бесплатный тестовый период без привязки банковской карты
@@ -539,8 +518,8 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-zinc-200 bg-white px-6 py-8 text-center text-xs text-[#727272]">
         <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-display-extended font-bold text-[#0C0C0C]">CHATPLACE SaaS</span>
-          <span>© 2026 ChatPlace. Все права защищены. Казахстан & СНГ.</span>
+          <span className="font-display-extended font-bold text-[#0C0C0C]">VIRALE AI SaaS</span>
+          <span>© 2026 Virale AI. Все права защищены. Казахстан & СНГ.</span>
         </div>
       </footer>
 

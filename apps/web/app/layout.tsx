@@ -21,8 +21,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'ChatPlace — Automate your work. Focus on what matters',
-  description: 'ИИ-агенты и чат-боты для продвижения в Instagram, Telegram и TikTok. Запустите по готовым шаблонам с телефона.'
+  title: 'Virale AI — Automate your work. Focus on what matters',
+  description: 'ИИ-агенты и чат-боты Virale AI для продвижения в Instagram, Telegram и TikTok. Запустите по готовым шаблонам с телефона.'
 };
 
 export default function RootLayout({

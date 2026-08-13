@@ -17,7 +17,7 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-8 max-w-[1100px] text-[#000000] font-body">
-      {/* 1. Top Promo Banner Card (Exact Match to Screenshot 5) */}
+      {/* 1. Top Promo Banner Card */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#21162B] via-[#432349] to-[#7A4050] text-white p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-md">
         {/* Background Decorative Watermark % Symbols */}
         <div className="absolute right-32 top-1/2 -translate-y-1/2 opacity-15 text-9xl font-extrabold select-none pointer-events-none flex gap-4">
@@ -36,7 +36,7 @@ export default function DashboardHome() {
           </h2>
 
           <p className="text-xs md:text-sm text-zinc-200 leading-relaxed">
-            Полный доступ к Virale и всем функциям ChatPlace, а также <strong>10 уроков по ИИ-контенту</strong>
+            Полный доступ к Virale AI и всем функциям платформы, а также <strong>10 уроков по ИИ-контенту</strong>
           </p>
         </div>
 
@@ -48,11 +48,11 @@ export default function DashboardHome() {
         </Link>
       </div>
 
-      {/* 2. "Быстрый старт" Quick Start Checklist (Exact Match to Screenshot 5) */}
+      {/* 2. "Быстрый старт" Quick Start Checklist */}
       <div className="space-y-6 pt-2">
         <div>
           <h2 className="font-display-extended text-2xl font-bold text-[#000000] tracking-tight">
-            Быстрый старт
+            Быстрый старт в Virale AI
           </h2>
           <p className="text-xs text-[#737378] mt-1 font-medium">
             Персональная настройка · 1 / 4
@@ -60,7 +60,7 @@ export default function DashboardHome() {
         </div>
 
         <div className="space-y-3">
-          {/* Step 1 (Active / Expanded) */}
+          {/* Step 1 */}
           <div className="p-5 rounded-xl border border-[#E7E7E7] bg-white space-y-4 shadow-subtle">
             <div className="flex items-start gap-3">
               <div className="w-5 h-5 rounded-full border-2 border-dashed border-zinc-400 mt-0.5 shrink-0" />
@@ -74,7 +74,6 @@ export default function DashboardHome() {
               </div>
             </div>
 
-            {/* Step 1 Action Buttons */}
             <div className="pl-8 flex flex-wrap items-center gap-4 pt-1">
               <Link
                 href="/automations"
@@ -96,11 +95,11 @@ export default function DashboardHome() {
           <div className="p-4 rounded-xl border border-[#E7E7E7] bg-white flex items-center gap-3 hover:bg-[#F2F2F7] cursor-pointer transition">
             <div className="w-5 h-5 rounded-full border-2 border-dashed border-zinc-300 shrink-0" />
             <span className="text-xs font-bold text-[#000000]">
-              Активировать пробный период
+              Активировать пробный период Virale AI Pro
             </span>
           </div>
 
-          {/* Step 3 (Completed) */}
+          {/* Step 3 */}
           <div className="p-4 rounded-xl border border-[#E7E7E7] bg-white flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
             <span className="text-xs font-semibold text-[#737378] line-through">
@@ -118,11 +117,11 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* 3. "Мини-курс" Video Lessons Grid (Exact Match to Screenshot 5) */}
+      {/* 3. "Мини-курс" Video Lessons Grid */}
       <div className="space-y-4 pt-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display-extended text-xl font-bold text-[#000000]">
-            Мини-курс
+            Мини-курс Virale AI
           </h2>
           <Link href="/education" className="text-xs font-bold text-[#737378] hover:text-[#000000] transition">
             Все уроки
@@ -130,7 +129,6 @@ export default function DashboardHome() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
-          {/* Video Lesson 1 */}
           <div className="group rounded-2xl overflow-hidden border border-[#E7E7E7] bg-[#261930] text-white cursor-pointer hover:shadow-md transition">
             <div className="h-44 bg-gradient-to-tr from-purple-900 via-indigo-900 to-[#261930] relative p-5 flex flex-col justify-between">
               <div className="self-end px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold font-mono">
@@ -139,10 +137,9 @@ export default function DashboardHome() {
               <div>
                 <span className="text-[10px] font-extrabold text-[#BEFF53] tracking-wider uppercase">Урок #1</span>
                 <h3 className="font-display-extended text-sm font-extrabold text-white mt-1 leading-tight">
-                  VIRALE: REELS И КАРУСЕЛИ ЗА МИНУТЫ
+                  VIRALE AI: REELS И КАРУСЕЛИ ЗА МИНУТЫ
                 </h3>
               </div>
-              {/* Play Button Overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
                 <div className="w-12 h-12 rounded-full bg-white/90 text-[#000000] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                   <Play className="w-5 h-5 fill-black ml-0.5" />
@@ -151,7 +148,6 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* Video Lesson 2 */}
           <div className="group rounded-2xl overflow-hidden border border-[#E7E7E7] bg-[#261930] text-white cursor-pointer hover:shadow-md transition">
             <div className="h-44 bg-gradient-to-tr from-pink-900 via-purple-900 to-[#261930] relative p-5 flex flex-col justify-between">
               <div className="self-end px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold font-mono">
@@ -163,7 +159,6 @@ export default function DashboardHome() {
                   INSTAGRAM-БОТ С ПРОВЕРКОЙ ПОДПИСКИ
                 </h3>
               </div>
-              {/* Play Button Overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
                 <div className="w-12 h-12 rounded-full bg-white/90 text-[#000000] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                   <Play className="w-5 h-5 fill-black ml-0.5" />
@@ -172,7 +167,6 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* Video Lesson 3 */}
           <div className="group rounded-2xl overflow-hidden border border-[#E7E7E7] bg-[#261930] text-white cursor-pointer hover:shadow-md transition">
             <div className="h-44 bg-gradient-to-tr from-blue-900 via-indigo-900 to-[#261930] relative p-5 flex flex-col justify-between">
               <div className="self-end px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold font-mono">
@@ -184,7 +178,6 @@ export default function DashboardHome() {
                   ИИ-АГЕНТ ДЛЯ ОТВЕТОВ НА СООБЩЕНИЯ И ПРОДАЖ
                 </h3>
               </div>
-              {/* Play Button Overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
                 <div className="w-12 h-12 rounded-full bg-white/90 text-[#000000] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                   <Play className="w-5 h-5 fill-black ml-0.5" />
