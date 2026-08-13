@@ -1,3 +1,6 @@
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   Bot, 
@@ -11,17 +14,30 @@ import {
   Send,
   Video,
   CheckCircle2,
-  Users,
+  Trophy,
+  Eye,
   Sparkles,
   Info
 } from 'lucide-react';
 
 export default function LandingPage() {
+  const [productsOpen, setProductsOpen] = useState(false);
+
+  const productsList = [
+    { name: 'Instagram', icon: Instagram, color: 'bg-pink-100 text-pink-600', href: '/automations' },
+    { name: 'Telegram', icon: Send, color: 'bg-sky-100 text-sky-500', href: '/automations' },
+    { name: 'TikTok', icon: Video, color: 'bg-zinc-100 text-zinc-900', href: '/automations' },
+    { name: 'Virale', icon: Eye, color: 'bg-purple-100 text-purple-600', href: '/ai-agents' },
+    { name: 'ИИ-менеджер', icon: Sparkles, color: 'bg-indigo-100 text-indigo-600', href: '/ai-agents' },
+    { name: 'Геймификация в Instagram', icon: Trophy, color: 'bg-pink-100 text-pink-600', href: '/automations' },
+    { name: 'Геймификация в Telegram', icon: Trophy, color: 'bg-sky-100 text-sky-500', href: '/automations' }
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#0C0C0C] font-body selection:bg-[#BEFF53] selection:text-[#0C0C0C]">
       {/* Top Header Navigation */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 py-4">
-        <div className="max-w-[1440px] mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-zinc-100 px-6 py-4">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between relative">
           {/* Logo & Lang */}
           <div className="flex items-center gap-6">
             <Link href="/" className="font-display-extended text-2xl font-extrabold tracking-tighter text-[#0C0C0C]">
@@ -36,10 +52,48 @@ export default function LandingPage() {
 
           {/* Center Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#0C0C0C]">
-            <div className="flex items-center gap-1 cursor-pointer hover:text-[#261930] transition">
-              <span>Продукты</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#727272]" />
+            {/* Interactive Products Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setProductsOpen(true)}
+              onMouseLeave={() => setProductsOpen(false)}
+            >
+              <button 
+                onClick={() => setProductsOpen(!productsOpen)}
+                className={`flex items-center gap-1 cursor-pointer transition px-3 py-1 rounded-full ${
+                  productsOpen ? 'bg-[#F6F5F8] text-[#0C0C0C]' : 'hover:text-[#261930]'
+                }`}
+              >
+                <span>Продукты</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-[#727272] transition-transform ${productsOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* ChatPlace Exact Products Dropdown Bar (Matching Screenshot 3) */}
+              {productsOpen && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[850px] p-6 rounded-[24px] bg-white border border-zinc-200 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="grid grid-cols-7 gap-3 text-center">
+                    {productsList.map((prod, i) => {
+                      const Icon = prod.icon;
+                      return (
+                        <Link
+                          key={i}
+                          href={prod.href}
+                          className="flex flex-col items-center gap-3.5 p-3 rounded-2xl hover:bg-[#F6F5F8] transition group"
+                        >
+                          <div className={`w-12 h-12 rounded-2xl ${prod.color} flex items-center justify-center group-hover:scale-105 transition-transform shadow-subtle`}>
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <span className="text-xs font-bold text-[#0C0C0C] group-hover:text-[#261930] leading-tight text-center">
+                            {prod.name}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
+
             <Link href="/dashboard" className="hover:text-[#261930] transition">
               Цены
             </Link>
@@ -110,25 +164,36 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Channels Bar */}
-        <section className="px-6 py-8 border-y border-zinc-100 bg-[#F6F5F8]">
-          <div className="max-w-[1440px] mx-auto flex flex-wrap justify-center items-center gap-10 text-sm font-medium text-[#0C0C0C]">
-            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
-              <Instagram className="w-4 h-4 text-pink-600" />
-              <span>Instagram Direct и комментарии</span>
+        {/* Products Direct Bar Section (Exact Match to Screenshot 3) */}
+        <section className="px-6 py-12 border-y border-zinc-100 bg-[#F6F5F8]">
+          <div className="max-w-[1440px] mx-auto">
+            <div className="text-center mb-8 text-xs uppercase tracking-wider font-bold text-[#727272]">
+              Все линейка продуктов ChatPlace:
             </div>
-            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
-              <Send className="w-4 h-4 text-sky-500" />
-              <span>Telegram-бот</span>
-            </div>
-            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
-              <Video className="w-4 h-4 text-zinc-900" />
-              <span>TikTok сообщения и комментарии</span>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+              {productsList.map((prod, i) => {
+                const Icon = prod.icon;
+                return (
+                  <Link
+                    key={i}
+                    href={prod.href}
+                    className="p-4 rounded-[24px] bg-white border border-zinc-200/80 shadow-subtle hover:shadow-soft flex flex-col items-center gap-3 transition text-center group"
+                  >
+                    <div className={`w-12 h-12 rounded-2xl ${prod.color} flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-bold text-[#0C0C0C] group-hover:text-[#261930]">
+                      {prod.name}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* NEW VIBRANT MAGENTA SUBSCRIBER GROWTH SECTION (MATCHING SCREENSHOT 2) */}
+        {/* VIBRANT MAGENTA SUBSCRIBER GROWTH SECTION */}
         <section className="relative bg-[#E60067] text-white overflow-hidden py-24 px-6">
           <div className="max-w-[1440px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
             {/* Left Copy */}
@@ -174,7 +239,6 @@ export default function LandingPage() {
 
             {/* Right Side Floating Notification Cards Stack */}
             <div className="relative flex flex-col gap-4 items-center lg:items-end">
-              {/* Notification Card 1 (Faded Top) */}
               <div className="w-full max-w-md p-4 rounded-[24px] bg-white/25 backdrop-blur-md border border-white/20 text-white flex items-center gap-4 opacity-80 transform -translate-y-2 scale-95 shadow-subtle">
                 <div className="w-12 h-12 rounded-full bg-pink-300 flex items-center justify-center font-bold text-pink-900 text-sm">
                   MK
@@ -187,7 +251,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Notification Card 2 (MAIN HIGHLIGHTED WHITE CARD - 24px Radius) */}
               <div className="w-full max-w-md p-5 rounded-[24px] bg-white text-[#0C0C0C] flex items-center gap-4 shadow-2xl transform scale-105 z-10">
                 <div className="w-14 h-14 rounded-full bg-[#BEFF53] flex items-center justify-center text-xl font-bold text-[#0C0C0C] shrink-0 border-2 border-white">
                   PM
@@ -200,7 +263,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Notification Card 3 (Faded Bottom) */}
               <div className="w-full max-w-md p-4 rounded-[24px] bg-white/25 backdrop-blur-md border border-white/20 text-white flex items-center gap-4 opacity-80 transform translate-y-2 scale-95 shadow-subtle">
                 <div className="w-12 h-12 rounded-full bg-purple-300 flex items-center justify-center font-bold text-purple-900 text-sm">
                   OI
@@ -214,9 +276,6 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-
-          {/* Bottom Dark Slanted Background Separator */}
-          <div className="absolute bottom-0 left-0 right-0 h-10 bg-[#261930] transform skew-y-1 origin-bottom-right" />
         </section>
 
         {/* Feature Cards Grid (24px Radius) */}
@@ -278,7 +337,7 @@ export default function LandingPage() {
             <h2 className="font-display-extended text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
               Запустите ваших первых ИИ-агентов уже сегодня
             </h2>
-            <p className="text-[#727272] max-w-xl mx-auto text-base">
+            <p className="text-zinc-400 max-w-xl mx-auto text-base">
               Начните бесплатный тестовый период без привязки банковской карты
             </p>
             <div className="pt-4 flex justify-center">
