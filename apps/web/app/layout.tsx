@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Syne, Roboto } from 'next/font/google';
+import { Syne, Roboto, Plus_Jakarta_Sans } from 'next/font/google';
 
 const syne = Syne({
   subsets: ['latin'],
@@ -14,8 +14,14 @@ const roboto = Roboto({
   variable: '--font-roboto'
 });
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-plus-jakarta'
+});
+
 export const metadata: Metadata = {
-  title: 'ChatPlace — Всё для роста в контенте и мессенджерах',
+  title: 'ChatPlace — Automate your work. Focus on what matters',
   description: 'ИИ-агенты и чат-боты для продвижения в Instagram, Telegram и TikTok. Запустите по готовым шаблонам с телефона.'
 };
 
@@ -25,8 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru" className={`${syne.variable} ${roboto.variable}`}>
-      <body className="min-h-screen bg-white text-zinc-900 font-body flex flex-col">
+    <html lang="ru" className={`${syne.variable} ${roboto.variable} ${plusJakartaSans.variable}`}>
+      <body className="min-h-screen bg-[#f0f0f0] text-[#141414] font-sans antialiased selection:bg-[#BEFF53] selection:text-[#0C0C0C]">
         {children}
       </body>
     </html>
