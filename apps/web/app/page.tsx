@@ -10,9 +10,10 @@ import {
   Instagram,
   Send,
   Video,
+  CheckCircle2,
+  Users,
   Sparkles,
-  Zap,
-  CheckCircle2
+  Info
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -114,17 +115,108 @@ export default function LandingPage() {
           <div className="max-w-[1440px] mx-auto flex flex-wrap justify-center items-center gap-10 text-sm font-medium text-[#0C0C0C]">
             <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
               <Instagram className="w-4 h-4 text-pink-600" />
-              <span>Instagram Direct & Comments</span>
+              <span>Instagram Direct и комментарии</span>
             </div>
             <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
               <Send className="w-4 h-4 text-sky-500" />
-              <span>Telegram Bot API</span>
+              <span>Telegram-бот</span>
             </div>
             <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
               <Video className="w-4 h-4 text-zinc-900" />
-              <span>TikTok DM & Comments</span>
+              <span>TikTok сообщения и комментарии</span>
             </div>
           </div>
+        </section>
+
+        {/* NEW VIBRANT MAGENTA SUBSCRIBER GROWTH SECTION (MATCHING SCREENSHOT 2) */}
+        <section className="relative bg-[#E60067] text-white overflow-hidden py-24 px-6">
+          <div className="max-w-[1440px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left Copy */}
+            <div className="space-y-8">
+              <h2 className="font-display-extended text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-[1.05]">
+                Привлекайте больше подписчиков
+              </h2>
+
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-1">
+                      Чат-боты с проверкой подписки
+                    </h3>
+                    <p className="text-base text-pink-100 leading-relaxed">
+                      Получайте на{' '}
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold text-sm mx-1">
+                        163% <Info className="w-3.5 h-3.5" />
+                      </span>{' '}
+                      больше охватов и конвертируйте просмотры в подписчиков
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-1">
+                      Реферальная система
+                    </h3>
+                    <p className="text-base text-pink-100 leading-relaxed">
+                      Привлекайте новую аудиторию по рекомендациям подписчиков и партнеров
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side Floating Notification Cards Stack */}
+            <div className="relative flex flex-col gap-4 items-center lg:items-end">
+              {/* Notification Card 1 (Faded Top) */}
+              <div className="w-full max-w-md p-4 rounded-[24px] bg-white/25 backdrop-blur-md border border-white/20 text-white flex items-center gap-4 opacity-80 transform -translate-y-2 scale-95 shadow-subtle">
+                <div className="w-12 h-12 rounded-full bg-pink-300 flex items-center justify-center font-bold text-pink-900 text-sm">
+                  MK
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-pink-50">
+                    <strong className="text-white font-bold">max.kireev</strong> подписался(-ась) на ваши обновления
+                  </div>
+                  <div className="text-xs text-pink-200 mt-0.5 font-mono">только что</div>
+                </div>
+              </div>
+
+              {/* Notification Card 2 (MAIN HIGHLIGHTED WHITE CARD - 24px Radius) */}
+              <div className="w-full max-w-md p-5 rounded-[24px] bg-white text-[#0C0C0C] flex items-center gap-4 shadow-2xl transform scale-105 z-10">
+                <div className="w-14 h-14 rounded-full bg-[#BEFF53] flex items-center justify-center text-xl font-bold text-[#0C0C0C] shrink-0 border-2 border-white">
+                  PM
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-base text-[#0C0C0C]">
+                    <strong className="font-extrabold text-[#0C0C0C]">popova.mary</strong> подписался(-ась)
+                  </div>
+                  <div className="text-sm text-[#727272]">на ваши обновления <span className="text-xs font-mono text-[#727272] ml-1">1 мин</span></div>
+                </div>
+              </div>
+
+              {/* Notification Card 3 (Faded Bottom) */}
+              <div className="w-full max-w-md p-4 rounded-[24px] bg-white/25 backdrop-blur-md border border-white/20 text-white flex items-center gap-4 opacity-80 transform translate-y-2 scale-95 shadow-subtle">
+                <div className="w-12 h-12 rounded-full bg-purple-300 flex items-center justify-center font-bold text-purple-900 text-sm">
+                  OI
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-pink-50">
+                    <strong className="text-white font-bold">oleg.ivanov</strong> подписался(-ась) на ваши обновления
+                  </div>
+                  <div className="text-xs text-pink-200 mt-0.5 font-mono">2 мин</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Dark Slanted Background Separator */}
+          <div className="absolute bottom-0 left-0 right-0 h-10 bg-[#261930] transform skew-y-1 origin-bottom-right" />
         </section>
 
         {/* Feature Cards Grid (24px Radius) */}
@@ -180,8 +272,28 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Bottom Decorative Accent Slope */}
-        <div className="w-full h-12 bg-gradient-to-r from-pink-600 via-purple-700 to-[#261930] transform -skew-y-1" />
+        {/* CTA Banner Section (#261930 Deep Plum) */}
+        <section className="bg-[#261930] text-white py-20 px-6">
+          <div className="max-w-[1440px] mx-auto text-center space-y-6">
+            <h2 className="font-display-extended text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+              Запустите ваших первых ИИ-агентов уже сегодня
+            </h2>
+            <p className="text-[#727272] max-w-xl mx-auto text-base">
+              Начните бесплатный тестовый период без привязки банковской карты
+            </p>
+            <div className="pt-4 flex justify-center">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-4 pl-8 pr-3 py-3 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-semibold text-base sm:text-lg hover:bg-[#b0f542] transition shadow-lg"
+              >
+                <span>Попробовать бесплатно</span>
+                <div className="w-10 h-10 rounded-full bg-[#0C0C0C] text-white flex items-center justify-center">
+                  <ArrowRight className="w-5 h-5 text-[#BEFF53]" />
+                </div>
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
