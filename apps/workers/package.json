@@ -1,0 +1,21 @@
+{
+  "name": "workers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/main.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chatplace/automation-engine": "workspace:*",
+    "@chatplace/channel-sdk": "workspace:*",
+    "@chatplace/ai-sdk": "workspace:*",
+    "@chatplace/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  }
+}

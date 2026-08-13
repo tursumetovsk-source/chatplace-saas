@@ -1,0 +1,23 @@
+{
+  "name": "chatplace-saas",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Enterprise Multi-Tenant AI & Omnichannel Automation SaaS Platform",
+  "packageManager": "pnpm@11.5.1",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "deploy:vercel": "vercel --prod --confirm",
+    "agents:start": "node scripts/orchestrate-agents.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

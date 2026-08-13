@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "project": "ChatPlace SaaS Platform",
+  "version": "1.0.0",
+  "architecture": "Modular Monolith Monorepo",
+  "agents": [
+    {
+      "name": "frontend-agent",
+      "role": "Frontend Specialist",
+      "scope": ["apps/web/**", "packages/ui/**"],
+      "description": "Develops Next.js pages, React Flow nodes, Inbox UI, CRM board, and Tailwind styling.",
+      "allowedCommands": ["pnpm --filter=web dev", "pnpm --filter=web build"]
+    },
+    {
+      "name": "backend-agent",
+      "role": "Backend & Database Architect",
+      "scope": ["apps/api/**", "apps/webhook-gateway/**", "packages/database/**"],
+      "description": "Develops NestJS API endpoints, Prisma database schemas, tenant isolation guards, and webhooks.",
+      "allowedCommands": ["pnpm --filter=api build", "pnpm --filter=database build"]
+    },
+    {
+      "name": "automation-agent",
+      "role": "Automation Engine Specialist",
+      "scope": ["packages/automation-engine/**", "apps/workers/**"],
+      "description": "Develops pure TypeScript flow execution engine, condition resolvers, delay jobs, and BullMQ queues.",
+      "allowedCommands": ["pnpm --filter=@chatplace/automation-engine build"]
+    },
+    {
+      "name": "ai-channel-agent",
+      "role": "AI & Integration SDK Specialist",
+      "scope": ["packages/channel-sdk/**", "packages/ai-sdk/**", "packages/payment-sdk/**"],
+      "description": "Develops Instagram/Telegram/WhatsApp/TikTok adapters, AI prompt pipelines, vector memory, and payment adapters.",
+      "allowedCommands": ["pnpm --filter=@chatplace/channel-sdk build", "pnpm --filter=@chatplace/ai-sdk build"]
+    }
+  ],
+  "concurrencyPolicy": {
+    "isolatedWorkspaces": true,
+    "sharedContractsPath": "packages/shared/src/index.ts",
+    "gitBranchPrefix": "agent/"
+  }
+}

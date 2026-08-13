@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String            @map("password_hash")
+  firstName    String            @map("first_name")
+  lastName     String?           @map("last_name")
+  avatarUrl    String?           @map("avatar_url")
+  locale       String            @default("ru")
+  timezone     String            @default("Asia/Almaty")
+  status       String            @default("ACTIVE")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  memberships  WorkspaceMember[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id              String            @id @default(uuid())
+  name            String
+  slug            String            @unique
+  country         String            @default("KZ")
+  currency        String            @default("KZT")
+  timezone        String            @default("Asia/Almaty")
+  locale          String            @default("ru")
+  ownerId         String            @map("owner_id")
+  status          String            @default("ACTIVE")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  members         WorkspaceMember[]
+  channels        ChannelAccount[]
+  contacts        Contact[]
+  conversations   Conversation[]
+  automations     Automation[]
+  aiAgents        AiAgent[]
+  deals           Deal[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  userId      String    @map("user_id")
+  role        String    @default("ADMIN")
+  status      String    @default("ACTIVE")
+  joinedAt    DateTime  @default(now()) @map("joined_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model ChannelAccount {
+  id            String    @id @default(uuid())
+  workspaceId   String    @map("workspace_id")
+  provider      String    // INSTAGRAM, TELEGRAM, TIKTOK, WHATSAPP
+  externalId    String    @map("external_id")
+  username      String?
+  displayName   String?   @map("display_name")
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("channel_accounts")
+}
+
+model Contact {
+  id             String         @id @default(uuid())
+  workspaceId    String         @map("workspace_id")
+  firstName      String         @map("first_name")
+  lastName       String?        @map("last_name")
+  phone          String?
+  email          String?
+  language       String         @default("ru")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  lastActivityAt DateTime       @default(now()) @map("last_activity_at")
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversations  Conversation[]
+  deals          Deal[]
+
+  @@map("contacts")
+}
+
+model Conversation {
+  id               String       @id @default(uuid())
+  workspaceId      String       @map("workspace_id")
+  contactId        String       @map("contact_id")
+  channelAccountId String       @map("channel_account_id")
+  status           String       @default("OPEN")
+  mode             String       @default("AI") // AI, HUMAN, HYBRID
+  unreadCount      Int          @default(0) @map("unread_count")
+  lastMessageAt    DateTime     @default(now()) @map("last_message_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  workspace        Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact          Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages         Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  workspaceId    String       @map("workspace_id")
+  conversationId String       @map("conversation_id")
+  direction      String       // INBOUND, OUTBOUND
+  senderType     String       // CONTACT, AI, MANAGER, SYSTEM
+  type           String       @default("TEXT")
+  text           String
+  status         String       @default("SENT")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Automation {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now()) @map("created_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("automations")
+}
+
+model AiAgent {
+  id           String    @id @default(uuid())
+  workspaceId  String    @map("workspace_id")
+  name         String
+  model        String    @default("gpt-4o")
+  systemPrompt String    @map("system_prompt")
+  status       String    @default("ACTIVE")
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("ai_agents")
+}
+
+model Deal {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  contactId   String    @map("contact_id")
+  title       String
+  amount      Float
+  currency    String    @default("KZT")
+  status      String    @default("OPEN")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("deals")
+}
