@@ -5,8 +5,6 @@ import {
   MessageSquare, 
   Kanban, 
   Zap, 
-  Globe, 
-  CheckCircle2, 
   ArrowRight,
   Instagram,
   Send,
@@ -54,7 +52,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Единая платформа для визуальных автоворонок, умных AI-консультантов, омниканального Inbox и CRM-системы.
+            Единая платформа для визуальных автоворонок, умных AI-консультантов, омниканального чата и CRM-системы.
           </p>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -63,14 +61,14 @@ export default function LandingPage() {
               className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-base transition shadow-lg shadow-indigo-600/30 flex items-center gap-2"
             >
               <Workflow className="w-5 h-5" />
-              Visual Flow Builder
+              Конструктор автоворонок
             </Link>
             <Link
               href="/inbox"
               className="px-6 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-semibold text-base transition flex items-center gap-2"
             >
               <MessageSquare className="w-5 h-5 text-indigo-400" />
-              Omnichannel Inbox
+              Единый чат (Inbox)
             </Link>
           </div>
 
@@ -79,11 +77,11 @@ export default function LandingPage() {
             <span className="text-xs uppercase tracking-wider font-medium text-zinc-500">Интегрированные каналы:</span>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
               <Instagram className="w-4 h-4 text-pink-400" />
-              <span className="text-sm font-medium text-zinc-300">Instagram Direct & Comments</span>
+              <span className="text-sm font-medium text-zinc-300">Instagram Direct и комментарии</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
               <Send className="w-4 h-4 text-sky-400" />
-              <span className="text-sm font-medium text-zinc-300">Telegram Bot API</span>
+              <span className="text-sm font-medium text-zinc-300">Telegram-бот</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
               <MessageCircle className="w-4 h-4 text-emerald-400" />
@@ -91,7 +89,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
               <Video className="w-4 h-4 text-zinc-200" />
-              <span className="text-sm font-medium text-zinc-300">TikTok DM & Comments</span>
+              <span className="text-sm font-medium text-zinc-300">TikTok сообщения и комментарии</span>
             </div>
           </div>
         </section>
@@ -103,9 +101,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
                 <Workflow className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Visual Automation Builder</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Визуальный конструктор воронок</h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Конструктор автоворонок на базе React Flow. Поддержка триггеров по кодовым словам в комментариях и Direct, условий, задержек и ветвлений.
+                Конструктор сценариев продажи. Поддержка триггеров по кодовым словам в комментариях и Direct, условий, задержек и ветвлений.
               </p>
             </div>
 
@@ -113,7 +111,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-4">
                 <Bot className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">AI-Агенты с продажами</h3>
+              <h3 className="text-lg font-bold text-white mb-2">AI-агенты продаж</h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
                 Автономные AI-консультанты с загрузкой базы знаний, памятью клиентов и автоматическим переключением на менеджера при вызовах.
               </p>
@@ -123,7 +121,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
                 <Kanban className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Omnichannel CRM & Inbox</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Омниканальный Inbox & CRM</h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
                 Единое окно оператора с онлайн-диалогами всех 4 соцсетей, канбан-доской сделок и автоматической фиксацией конверсий.
               </p>
@@ -134,7 +132,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-900 px-6 py-6 text-center text-xs text-zinc-500">
-        © 2026 ChatPlace SaaS Platform. Built with Next.js, Turborepo & TypeScript.
+        © 2026 SaaS-платформа ChatPlace. Собрано на Next.js, Turborepo и TypeScript.
       </footer>
     </div>
   );
