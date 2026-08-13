@@ -19,9 +19,17 @@ import {
   Sparkles,
   Info
 } from 'lucide-react';
+import AuthModal from '../components/AuthModal';
 
 export default function LandingPage() {
   const [productsOpen, setProductsOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'sign-up' | 'sign-in'>('sign-up');
+
+  const openAuth = (mode: 'sign-up' | 'sign-in') => {
+    setAuthMode(mode);
+    setAuthOpen(true);
+  };
 
   const productsList = [
     { name: 'Instagram', icon: Instagram, color: 'bg-pink-100 text-pink-600', href: '/automations' },
@@ -68,7 +76,7 @@ export default function LandingPage() {
                 <ChevronDown className={`w-3.5 h-3.5 text-[#727272] transition-transform ${productsOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* ChatPlace Exact Products Dropdown Bar (Matching Screenshot 3) */}
+              {/* ChatPlace Exact Products Dropdown Bar */}
               {productsOpen && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[850px] p-6 rounded-[24px] bg-white border border-zinc-200 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="grid grid-cols-7 gap-3 text-center">
@@ -109,19 +117,19 @@ export default function LandingPage() {
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
+            <button
+              onClick={() => openAuth('sign-in')}
               className="w-10 h-10 rounded-full bg-[#0C0C0C] text-white flex items-center justify-center hover:bg-[#261930] transition shadow-subtle"
             >
               <User className="w-4 h-4" />
-            </Link>
+            </button>
 
-            <Link
-              href="/dashboard"
+            <button
+              onClick={() => openAuth('sign-up')}
               className="px-5 py-2.5 rounded-full bg-[#0C0C0C] text-white text-sm font-semibold hover:bg-[#261930] transition shadow-subtle"
             >
               Попробовать бесплатно
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -152,19 +160,19 @@ export default function LandingPage() {
 
           {/* Big Electric Lime Primary CTA Button */}
           <div className="mt-10 flex justify-center">
-            <Link
-              href="/dashboard"
+            <button
+              onClick={() => openAuth('sign-up')}
               className="inline-flex items-center gap-4 pl-8 pr-3 py-3 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-semibold text-base sm:text-lg hover:bg-[#b0f542] transition-all shadow-md group"
             >
               <span>Попробовать бесплатно</span>
               <div className="w-10 h-10 rounded-full bg-[#0C0C0C] text-white flex items-center justify-center group-hover:scale-105 transition-transform">
                 <ArrowRight className="w-5 h-5 text-[#BEFF53]" />
               </div>
-            </Link>
+            </button>
           </div>
         </section>
 
-        {/* Products Direct Bar Section (Exact Match to Screenshot 3) */}
+        {/* Products Direct Bar Section */}
         <section className="px-6 py-12 border-y border-zinc-100 bg-[#F6F5F8]">
           <div className="max-w-[1440px] mx-auto">
             <div className="text-center mb-8 text-xs uppercase tracking-wider font-bold text-[#727272]">
@@ -341,15 +349,15 @@ export default function LandingPage() {
               Начните бесплатный тестовый период без привязки банковской карты
             </p>
             <div className="pt-4 flex justify-center">
-              <Link
-                href="/dashboard"
+              <button
+                onClick={() => openAuth('sign-up')}
                 className="inline-flex items-center gap-4 pl-8 pr-3 py-3 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-semibold text-base sm:text-lg hover:bg-[#b0f542] transition shadow-lg"
               >
                 <span>Попробовать бесплатно</span>
                 <div className="w-10 h-10 rounded-full bg-[#0C0C0C] text-white flex items-center justify-center">
                   <ArrowRight className="w-5 h-5 text-[#BEFF53]" />
                 </div>
-              </Link>
+              </button>
             </div>
           </div>
         </section>
@@ -362,6 +370,9 @@ export default function LandingPage() {
           <span>© 2026 ChatPlace. Все права защищены. Казахстан & СНГ.</span>
         </div>
       </footer>
+
+      {/* Auth Modal Trigger */}
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} initialMode={authMode} />
     </div>
   );
 }
