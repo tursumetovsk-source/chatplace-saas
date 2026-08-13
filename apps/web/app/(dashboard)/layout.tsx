@@ -14,9 +14,7 @@ import {
   Settings,
   Zap,
   Globe,
-  ChevronDown,
-  Sparkles,
-  Layers
+  ChevronDown
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -74,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-indigo-500 text-white">
+                    <span className="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-600 text-white">
                       {item.badge}
                     </span>
                   )}
@@ -87,15 +85,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* System Status Footbar */}
         <div className="p-3.5 rounded-xl bg-zinc-900/40 border border-zinc-800/60 text-xs">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
               Каналы связи
             </span>
-            <span className="text-emerald-400 font-medium">ONLINE</span>
+            <span className="text-emerald-400 font-semibold">ONLINE</span>
           </div>
           <div className="text-[11px] text-zinc-400 flex items-center justify-between">
             <span>Instagram, TG, WA, TT</span>
-            <span className="font-mono text-zinc-400">v1.0.0</span>
+            <span className="font-mono text-zinc-500">v1.0.0</span>
           </div>
         </div>
       </aside>

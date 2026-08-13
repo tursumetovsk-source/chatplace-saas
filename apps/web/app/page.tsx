@@ -24,11 +24,8 @@ export default function LandingPage() {
             <Zap className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-zinc-200 to-indigo-300 bg-clip-text text-transparent">
+            <span className="text-xl font-bold tracking-tight text-white">
               ChatPlace
-            </span>
-            <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              Enterprise SaaS
             </span>
           </div>
         </div>
@@ -38,7 +35,7 @@ export default function LandingPage() {
             href="/dashboard"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm transition-all shadow-lg shadow-indigo-600/25 hover:shadow-indigo-500/40"
           >
-            Открыть демо-платформу
+            Открыть платформу
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -46,23 +43,18 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <main className="flex-1">
-        <section className="relative px-6 pt-20 pb-16 max-w-6xl mx-auto text-center">
+        <section className="relative px-6 pt-24 pb-16 max-w-6xl mx-auto text-center">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 blur-3xl rounded-full pointer-events-none" />
-
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-indigo-400 mb-8">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            SaaS-платформа уровня ChatPlace / ManyChat для Казахстана & СНГ
-          </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
             Автоматизация продаж и AI-агенты в{' '}
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400 bg-clip-text text-transparent">
+            <span className="text-indigo-400">
               Instagram, Telegram, TikTok & WhatsApp
             </span>
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Единая платформа для визуальных автоворонок, умных AI-консультантов, единого омниканального Inbox и CRM-системы.
+            Единая платформа для визуальных автоворонок, умных AI-консультантов, омниканального Inbox и CRM-системы.
           </p>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -84,7 +76,7 @@ export default function LandingPage() {
 
           {/* Social Proof Channels */}
           <div className="mt-16 pt-10 border-t border-zinc-800/60 flex flex-wrap justify-center items-center gap-8 text-zinc-400">
-            <span className="text-xs uppercase tracking-wider font-medium text-zinc-5-00">Интегрированные каналы:</span>
+            <span className="text-xs uppercase tracking-wider font-medium text-zinc-500">Интегрированные каналы:</span>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
               <Instagram className="w-4 h-4 text-pink-400" />
               <span className="text-sm font-medium text-zinc-300">Instagram Direct & Comments</span>

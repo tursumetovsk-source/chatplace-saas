@@ -5,7 +5,6 @@ import {
   Users, 
   MessageSquare, 
   Workflow, 
-  TrendingUp, 
   DollarSign, 
   Instagram, 
   Send, 
@@ -27,7 +26,7 @@ export default function DashboardOverview() {
       {/* Title */}
       <div>
         <h2 className="text-2xl font-bold text-white tracking-tight">Обзор показателей платформы</h2>
-        <p className="text-sm text-zinc-400 mt-1">Сводная аналитика по всем 4 социальным каналам и AI-автоматизациям</p>
+        <p className="text-sm text-zinc-400 mt-1">Сводная аналитика по всем 4 социальным каналам и автоворонкам</p>
       </div>
 
       {/* Metrics Cards */}
@@ -59,7 +58,7 @@ export default function DashboardOverview() {
         <div className="lg:col-span-2 p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-white">Сквозная атрибуция конверсий (End-to-End)</h3>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
               Live Pipeline
             </span>
           </div>
