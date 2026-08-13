@@ -18,133 +18,116 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { 
-  Play, 
   Plus, 
   Instagram, 
   MessageSquare, 
-  GitBranch, 
   Clock, 
   Bot, 
-  Kanban, 
   Save, 
-  Zap, 
-  CheckCircle2, 
-  Send,
   Smartphone,
   CreditCard,
-  Tag,
-  Sliders,
-  ExternalLink,
-  Layers,
-  Sparkles,
-  X
+  X,
+  Send,
+  ArrowRight
 } from 'lucide-react';
 
 // ChatPlace Instagram Trigger Node
 const InstagramTriggerNode = ({ data }: { data: { title: string; keyword: string; scope: string } }) => (
-  <div className="px-4 py-3.5 rounded-2xl bg-zinc-900 border-2 border-pink-500/80 shadow-2xl w-72">
+  <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-pink-500 shadow-lg w-76">
     <div className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-2 text-pink-400 font-bold text-xs">
-        <div className="p-1 rounded-lg bg-pink-500/20 text-pink-400">
-          <Instagram className="w-4 h-4" />
-        </div>
-        <span>INSTAGRAM TRIGGER</span>
+        <Instagram className="w-4 h-4" />
+        <span>ТРИГГЕР INSTAGRAM</span>
       </div>
-      <span className="text-[10px] px-2 py-0.5 rounded bg-pink-950 text-pink-300 font-mono">
-        Meta Verified
+      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold font-mono">
+        Meta API
       </span>
     </div>
     <div className="text-sm font-bold text-white mb-1">{data.title}</div>
-    <div className="text-xs text-zinc-400 mb-2">{data.scope}</div>
-    <div className="p-2 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
-      <span className="text-xs text-zinc-400">Кодовое слово:</span>
-      <span className="text-xs font-bold text-pink-300 bg-pink-950/80 px-2.5 py-0.5 rounded border border-pink-800/60 font-mono">
+    <div className="text-xs text-zinc-300 mb-3">{data.scope}</div>
+    <div className="p-2.5 rounded-xl bg-[#191020] border border-white/10 flex items-center justify-between">
+      <span className="text-xs text-zinc-400">Слово в коммент:</span>
+      <span className="text-xs font-bold text-[#BEFF53] bg-pink-950/80 px-2.5 py-0.5 rounded-full border border-pink-700 font-mono">
         {data.keyword}
       </span>
     </div>
-    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-pink-500 border-2 border-zinc-900" />
+    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
   </div>
 );
 
 // ChatPlace Instagram Direct Message Node
 const InstagramMessageNode = ({ data }: { data: { text: string; buttons: string[]; delay?: string } }) => (
-  <div className="px-4 py-3.5 rounded-2xl bg-zinc-900 border-2 border-indigo-500/80 shadow-2xl w-80">
-    <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-indigo-500 border-2 border-zinc-900" />
+  <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-indigo-400 shadow-lg w-80">
+    <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
     <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
-        <div className="p-1 rounded-lg bg-indigo-500/20 text-indigo-400">
-          <MessageSquare className="w-4 h-4" />
-        </div>
+      <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs">
+        <MessageSquare className="w-4 h-4" />
         <span>INSTAGRAM DIRECT</span>
       </div>
       {data.delay && (
-        <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono flex items-center gap-1">
-          <Clock className="w-3 h-3 text-amber-400" /> {data.delay}
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-amber-300 font-mono flex items-center gap-1">
+          <Clock className="w-3 h-3 text-amber-300" /> {data.delay}
         </span>
       )}
     </div>
-    <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 leading-relaxed mb-3">
+    <div className="p-3 rounded-xl bg-[#191020] border border-white/10 text-xs text-zinc-200 leading-relaxed mb-3">
       {data.text}
     </div>
     {data.buttons && data.buttons.length > 0 && (
       <div className="space-y-1.5">
-        <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Кнопки быстрого ответа:</div>
+        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Кнопки быстрого ответа:</div>
         {data.buttons.map((b, i) => (
-          <div key={i} className="p-2 rounded-lg bg-indigo-950/60 border border-indigo-800/60 text-xs font-semibold text-indigo-200 text-center">
+          <div key={i} className="p-2 rounded-xl bg-[#BEFF53] text-[#0C0C0C] text-xs font-bold text-center">
             {b}
           </div>
         ))}
       </div>
     )}
-    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-indigo-500 border-2 border-zinc-900" />
+    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
   </div>
 );
 
 // ChatPlace AI Agent Node
 const AiAgentNode = ({ data }: { data: { agentName: string; model: string; kbChunks: string } }) => (
-  <div className="px-4 py-3.5 rounded-2xl bg-zinc-900 border-2 border-purple-500/80 shadow-2xl w-76">
-    <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-purple-500 border-2 border-zinc-900" />
+  <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-purple-400 shadow-lg w-76">
+    <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
     <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-2 text-purple-400 font-bold text-xs">
-        <div className="p-1 rounded-lg bg-purple-500/20 text-purple-400">
-          <Bot className="w-4 h-4" />
-        </div>
-        <span>AI SALES COPILOT</span>
+      <div className="flex items-center gap-2 text-purple-300 font-bold text-xs">
+        <Bot className="w-4 h-4" />
+        <span>AI КОНСУЛЬТАНТ</span>
       </div>
-      <span className="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 font-mono">
+      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-200 font-mono">
         {data.model}
       </span>
     </div>
-    <div className="text-sm font-bold text-white mb-1">{data.agentName}</div>
-    <div className="p-2 rounded-xl bg-purple-950/40 border border-purple-800/40 text-xs text-purple-200 flex items-center justify-between">
-      <span>База знаний (RAG):</span>
-      <span className="font-bold text-emerald-400">{data.kbChunks}</span>
+    <div className="text-sm font-bold text-white mb-2">{data.agentName}</div>
+    <div className="p-2.5 rounded-xl bg-[#191020] border border-white/10 text-xs text-purple-200 flex items-center justify-between">
+      <span>База знаний:</span>
+      <span className="font-bold text-[#BEFF53]">{data.kbChunks}</span>
     </div>
-    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-purple-500 border-2 border-zinc-900" />
+    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
   </div>
 );
 
 // ChatPlace Kaspi Pay & CRM Node
 const KaspiPayNode = ({ data }: { data: { title: string; amount: string; provider: string } }) => (
-  <div className="px-4 py-3.5 rounded-2xl bg-zinc-900 border-2 border-emerald-500/80 shadow-2xl w-76">
-    <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-emerald-500 border-2 border-zinc-900" />
+  <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-emerald-400 shadow-lg w-76">
+    <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
     <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
-        <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
-          <CreditCard className="w-4 h-4" />
-        </div>
+      <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs">
+        <CreditCard className="w-4 h-4" />
         <span>KASPI PAY & CRM</span>
       </div>
-      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono font-bold">
+      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-mono font-bold">
         {data.provider}
       </span>
     </div>
-    <div className="text-sm font-bold text-white mb-1">{data.title}</div>
-    <div className="p-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs flex items-center justify-between">
+    <div className="text-sm font-bold text-white mb-2">{data.title}</div>
+    <div className="p-2.5 rounded-xl bg-[#191020] border border-white/10 text-xs flex items-center justify-between">
       <span className="text-zinc-400">Сумма счета:</span>
-      <span className="font-extrabold text-emerald-400 text-sm">{data.amount}</span>
+      <span className="font-extrabold text-[#BEFF53] text-sm">{data.amount}</span>
     </div>
-    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-emerald-500 border-2 border-zinc-900" />
+    <Handle type="source" position={Position.Bottom} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
   </div>
 );
 
@@ -168,29 +151,29 @@ export default function AutomationsPage() {
       type: 'instagramMessage',
       position: { x: 260, y: 220 },
       data: { 
-        text: 'Здравствуйте, {{contact.first_name}}! Вы запрашивали прайс-лист на наши услуги. Какая услуга вас интересует?',
-        buttons: ['Тариф Старт (45 000 ₸)', 'Тариф Про (95 000 ₸)', 'Связаться с менеджером'],
+        text: 'Здравствуйте! Вы запрашивали прайс-лист на наши услуги. Какая услуга вас интересует?',
+        buttons: ['Тариф Старт (45 000 ₸)', 'Тариф Про (95 000 ₸)'],
         delay: 'Пауза 2 сек'
       }
     },
     {
       id: 'n3',
       type: 'aiAgent',
-      position: { x: 260, y: 440 },
+      position: { x: 260, y: 450 },
       data: { agentName: 'AI Консультант Продаж', model: 'GPT-4o', kbChunks: '142 чанка' }
     },
     {
       id: 'n4',
       type: 'kaspiPay',
-      position: { x: 260, y: 620 },
+      position: { x: 260, y: 640 },
       data: { title: 'Ссылка на оплату в Kaspi Pay', amount: '95 000 ₸', provider: 'Kaspi Pay' }
     }
   ]);
 
   const [edges, setEdges] = useState<Edge[]>([
     { id: 'e1-2', source: 'n1', target: 'n2', animated: true, style: { stroke: '#ec4899', strokeWidth: 2 } },
-    { id: 'e2-3', source: 'n2', target: 'n3', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 } },
-    { id: 'e3-4', source: 'n3', target: 'n4', animated: true, style: { stroke: '#10b981', strokeWidth: 2 } }
+    { id: 'e2-3', source: 'n2', target: 'n3', animated: true, style: { stroke: '#818cf8', strokeWidth: 2 } },
+    { id: 'e3-4', source: 'n3', target: 'n4', animated: true, style: { stroke: '#34d399', strokeWidth: 2 } }
   ]);
 
   const [simulating, setSimulating] = useState(false);
@@ -241,82 +224,82 @@ export default function AutomationsPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden relative">
+    <div className="h-[calc(100vh-6rem)] flex flex-col rounded-[24px] border border-zinc-200 bg-white overflow-hidden relative shadow-subtle">
       {/* Top Toolbar */}
-      <div className="p-4 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between z-10">
+      <div className="p-4 border-b border-zinc-200 bg-white flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-600 to-indigo-600 flex items-center justify-center text-white shadow">
+          <div className="w-9 h-9 rounded-xl bg-[#261930] text-[#BEFF53] flex items-center justify-center font-bold">
             <Instagram className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              ChatPlace Flow Builder
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-semibold border border-emerald-800">
-                ACTIVE
+            <h2 className="font-display-extended text-base font-bold text-[#0C0C0C] flex items-center gap-2">
+              Конструктор автоворонок
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold">
+                АКТИВЕН
               </span>
             </h2>
-            <p className="text-xs text-zinc-400">Сценарий: Reels "ПРАЙС" → Direct автоответ → AI Продажи → Kaspi Pay</p>
+            <p className="text-xs text-[#727272]">Сценарий: Reels "ПРАЙС" → Direct автоответ → AI Продажи → Kaspi Pay</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={startSimulator}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-500 hover:to-indigo-500 text-white font-semibold text-xs transition flex items-center gap-2 shadow-lg shadow-pink-600/20"
+            className="px-4 py-2 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-semibold text-xs transition flex items-center gap-2 shadow-sm hover:bg-[#b0f542]"
           >
             <Smartphone className="w-4 h-4" />
             Тестировать воронку
           </button>
 
-          <button className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+          <button className="px-4 py-2 rounded-full bg-[#261930] text-white font-semibold text-xs transition flex items-center gap-2 hover:bg-[#392648]">
             <Save className="w-4 h-4" />
-            Сохранить flow v2.4
+            Сохранить сценарий
           </button>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Node Palette Toolbar */}
-        <div className="w-64 border-r border-zinc-800 bg-zinc-950 p-4 space-y-4 shrink-0 overflow-y-auto">
-          <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Блоки сценария ChatPlace</div>
+        <div className="w-64 border-r border-zinc-200 bg-[#F6F5F8] p-4 space-y-4 shrink-0 overflow-y-auto">
+          <div className="text-xs font-bold text-[#727272] uppercase tracking-wider">Блоки сценария ChatPlace</div>
           
-          <div className="space-y-2">
-            <div className="p-3 rounded-xl bg-zinc-900/80 border border-pink-500/40 hover:border-pink-500 cursor-pointer transition">
-              <div className="flex items-center gap-2 text-xs font-bold text-pink-400 mb-1">
+          <div className="space-y-2.5">
+            <div className="p-3.5 rounded-2xl bg-white border border-zinc-200 shadow-subtle hover:border-[#261930] cursor-pointer transition">
+              <div className="flex items-center gap-2 text-xs font-bold text-pink-600 mb-1">
                 <Instagram className="w-4 h-4" />
                 Триггер Instagram
               </div>
-              <p className="text-[11px] text-zinc-400">Кодовое слово в комментариях Reels/Post или Direct</p>
+              <p className="text-[11px] text-[#727272]">Кодовое слово в комментариях Reels/Post или Direct</p>
             </div>
 
-            <div className="p-3 rounded-xl bg-zinc-900/80 border border-indigo-500/40 hover:border-indigo-500 cursor-pointer transition">
-              <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 mb-1">
+            <div className="p-3.5 rounded-2xl bg-white border border-zinc-200 shadow-subtle hover:border-[#261930] cursor-pointer transition">
+              <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 mb-1">
                 <MessageSquare className="w-4 h-4" />
                 Instagram Direct
               </div>
-              <p className="text-[11px] text-zinc-400">Сообщение с быстрыми кнопками и паузой</p>
+              <p className="text-[11px] text-[#727272]">Сообщение с быстрыми кнопками и паузой</p>
             </div>
 
-            <div className="p-3 rounded-xl bg-zinc-900/80 border border-purple-500/40 hover:border-purple-500 cursor-pointer transition">
-              <div className="flex items-center gap-2 text-xs font-bold text-purple-400 mb-1">
+            <div className="p-3.5 rounded-2xl bg-white border border-zinc-200 shadow-subtle hover:border-[#261930] cursor-pointer transition">
+              <div className="flex items-center gap-2 text-xs font-bold text-purple-600 mb-1">
                 <Bot className="w-4 h-4" />
-                AI Sales Copilot
+                AI Консультант
               </div>
-              <p className="text-[11px] text-zinc-400">Автономный консультант с базой знаний RAG</p>
+              <p className="text-[11px] text-[#727272]">Автономный продавц с базой знаний RAG</p>
             </div>
 
-            <div className="p-3 rounded-xl bg-zinc-900/80 border border-emerald-500/40 hover:border-emerald-500 cursor-pointer transition">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 mb-1">
+            <div className="p-3.5 rounded-2xl bg-white border border-zinc-200 shadow-subtle hover:border-[#261930] cursor-pointer transition">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 mb-1">
                 <CreditCard className="w-4 h-4" />
                 Kaspi Pay & CRM
               </div>
-              <p className="text-[11px] text-zinc-400">Генерация ссылки на оплату Kaspi и фиксация сделки</p>
+              <p className="text-[11px] text-[#727272]">Генерация ссылки на оплату Kaspi и фиксация сделки</p>
             </div>
           </div>
         </div>
 
         {/* Center Flow Canvas */}
-        <div className="flex-1 w-full relative bg-zinc-950">
+        <div className="flex-1 w-full relative bg-[#F6F5F8]">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -326,36 +309,36 @@ export default function AutomationsPage() {
             nodeTypes={nodeTypes}
             fitView
           >
-            <Background color="#27272a" gap={24} size={1} />
-            <Controls className="bg-zinc-900 border-zinc-800 text-white fill-white" />
+            <Background color="#E4E4E7" gap={24} size={1} />
+            <Controls className="bg-white border-zinc-200 text-[#0C0C0C]" />
           </ReactFlow>
         </div>
 
         {/* Right Phone Direct Simulator Drawer */}
         {simulating && (
-          <div className="w-80 border-l border-zinc-800 bg-zinc-950 flex flex-col shrink-0 animate-in slide-in-from-right duration-200">
-            <div className="p-3.5 border-b border-zinc-800 flex items-center justify-between bg-zinc-900">
-              <div className="flex items-center gap-2 text-xs font-bold text-white">
-                <Smartphone className="w-4 h-4 text-pink-400" />
+          <div className="w-80 border-l border-zinc-200 bg-white flex flex-col shrink-0 animate-in slide-in-from-right duration-200 shadow-lg">
+            <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-[#F6F5F8]">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#0C0C0C]">
+                <Smartphone className="w-4 h-4 text-pink-600" />
                 Имитатор Instagram Direct
               </div>
-              <button onClick={() => setSimulating(false)} className="text-zinc-400 hover:text-white">
+              <button onClick={() => setSimulating(false)} className="text-[#727272] hover:text-[#0C0C0C]">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs">
+            <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
               {simLogs.map((log, i) => (
                 <div
                   key={i}
-                  className={`p-2.5 rounded-xl ${
+                  className={`p-3 rounded-2xl ${
                     log.sender === 'SYSTEM'
-                      ? 'bg-zinc-900 text-zinc-400 text-[11px] text-center font-mono'
+                      ? 'bg-[#F6F5F8] text-[#727272] text-[11px] text-center font-mono'
                       : log.sender === 'USER'
-                      ? 'bg-zinc-800 text-white ml-auto max-w-[85%]'
+                      ? 'bg-[#261930] text-white ml-auto max-w-[85%]'
                       : log.sender === 'AI'
-                      ? 'bg-purple-950 border border-purple-800 text-purple-200 mr-auto max-w-[85%]'
-                      : 'bg-indigo-600 text-white mr-auto max-w-[85%]'
+                      ? 'bg-purple-100 text-purple-950 border border-purple-200 mr-auto max-w-[85%]'
+                      : 'bg-[#BEFF53] text-[#0C0C0C] font-semibold mr-auto max-w-[85%]'
                   }`}
                 >
                   {log.text}
@@ -363,16 +346,16 @@ export default function AutomationsPage() {
               ))}
             </div>
 
-            <div className="p-3 border-t border-zinc-800 flex items-center gap-2">
+            <div className="p-3 border-t border-zinc-200 flex items-center gap-2">
               <input
                 type="text"
                 value={simInput}
                 onChange={e => setSimInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSimSend()}
                 placeholder="Напишите 'ПРАЙС'..."
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                className="flex-1 bg-[#F6F5F8] border border-zinc-200 rounded-full px-4 py-2 text-xs text-[#0C0C0C] focus:outline-none focus:border-[#261930] font-sans"
               />
-              <button onClick={handleSimSend} className="p-2 rounded-lg bg-pink-600 text-white">
+              <button onClick={handleSimSend} className="p-2.5 rounded-full bg-[#261930] text-[#BEFF53]">
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>

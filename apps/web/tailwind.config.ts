@@ -6,18 +6,30 @@ const config: Config = {
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     '../../packages/ui/src/**/*.{js,ts,jsx,tsx}'
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          900: '#312e81'
+          dark: '#261930',      // Primary deep plum
+          accent: '#BEFF53',    // Electric Lime Accent
+          surface: '#FFFFFF',   // Pure White surface
+          elevated: '#F6F5F8',  // Soft elevated light grey
+          text: '#0C0C0C',      // Deep text
+          muted: '#727272'      // Muted text
         }
+      },
+      fontFamily: {
+        display: ['var(--font-syne)', 'Space Grotesk', 'sans-serif'],
+        body: ['var(--font-roboto)', 'Inter', 'sans-serif']
+      },
+      borderRadius: {
+        'card': '24px',
+        'chip': '10px',
+        'pill': '9999px'
+      },
+      boxShadow: {
+        'subtle': '0px 0px 6.6px 0px rgba(0, 0, 0, 0.05)',
+        'soft': '0px 8px 24px 0px rgba(38, 25, 48, 0.06)'
       }
     }
   },

@@ -4,135 +4,192 @@ import {
   Workflow, 
   MessageSquare, 
   Kanban, 
-  Zap, 
   ArrowRight,
+  ChevronDown,
+  User,
   Instagram,
   Send,
-  MessageCircle,
-  Video
+  Video,
+  Sparkles,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden">
-      {/* Header / Nav */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-xl font-bold tracking-tight text-white">
-              ChatPlace
-            </span>
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col bg-white text-[#0C0C0C] font-body selection:bg-[#BEFF53] selection:text-[#0C0C0C]">
+      {/* Top Header Navigation */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 py-4">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between">
+          {/* Logo & Lang */}
+          <div className="flex items-center gap-6">
+            <Link href="/" className="font-display-extended text-2xl font-extrabold tracking-tighter text-[#0C0C0C]">
+              CHATPLACE
+            </Link>
 
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm transition-all shadow-lg shadow-indigo-600/25 hover:shadow-indigo-500/40"
-          >
-            Открыть платформу
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+            <button className="flex items-center gap-1 text-sm font-medium text-[#727272] hover:text-[#0C0C0C] transition">
+              <span>RU</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Center Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#0C0C0C]">
+            <div className="flex items-center gap-1 cursor-pointer hover:text-[#261930] transition">
+              <span>Продукты</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#727272]" />
+            </div>
+            <Link href="/dashboard" className="hover:text-[#261930] transition">
+              Цены
+            </Link>
+            <div className="flex items-center gap-1 cursor-pointer hover:text-[#261930] transition">
+              <span>Партнёрам</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#727272]" />
+            </div>
+            <div className="flex items-center gap-1 cursor-pointer hover:text-[#261930] transition">
+              <span>Ресурсы</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#727272]" />
+            </div>
+          </nav>
+
+          {/* Right Header Actions */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="w-10 h-10 rounded-full bg-[#0C0C0C] text-white flex items-center justify-center hover:bg-[#261930] transition shadow-subtle"
+            >
+              <User className="w-4 h-4" />
+            </Link>
+
+            <Link
+              href="/dashboard"
+              className="px-5 py-2.5 rounded-full bg-[#0C0C0C] text-white text-sm font-semibold hover:bg-[#261930] transition shadow-subtle"
+            >
+              Попробовать бесплатно
+            </Link>
+          </div>
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Main Hero Section */}
       <main className="flex-1">
-        <section className="relative px-6 pt-24 pb-16 max-w-6xl mx-auto text-center">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 blur-3xl rounded-full pointer-events-none" />
+        {/* Top Announcement Pill */}
+        <div className="pt-8 pb-4 text-center">
+          <Link
+            href="/ai-agents"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#261930] text-white text-xs font-semibold hover:bg-[#392648] transition shadow-subtle"
+          >
+            <span>🚀 НОВОЕ</span>
+            <span className="text-zinc-200">Virale — ИИ-креатор для вирального контента</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#BEFF53]" />
+          </Link>
+        </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
-            Автоматизация продаж и AI-агенты в{' '}
-            <span className="text-indigo-400">
-              Instagram, Telegram, TikTok & WhatsApp
-            </span>
+        {/* Hero Copy */}
+        <section className="px-6 pt-6 pb-20 max-w-5xl mx-auto text-center">
+          <h1 className="font-display-extended text-4xl sm:text-7xl font-extrabold text-[#0C0C0C] tracking-tight leading-[1.05] max-w-4xl mx-auto">
+            Всё для роста в контенте и мессенджерах
           </h1>
 
-          <p className="mt-6 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Единая платформа для визуальных автоворонок, умных AI-консультантов, омниканального чата и CRM-системы.
+          <p className="mt-8 text-lg sm:text-xl text-[#727272] max-w-2xl mx-auto leading-normal font-normal">
+            ИИ-агенты и чат-боты для продвижения в Instagram, Telegram и TikTok. Запустите по готовым шаблонам с телефона
           </p>
 
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
+          {/* Big Electric Lime Primary CTA Button */}
+          <div className="mt-10 flex justify-center">
             <Link
-              href="/automations"
-              className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-base transition shadow-lg shadow-indigo-600/30 flex items-center gap-2"
+              href="/dashboard"
+              className="inline-flex items-center gap-4 pl-8 pr-3 py-3 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-semibold text-base sm:text-lg hover:bg-[#b0f542] transition-all shadow-md group"
             >
-              <Workflow className="w-5 h-5" />
-              Конструктор автоворонок
-            </Link>
-            <Link
-              href="/inbox"
-              className="px-6 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-semibold text-base transition flex items-center gap-2"
-            >
-              <MessageSquare className="w-5 h-5 text-indigo-400" />
-              Единый чат (Inbox)
+              <span>Попробовать бесплатно</span>
+              <div className="w-10 h-10 rounded-full bg-[#0C0C0C] text-white flex items-center justify-center group-hover:scale-105 transition-transform">
+                <ArrowRight className="w-5 h-5 text-[#BEFF53]" />
+              </div>
             </Link>
           </div>
+        </section>
 
-          {/* Social Proof Channels */}
-          <div className="mt-16 pt-10 border-t border-zinc-800/60 flex flex-wrap justify-center items-center gap-8 text-zinc-400">
-            <span className="text-xs uppercase tracking-wider font-medium text-zinc-500">Интегрированные каналы:</span>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
-              <Instagram className="w-4 h-4 text-pink-400" />
-              <span className="text-sm font-medium text-zinc-300">Instagram Direct и комментарии</span>
+        {/* Channels Bar */}
+        <section className="px-6 py-8 border-y border-zinc-100 bg-[#F6F5F8]">
+          <div className="max-w-[1440px] mx-auto flex flex-wrap justify-center items-center gap-10 text-sm font-medium text-[#0C0C0C]">
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
+              <Instagram className="w-4 h-4 text-pink-600" />
+              <span>Instagram Direct & Comments</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
-              <Send className="w-4 h-4 text-sky-400" />
-              <span className="text-sm font-medium text-zinc-300">Telegram-бот</span>
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
+              <Send className="w-4 h-4 text-sky-500" />
+              <span>Telegram Bot API</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
-              <MessageCircle className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-medium text-zinc-300">WhatsApp Business</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/80">
-              <Video className="w-4 h-4 text-zinc-200" />
-              <span className="text-sm font-medium text-zinc-300">TikTok сообщения и комментарии</span>
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white shadow-subtle">
+              <Video className="w-4 h-4 text-zinc-900" />
+              <span>TikTok DM & Comments</span>
             </div>
           </div>
         </section>
 
-        {/* Feature Grid */}
-        <section className="px-6 py-16 max-w-6xl mx-auto border-t border-zinc-900">
+        {/* Feature Cards Grid (24px Radius) */}
+        <section className="px-6 py-20 max-w-[1440px] mx-auto">
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 hover:border-indigo-500/40 transition">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
+            <div className="p-8 rounded-[24px] bg-[#F6F5F8] border border-zinc-200/60 shadow-subtle hover:shadow-soft transition">
+              <div className="w-12 h-12 rounded-2xl bg-[#261930] text-[#BEFF53] flex items-center justify-center mb-6">
                 <Workflow className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Визуальный конструктор воронок</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Конструктор сценариев продажи. Поддержка триггеров по кодовым словам в комментариях и Direct, условий, задержек и ветвлений.
+              <h3 className="font-display-extended text-xl font-bold text-[#0C0C0C] mb-3">
+                Конструктор автоворонок
+              </h3>
+              <p className="text-sm text-[#727272] leading-relaxed">
+                Визуальный графический редактор на базе React Flow. Поддержка триггеров по кодовым словам в комментариях Reels и Direct, условий, задержек и ветвлений.
               </p>
+              <Link href="/automations" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0C0C0C] mt-6 hover:text-[#261930]">
+                <span>Открыть конструктор</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#261930]" />
+              </Link>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 hover:border-purple-500/40 transition">
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-4">
+            <div className="p-8 rounded-[24px] bg-[#F6F5F8] border border-zinc-200/60 shadow-subtle hover:shadow-soft transition">
+              <div className="w-12 h-12 rounded-2xl bg-[#261930] text-[#BEFF53] flex items-center justify-center mb-6">
                 <Bot className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">AI-агенты продаж</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Автономные AI-консультанты с загрузкой базы знаний, памятью клиентов и автоматическим переключением на менеджера при вызовах.
+              <h3 className="font-display-extended text-xl font-bold text-[#0C0C0C] mb-3">
+                ИИ-агенты продаж 24/7
+              </h3>
+              <p className="text-sm text-[#727272] leading-relaxed">
+                Автономные AI-консультанты с загрузкой вашей базы знаний (RAG), памятью клиентов и автоматической передачей лида оператору.
               </p>
+              <Link href="/ai-agents" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0C0C0C] mt-6 hover:text-[#261930]">
+                <span>Настроить агента</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#261930]" />
+              </Link>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 hover:border-emerald-500/40 transition">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
-                <Kanban className="w-6 h-6" />
+            <div className="p-8 rounded-[24px] bg-[#F6F5F8] border border-zinc-200/60 shadow-subtle hover:shadow-soft transition">
+              <div className="w-12 h-12 rounded-2xl bg-[#261930] text-[#BEFF53] flex items-center justify-center mb-6">
+                <MessageSquare className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Омниканальный Inbox & CRM</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Единое окно оператора с онлайн-диалогами всех 4 соцсетей, канбан-доской сделок и автоматической фиксацией конверсий.
+              <h3 className="font-display-extended text-xl font-bold text-[#0C0C0C] mb-3">
+                Единый Inbox & CRM
+              </h3>
+              <p className="text-sm text-[#727272] leading-relaxed">
+                Единое окно диалогов всех 4 социальных сетей, канбан-доска сделок с подсчетом суммы в ₸ KZT и интеграцией Kaspi Pay.
               </p>
+              <Link href="/inbox" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0C0C0C] mt-6 hover:text-[#261930]">
+                <span>Перейти в Inbox</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#261930]" />
+              </Link>
             </div>
           </div>
         </section>
+
+        {/* Bottom Decorative Accent Slope */}
+        <div className="w-full h-12 bg-gradient-to-r from-pink-600 via-purple-700 to-[#261930] transform -skew-y-1" />
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-900 px-6 py-6 text-center text-xs text-zinc-500">
-        © 2026 SaaS-платформа ChatPlace. Собрано на Next.js, Turborepo и TypeScript.
+      <footer className="border-t border-zinc-200 bg-[#F6F5F8] px-6 py-8 text-center text-xs text-[#727272]">
+        <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <span className="font-display-extended font-bold text-[#0C0C0C]">CHATPLACE SaaS</span>
+          <span>© 2026 ChatPlace. Все права защищены. Казахстан & СНГ.</span>
+        </div>
       </footer>
     </div>
   );
