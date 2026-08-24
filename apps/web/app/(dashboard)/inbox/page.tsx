@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CreditCard, Instagram, MessageCircle, Phone, Send, SendHorizontal, Sparkles, Video } from 'lucide-react';
+import { CreditCard, Instagram, MessageCircle, Phone, Send, SendHorizontal, Sparkles, UserCheck, UserRound, Users, Video } from 'lucide-react';
 import { useAccountMode } from '../../../lib/use-account-mode';
 
 type Provider = 'INSTAGRAM' | 'TELEGRAM' | 'WHATSAPP' | 'TIKTOK';
 type OperatorMode = 'AI' | 'HUMAN' | 'HYBRID';
+type InboxFilter = 'ALL' | 'MINE' | 'UNASSIGNED' | 'HUMAN';
+interface AssignedMember { id: string; userId: string; user: { firstName: string; lastName?: string | null; email: string } }
+interface TeamMember extends AssignedMember { role: string; _count: { assignedConversations: number } }
 
 interface Chat {
   id: string;
@@ -21,6 +24,8 @@ interface Chat {
   city?: string;
   followers?: string;
   triggerContext?: string;
+  assignedTo?: AssignedMember | null;
+  handoffReason?: string | null;
 }
 
 interface ChatMessage {
@@ -41,6 +46,8 @@ interface ApiConversation {
   contact: { firstName: string; lastName?: string | null; username?: string | null; phone?: string | null; city?: string | null; tags: string[] };
   channelAccount: { provider: string; username?: string | null };
   messages: Array<{ text: string }>;
+  assignedTo?: AssignedMember | null;
+  handoffReason?: string | null;
 }
 
 interface ApiMessage {
@@ -52,9 +59,9 @@ interface ApiMessage {
 }
 
 const demoChats: Chat[] = [
-  { id: 'c1', name: 'Айдос Нурланов', username: '@aidos_nurlan', provider: 'INSTAGRAM', lastMessage: 'Здравствуйте! Какая цена на курс по автоматизации?', time: '14:22', mode: 'AI', unread: 1, tags: ['Горячий лид', 'Алматы', 'Kaspi Pay'], phone: '+7 (707) 890-12-34', city: 'Алматы', followers: '14.2K', triggerContext: 'Reels #143 "ПРАЙС"' },
+  { id: 'c1', name: 'Айдос Нурланов', username: '@aidos_nurlan', provider: 'INSTAGRAM', lastMessage: 'Здравствуйте! Какая цена на курс по автоматизации?', time: '14:22', mode: 'AI', unread: 1, tags: ['Горячий лид', 'Алматы', 'Kaspi Pay'], phone: '+7 (707) 890-12-34', city: 'Алматы', followers: '14.2K', triggerContext: 'Reels #143 "ПРАЙС"', assignedTo: null },
   { id: 'c2', name: 'Елена Смирнова', username: '@elena_smirnova', provider: 'TELEGRAM', lastMessage: 'Хочу подключить систему к нашему интернет-магазину', time: '13:05', mode: 'HYBRID', unread: 0, tags: ['SaaS Клиент'], followers: '3.1K' },
-  { id: 'c3', name: 'Аскар Болатов', username: '+7 (701) 999-88-77', provider: 'WHATSAPP', lastMessage: 'Оплату отправил через Kaspi Pay, проверьте чек', time: '11:45', mode: 'HUMAN', unread: 2, tags: ['Счет Выставлен'] },
+  { id: 'c3', name: 'Аскар Болатов', username: '+7 (701) 999-88-77', provider: 'WHATSAPP', lastMessage: 'Оплату отправил через Kaspi Pay, проверьте чек', time: '11:45', mode: 'HUMAN', unread: 2, tags: ['Счет Выставлен'], assignedTo: null, handoffReason: 'Клиент сообщил об оплате' },
   { id: 'c4', name: 'Динара Серикова', username: '@dinara_tok', provider: 'TIKTOK', lastMessage: 'Пришлите прайс-лист в Direct', time: 'Вчера', mode: 'AI', unread: 0, tags: ['Новый подписчик'] }
 ];
 
@@ -82,11 +89,14 @@ const mapConversation = (conversation: ApiConversation): Chat => {
     unread: conversation.unreadCount,
     tags: conversation.contact.tags,
     phone: conversation.contact.phone || undefined,
-    city: conversation.contact.city || undefined
+    city: conversation.contact.city || undefined,
+    assignedTo: conversation.assignedTo,
+    handoffReason: conversation.handoffReason
   };
 };
 
 const initials = (name: string) => name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'К';
+const memberName = (member?: AssignedMember | null) => member ? [member.user.firstName, member.user.lastName].filter(Boolean).join(' ') || member.user.email : 'Не назначен';
 
 export default function InboxPage() {
   const { mode } = useAccountMode();
@@ -98,12 +108,22 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [filter, setFilter] = useState<InboxFilter>('ALL');
+  const [members, setMembers] = useState<TeamMember[]>([
+    { id: 'demo-owner', userId: 'demo-user', role: 'OWNER', user: { firstName: 'Владелец', email: 'owner@virale.demo' }, _count: { assignedConversations: 2 } },
+    { id: 'demo-manager', userId: 'demo-manager', role: 'MANAGER', user: { firstName: 'Алия', lastName: 'Садыкова', email: 'aliya@virale.demo' }, _count: { assignedConversations: 3 } }
+  ]);
+  const [currentUserId, setCurrentUserId] = useState('demo-user');
 
   useEffect(() => {
     if (mode !== 'account') return;
     setLoading(true);
-    void fetch('/api/conversations', { cache: 'no-store' })
-      .then(async response => {
+    const params = new URLSearchParams();
+    if (filter === 'MINE') params.set('assignee', 'me');
+    if (filter === 'UNASSIGNED') params.set('assignee', 'unassigned');
+    if (filter === 'HUMAN') params.set('needsHuman', 'true');
+    void Promise.all([fetch(`/api/conversations${params.size ? `?${params}` : ''}`, { cache: 'no-store' }), fetch('/api/team', { cache: 'no-store' })])
+      .then(async ([response, teamResponse]) => {
         if (!response.ok) throw new Error('Не удалось загрузить Inbox');
         const data = await response.json() as { conversations: ApiConversation[] };
         const mapped = data.conversations.map(mapConversation);
@@ -111,10 +131,11 @@ export default function InboxPage() {
         setActiveChat(mapped[0] ?? null);
         setOperatorMode(mapped[0]?.mode ?? 'AI');
         if (!mapped.length) setMessages([]);
+        if (teamResponse.ok) { const team = await teamResponse.json() as { members: TeamMember[]; currentUserId: string }; setMembers(team.members); setCurrentUserId(team.currentUserId); }
       })
       .catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить Inbox'))
       .finally(() => setLoading(false));
-  }, [mode]);
+  }, [filter, mode]);
 
   useEffect(() => {
     if (mode !== 'account' || !activeChat) return;
@@ -133,13 +154,28 @@ export default function InboxPage() {
     setActiveChat(chat);
     setOperatorMode(chat.mode);
     if (mode === 'demo') setMessages(chat.id === 'c1' ? demoMessages : []);
+    setChats(current => current.map(item => item.id === chat.id ? { ...item, unread: 0 } : item));
+  };
+
+  const assignConversation = async (memberId: string) => {
+    if (!activeChat) return;
+    const assignedTo = members.find(member => member.id === memberId) || null;
+    if (mode === 'demo') { setActiveChat(current => current ? { ...current, assignedTo } : current); setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, assignedTo } : chat)); return; }
+    try {
+      const response = await fetch(`/api/conversations/${activeChat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignedToMemberId: memberId || null }) });
+      const data = await response.json() as { conversation?: { assignedTo?: AssignedMember | null }; error?: string };
+      if (!response.ok) throw new Error(data.error || 'Не удалось назначить менеджера');
+      const next = data.conversation?.assignedTo || null;
+      setActiveChat(current => current ? { ...current, assignedTo: next } : current);
+      setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, assignedTo: next } : chat));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось назначить менеджера'); }
   };
 
   const changeOperatorMode = async (nextMode: 'AI' | 'HUMAN') => {
     setOperatorMode(nextMode);
     if (!activeChat) return;
-    setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, mode: nextMode } : chat));
-    setActiveChat(current => current ? { ...current, mode: nextMode } : current);
+    setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, mode: nextMode, handoffReason: nextMode === 'AI' ? null : chat.handoffReason } : chat));
+    setActiveChat(current => current ? { ...current, mode: nextMode, handoffReason: nextMode === 'AI' ? null : current.handoffReason } : current);
     if (mode === 'account') {
       const response = await fetch(`/api/conversations/${activeChat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: nextMode }) });
       if (!response.ok) setError('Не удалось изменить режим диалога');
@@ -163,7 +199,9 @@ export default function InboxPage() {
       }
       setInputText('');
       setOperatorMode('HUMAN');
-      setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, lastMessage: text, time: 'сейчас', mode: 'HUMAN' } : chat));
+      const me = members.find(member => member.userId === currentUserId) || null;
+      setActiveChat(current => current ? { ...current, mode: 'HUMAN', assignedTo: me } : current);
+      setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, lastMessage: text, time: 'сейчас', mode: 'HUMAN', assignedTo: me } : chat));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Не удалось отправить сообщение');
     } finally {
@@ -184,15 +222,16 @@ export default function InboxPage() {
       <div className="h-[calc(100vh-10rem)] md:h-[calc(100vh-7rem)] min-h-[560px] flex rounded-[24px] border border-zinc-200 bg-white overflow-hidden shadow-subtle">
         <div className="hidden md:flex w-72 lg:w-80 border-r border-zinc-200 flex-col bg-[#F6F5F8] shrink-0">
           <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-white">
-            <h2 className="font-display-extended font-bold text-[#0C0C0C] text-base">Единый Inbox</h2>
-            <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold">{chats.length} диалогов</span>
+            <h2 className="font-display-extended font-bold text-[#0C0C0C] text-lg">Единый Inbox</h2>
+            <span className="text-xs px-2.5 py-1 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold">{chats.length}</span>
           </div>
+          <div className="grid grid-cols-2 gap-1.5 p-3 border-b border-zinc-200 bg-white">{([['ALL', 'Все'], ['MINE', 'Мои'], ['UNASSIGNED', 'Без менеджера'], ['HUMAN', 'Нужен человек']] as Array<[InboxFilter, string]>).map(([value, label]) => <button key={value} onClick={() => setFilter(value)} className={`rounded-lg px-2 py-2 text-xs font-bold ${filter === value ? 'bg-[#261930] text-white' : 'bg-[#F2F2F5] text-[#65656B] hover:bg-zinc-200'}`}>{label}</button>)}</div>
           <div className="flex-1 overflow-y-auto divide-y divide-zinc-200/60">
             {chats.map(chat => (
               <button key={chat.id} onClick={() => selectChat(chat)} className={`w-full p-4 text-left transition ${activeChat?.id === chat.id ? 'bg-white border-l-4 border-[#261930] shadow-subtle' : 'hover:bg-white/60'}`}>
                 <div className="flex items-center justify-between mb-1"><div className="flex items-center gap-2 min-w-0">{getProviderIcon(chat.provider)}<span className="text-sm font-bold text-[#0C0C0C] truncate">{chat.name}</span></div><span className="text-[11px] text-[#727272] shrink-0">{chat.time}</span></div>
                 <p className="text-xs text-[#727272] truncate mb-2">{chat.lastMessage}</p>
-                <div className="flex items-center justify-between"><span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${chat.mode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'bg-emerald-100 text-emerald-800'}`}>{chat.mode === 'AI' ? 'AI-агент' : chat.mode === 'HYBRID' ? 'AI + менеджер' : 'Менеджер'}</span>{chat.unread > 0 && <span className="w-5 h-5 rounded-full bg-[#1E5CFB] text-white font-bold text-[10px] flex items-center justify-center">{chat.unread}</span>}</div>
+                <div className="flex items-center justify-between gap-2"><span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${chat.mode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'bg-emerald-100 text-emerald-800'}`}>{chat.mode === 'AI' ? 'AI-агент' : chat.mode === 'HYBRID' ? 'AI + менеджер' : 'Менеджер'}</span><span className="min-w-0 flex items-center gap-1 text-[10px] font-semibold text-zinc-500 truncate"><UserRound className="w-3 h-3 shrink-0" /> {chat.assignedTo ? memberName(chat.assignedTo) : 'Не назначен'}</span>{chat.unread > 0 && <span className="w-5 h-5 rounded-full bg-[#1E5CFB] text-white font-bold text-[10px] flex items-center justify-center shrink-0">{chat.unread}</span>}</div>
               </button>
             ))}
             {(loading || mode === 'loading') && <div className="p-8 text-center text-sm text-[#727272]">Загружаем диалоги…</div>}
@@ -204,7 +243,7 @@ export default function InboxPage() {
           <div className="flex-1 flex flex-col bg-white min-w-0">
             <div className="p-3 sm:p-4 border-b border-zinc-200 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0"><div className="w-10 h-10 rounded-full bg-[#261930] text-[#BEFF53] flex items-center justify-center font-bold text-sm shrink-0">{initials(activeChat.name)}</div><div className="min-w-0"><div className="flex items-center gap-2"><h3 className="font-bold text-[#0C0C0C] text-sm truncate">{activeChat.name}</h3><span className="hidden 2xl:inline text-xs text-[#737378] truncate">{activeChat.username}</span></div><div className="text-[11px] text-[#727272] flex items-center gap-1.5 mt-0.5">{getProviderIcon(activeChat.provider)}<span className="truncate">{activeChat.triggerContext ? `Триггер: ${activeChat.triggerContext}` : activeChat.provider}</span></div></div></div>
-              <div className="flex items-center gap-1.5 p-1 rounded-full bg-[#F6F5F8] border border-zinc-200 text-xs shrink-0"><button onClick={() => void changeOperatorMode('AI')} className={`px-2 sm:px-3.5 py-1.5 rounded-full font-semibold transition ${operatorMode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'text-[#727272]'}`}>AI</button><button onClick={() => void changeOperatorMode('HUMAN')} className={`px-2 sm:px-3.5 py-1.5 rounded-full font-semibold transition ${operatorMode === 'HUMAN' ? 'bg-[#1E5CFB] text-white' : 'text-[#727272]'}`}>Менеджер</button></div>
+              <div className="flex items-center gap-2 shrink-0"><label className="hidden xl:flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold"><UserCheck className="w-4 h-4 text-[#1E5CFB]" /><select value={activeChat.assignedTo?.id || ''} onChange={event => void assignConversation(event.target.value)} className="max-w-40 bg-transparent outline-none"><option value="">Не назначен</option>{members.map(member => <option key={member.id} value={member.id}>{memberName(member)}{member.userId === currentUserId ? ' (я)' : ''}</option>)}</select></label><div className="flex items-center gap-1.5 p-1 rounded-full bg-[#F6F5F8] border border-zinc-200 text-xs"><button onClick={() => void changeOperatorMode('AI')} className={`px-2 sm:px-3.5 py-1.5 rounded-full font-semibold transition ${operatorMode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'text-[#727272]'}`}>AI</button><button onClick={() => void changeOperatorMode('HUMAN')} className={`px-2 sm:px-3.5 py-1.5 rounded-full font-semibold transition ${operatorMode === 'HUMAN' ? 'bg-[#1E5CFB] text-white' : 'text-[#727272]'}`}>Менеджер</button></div></div>
             </div>
 
             <div className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4 bg-[#F6F5F8]/40">
@@ -229,6 +268,7 @@ export default function InboxPage() {
           <aside className="w-72 border-l border-zinc-200 bg-[#F6F5F8] p-5 shrink-0 space-y-6 hidden lg:block">
             <div><h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Профиль клиента</h4><div className="p-4 rounded-2xl bg-white border border-zinc-200 shadow-subtle space-y-2"><div className="text-sm font-bold">{activeChat.name}</div><div className="text-xs text-[#1E5CFB]">{activeChat.username}</div>{activeChat.followers && <div className="text-xs text-[#727272]">Подписчиков: <strong>{activeChat.followers}</strong></div>}{activeChat.phone && <div className="text-xs text-[#727272] flex items-center gap-2 pt-2 border-t border-zinc-100"><Phone className="w-3.5 h-3.5" />{activeChat.phone}</div>}</div></div>
             <div><h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Контекст</h4><div className="p-4 rounded-2xl bg-white border border-zinc-200 shadow-subtle text-xs space-y-2"><div>📍 <strong>Город:</strong> {activeChat.city || 'не указан'}</div><div>💬 <strong>Канал:</strong> {activeChat.provider}</div><div>⚙️ <strong>Режим:</strong> {operatorMode === 'AI' ? 'AI отвечает' : 'ведёт менеджер'}</div></div></div>
+            <div><h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Ответственный</h4><div className="p-4 rounded-2xl bg-white border border-zinc-200 shadow-subtle"><p className="text-sm font-bold">{memberName(activeChat.assignedTo)}</p>{activeChat.handoffReason && <p className="mt-2 rounded-lg bg-amber-50 p-2.5 text-xs leading-5 text-amber-900"><strong className="block">Почему нужен менеджер</strong>{activeChat.handoffReason}</p>}<select value={activeChat.assignedTo?.id || ''} onChange={event => void assignConversation(event.target.value)} className="mt-3 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-semibold"><option value="">Не назначен</option>{members.map(member => <option key={member.id} value={member.id}>{memberName(member)}{member.userId === currentUserId ? ' (я)' : ''}</option>)}</select></div></div>
             <div><h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Теги контакта</h4><div className="flex flex-wrap gap-1.5">{activeChat.tags.length ? activeChat.tags.map(tag => <span key={tag} className="px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-xs font-semibold shadow-subtle">{tag}</span>) : <span className="text-xs text-[#727272]">Тегов пока нет</span>}</div></div>
           </aside>
         </> : <div className="flex-1 flex flex-col items-center justify-center px-6 text-center"><div className="w-14 h-14 rounded-2xl bg-[#261930] text-[#BEFF53] flex items-center justify-center mb-4"><MessageCircle className="w-6 h-6" /></div><h2 className="text-xl font-extrabold">Inbox готов к обращениям</h2><p className="text-sm text-[#727272] mt-2 max-w-md">Подключите Instagram или Telegram в разделе «Каналы». Диалоги и контакты будут создаваться автоматически.</p><a href="/channels" className="mt-5 rounded-xl bg-[#1E5CFB] px-5 py-3 text-sm font-bold text-white">Подключить канал</a></div>}

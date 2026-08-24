@@ -147,6 +147,7 @@ export default function BroadcastsPage() {
   };
 
   const cancelCampaign = async (campaignId: string) => {
+    if (!window.confirm('Отменить эту рассылку? Сообщения, уже принятые Telegram API, остановить нельзя.')) return;
     setLoading(true);
     try {
       const response = await fetch(`/api/broadcasts/${campaignId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel' }) });

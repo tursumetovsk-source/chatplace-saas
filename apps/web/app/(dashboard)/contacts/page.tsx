@@ -219,6 +219,7 @@ export default function ContactsPage() {
 
   const deleteSegment = async () => {
     if (!selectedSegment || mode !== 'account') return;
+    if (!window.confirm('Удалить сохранённый сегмент? Уже созданные рассылки сохранят снимок его фильтров.')) return;
     setLoading(true);
     try {
       const response = await fetch(`/api/segments/${selectedSegment}`, { method: 'DELETE' });

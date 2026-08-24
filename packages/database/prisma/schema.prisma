@@ -58,6 +58,7 @@ model Workspace {
   privacyRequests PrivacyRequest[]
   broadcastCampaigns BroadcastCampaign[]
   contactSegments ContactSegment[]
+  invitations     WorkspaceInvitation[]
 
   @@map("workspaces")
 }
@@ -71,6 +72,7 @@ model WorkspaceMember {
   joinedAt    DateTime  @default(now()) @map("joined_at")
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedConversations Conversation[] @relation("ConversationAssignee")
 
   @@unique([workspaceId, userId])
   @@map("workspace_members")
@@ -98,6 +100,24 @@ model ChannelAccount {
 
   @@unique([provider, externalId])
   @@map("channel_accounts")
+}
+
+model WorkspaceInvitation {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  email       String
+  role        String    @default("MANAGER")
+  tokenHash   String    @unique @map("token_hash")
+  status      String    @default("PENDING")
+  invitedBy   String    @map("invited_by")
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([email, status])
+  @@map("workspace_invitations")
 }
 
 model Contact {
@@ -154,6 +174,9 @@ model Conversation {
   externalThreadId String?      @map("external_thread_id")
   status           String       @default("OPEN")
   mode             String       @default("AI") // AI, HUMAN, HYBRID
+  assignedToMemberId String?    @map("assigned_to_member_id")
+  assignedAt       DateTime?    @map("assigned_at")
+  handoffReason    String?      @map("handoff_reason")
   unreadCount      Int          @default(0) @map("unread_count")
   lastMessageAt    DateTime     @default(now()) @map("last_message_at")
   createdAt        DateTime     @default(now()) @map("created_at")
@@ -165,8 +188,10 @@ model Conversation {
   automationRuns   AutomationRun[]
   automationEvents AutomationEvent[]
   broadcastDeliveries BroadcastDelivery[]
+  assignedTo       WorkspaceMember? @relation("ConversationAssignee", fields: [assignedToMemberId], references: [id], onDelete: SetNull)
 
   @@unique([channelAccountId, externalThreadId])
+  @@index([workspaceId, assignedToMemberId, status])
   @@map("conversations")
 }
 

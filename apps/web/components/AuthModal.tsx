@@ -47,6 +47,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
 
   if (!isOpen) return null;
 
+  const destination = () => {
+    const next = new URLSearchParams(window.location.search).get('next');
+    return next?.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+  };
+
   const submitCredentials = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
@@ -59,7 +64,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Не удалось продолжить.');
-      window.location.assign('/dashboard');
+      window.location.assign(destination());
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Не удалось продолжить.');
       setSubmitting(false);
@@ -72,7 +77,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
     try {
       const response = await fetch('/api/auth/demo', { method: 'POST' });
       if (!response.ok) throw new Error('Не удалось открыть демо.');
-      window.location.assign('/dashboard');
+      window.location.assign(destination());
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Не удалось открыть демо.');
       setSubmitting(false);

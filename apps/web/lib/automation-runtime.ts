@@ -226,7 +226,7 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
     });
     await prisma.conversation.update({
       where: { id: event.conversationId },
-      data: { lastMessageAt: new Date(), mode: reply.handoff ? 'HUMAN' : 'AI' }
+      data: { lastMessageAt: new Date(), mode: reply.handoff ? 'HUMAN' : 'AI', handoffReason: reply.handoff ? reply.reason.slice(0, 500) : null }
     });
     await Promise.all([
       recordUsage({ workspaceId: event.workspaceId, metric: 'OUTBOUND_MESSAGES', idempotencyKey: message.id, metadata: { senderType: 'AI' } }),

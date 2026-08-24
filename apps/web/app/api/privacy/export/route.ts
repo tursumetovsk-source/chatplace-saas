@@ -23,6 +23,7 @@ export async function GET(request: Request) {
       usageEvents: { orderBy: { createdAt: 'desc' }, take: 10_000 },
       broadcastCampaigns: { include: { deliveries: { orderBy: { createdAt: 'desc' }, take: 10_000 } } },
       contactSegments: true,
+      invitations: { select: { id: true, email: true, role: true, status: true, expiresAt: true, acceptedAt: true, createdAt: true } },
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10_000 }
     }
   });

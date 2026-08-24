@@ -43,7 +43,10 @@ const auditLabels: Record<string, string> = {
   'broadcast.created': 'Создана рассылка', 'broadcast.scheduled': 'Запланирована рассылка',
   'broadcast.canceled': 'Отменена рассылка', 'contact.updated': 'Обновлён контакт',
   'segment.created': 'Создан сегмент', 'segment.updated': 'Обновлён сегмент', 'segment.deleted': 'Удалён сегмент',
-  'contacts.imported': 'Импортированы контакты', 'contacts.exported': 'Экспортированы контакты'
+  'contacts.imported': 'Импортированы контакты', 'contacts.exported': 'Экспортированы контакты',
+  'team.invited': 'Приглашён участник', 'team.invitation_revoked': 'Отозвано приглашение', 'team.invitation_accepted': 'Принято приглашение',
+  'team.role_changed': 'Изменена роль', 'team.member_removed': 'Удалён участник', 'workspace.switched': 'Сменено рабочее пространство',
+  'conversation.assigned': 'Назначен менеджер', 'conversation.updated': 'Обновлён диалог'
 };
 
 export default function AnalyticsPage() {

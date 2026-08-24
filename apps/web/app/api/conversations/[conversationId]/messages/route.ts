@@ -26,6 +26,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     orderBy: { createdAt: 'asc' },
     take: 500
   });
+  await prisma.conversation.updateMany({ where: { id: conversationId, workspaceId: account.workspaceId, unreadCount: { gt: 0 } }, data: { unreadCount: 0 } });
   return NextResponse.json({ messages });
 }
 
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const now = new Date();
+  const membership = await prisma.workspaceMember.findFirst({ where: { workspaceId: account.workspaceId, userId: account.userId, status: 'ACTIVE' }, select: { id: true } });
   let message = await prisma.$transaction(async transaction => {
     const created = await transaction.message.create({
       data: {
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         status: conversation.channelAccount.provider === 'TELEGRAM' ? 'PENDING' : 'QUEUED'
       }
     });
-    await transaction.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now, mode: 'HUMAN' } });
+    await transaction.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now, mode: 'HUMAN', assignedToMemberId: membership?.id, assignedAt: membership ? now : undefined, handoffReason: null } });
     await transaction.contact.update({ where: { id: conversation.contactId }, data: { lastActivityAt: now } });
     return created;
   });

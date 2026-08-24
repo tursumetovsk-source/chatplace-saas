@@ -24,6 +24,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 7. Create one opted-in test contact, schedule a Telegram broadcast and confirm that the delivery reaches `SENT` in Analytics.
 8. Confirm that the automation run appears in Analytics and that no failed/retrying jobs remain.
 9. Import a two-row CSV in staging, verify duplicate matching, then export the same segment and open it in the target spreadsheet application.
+10. Invite a disposable manager account, accept the link, switch workspaces, self-assign a handoff conversation and remove the test member.
 
 ## Backups and restore drills
 
@@ -47,6 +48,12 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 - Rotating `CHANNEL_ENCRYPTION_KEY` requires re-encrypting stored channel credentials or reconnecting every channel.
 - Revoke a leaked Telegram token in BotFather immediately, then reconnect the channel.
 - Rotate OpenAI and cron keys in Vercel and redeploy.
+
+## Team access
+
+- Invitation links are shown once to an owner/admin, stored only as an HMAC hash and expire after seven days. Virale AI does not email them until a transactional email provider is configured.
+- Review active members and pending invitations monthly. Removing a member also unassigns their Inbox conversations.
+- Keep at least two owners/admins only after an escalation and recovery policy is documented; the current product supports one immutable owner per workspace.
 
 ## Launch blockers owned outside the repository
 
