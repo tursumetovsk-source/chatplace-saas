@@ -33,6 +33,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 14. In the AI-agent test chat, mark one answer «Полезно» and one «Исправить», reload the agent, and verify the correction is present in the audit log and influences a subsequent test response.
 15. In staging, send a signed event to `POST /api/webhooks/billing`, replay the same `eventId`, and verify the first request updates the subscription while the replay returns `duplicate: true` without a second state change.
 16. For Instagram staging, connect a disposable Business Account, complete Meta Webhooks verification, send a Direct message and a comment, and verify both create one contact/conversation and one automation event; send a manager reply and an AI reply back to the same thread.
+17. For WhatsApp staging, connect a disposable Cloud API Phone Number, complete Meta Webhooks verification for `messages`, send an inbound text, verify the delivery status update, and send a manager/AI reply within the user-initiated session window.
 
 ## Backups and restore drills
 

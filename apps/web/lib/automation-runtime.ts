@@ -4,6 +4,7 @@ import { decryptCredential } from './credentials';
 import { generateAgentReply } from './openai';
 import { sendTelegramMessage, TelegramApiError } from './telegram';
 import { sendInstagramMessage } from './instagram';
+import { sendWhatsAppMessage } from './whatsapp';
 import { assertWorkspaceQuota, recordUsage } from './billing';
 import { ExternalWebhookError, sendWorkspaceWebhook } from './external-webhooks';
 import { buildCorrectionContext } from './ai-corrections';
@@ -140,7 +141,7 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
 
   try {
     if (
-      !['TELEGRAM', 'INSTAGRAM'].includes(conversation.channelAccount.provider) ||
+      !['TELEGRAM', 'INSTAGRAM', 'WHATSAPP'].includes(conversation.channelAccount.provider) ||
       conversation.channelAccount.status !== 'ACTIVE' ||
       !conversation.channelAccount.accessTokenEncrypted ||
       !conversation.externalThreadId
@@ -150,10 +151,12 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
     const token = decryptCredential(conversation.channelAccount.accessTokenEncrypted);
     const sent = conversation.channelAccount.provider === 'TELEGRAM'
       ? await sendTelegramMessage(token, conversation.externalThreadId.split(':')[0], text)
-      : await sendInstagramMessage(token, conversation.externalThreadId, text);
+      : conversation.channelAccount.provider === 'INSTAGRAM'
+        ? await sendInstagramMessage(token, conversation.externalThreadId, text)
+        : await sendWhatsAppMessage(token, conversation.channelAccount.externalId, conversation.externalThreadId, text);
     message = await prisma.message.update({
       where: { id: message.id },
-      data: { providerMessageId: String('message_id' in sent ? sent.message_id || message.id : message.id), status: 'SENT', deliveredAt: new Date() }
+      data: { providerMessageId: String('message_id' in sent ? sent.message_id || message.id : 'messages' in sent ? sent.messages?.[0]?.id || message.id : message.id), status: 'SENT', deliveredAt: new Date() }
     });
     await prisma.conversation.update({ where: { id: event.conversationId }, data: { lastMessageAt: new Date(), mode: 'HYBRID' } });
     await recordUsage({ workspaceId: event.workspaceId, metric: 'OUTBOUND_MESSAGES', idempotencyKey: message.id, metadata: { senderType: 'SYSTEM' } })
@@ -269,7 +272,7 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
 
   try {
     if (
-      !['TELEGRAM', 'INSTAGRAM'].includes(conversation.channelAccount.provider) ||
+      !['TELEGRAM', 'INSTAGRAM', 'WHATSAPP'].includes(conversation.channelAccount.provider) ||
       conversation.channelAccount.status !== 'ACTIVE' ||
       !conversation.channelAccount.accessTokenEncrypted ||
       !conversation.externalThreadId
@@ -279,10 +282,12 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
     const token = decryptCredential(conversation.channelAccount.accessTokenEncrypted);
     const sent = conversation.channelAccount.provider === 'TELEGRAM'
       ? await sendTelegramMessage(token, conversation.externalThreadId.split(':')[0], reply.answer)
-      : await sendInstagramMessage(token, conversation.externalThreadId, reply.answer);
+      : conversation.channelAccount.provider === 'INSTAGRAM'
+        ? await sendInstagramMessage(token, conversation.externalThreadId, reply.answer)
+        : await sendWhatsAppMessage(token, conversation.channelAccount.externalId, conversation.externalThreadId, reply.answer);
     message = await prisma.message.update({
       where: { id: message.id },
-      data: { providerMessageId: String('message_id' in sent ? sent.message_id || message.id : message.id), status: 'SENT', deliveredAt: new Date() }
+      data: { providerMessageId: String('message_id' in sent ? sent.message_id || message.id : 'messages' in sent ? sent.messages?.[0]?.id || message.id : message.id), status: 'SENT', deliveredAt: new Date() }
     });
     await prisma.conversation.update({
       where: { id: event.conversationId },

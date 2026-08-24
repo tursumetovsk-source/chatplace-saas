@@ -6,6 +6,7 @@ import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
 import { encryptCredential } from '../../../lib/credentials';
 import { getTelegramBot, setTelegramWebhook, TelegramApiError } from '../../../lib/telegram';
 import { getInstagramProfile, InstagramApiError, instagramWebhookUrl } from '../../../lib/instagram';
+import { getWhatsAppPhoneProfile, WhatsAppApiError, whatsappWebhookUrl } from '../../../lib/whatsapp';
 import { writeAuditLog } from '../../../lib/audit';
 
 const channelSelect = {
@@ -87,6 +88,41 @@ export async function POST(request: NextRequest) {
       if (error instanceof InstagramApiError) return NextResponse.json({ error: error.status === 401 || error.status === 403 ? 'Instagram отклонил access token или права приложения' : error.message }, { status: error.status >= 400 && error.status < 500 ? 400 : 502 });
       console.error('[channels.instagram.connect]', error);
       return NextResponse.json({ error: 'Не удалось подключить Instagram Business Account' }, { status: 500 });
+    }
+  }
+  if (provider === 'WHATSAPP') {
+    if (!token || !/^\d{5,}$/.test(externalId)) return NextResponse.json({ error: 'Укажите access token и Phone Number ID WhatsApp Cloud API' }, { status: 400 });
+    try {
+      const profile = await getWhatsAppPhoneProfile(token, externalId);
+      const existing = await prisma.channelAccount.findUnique({ where: { provider_externalId: { provider, externalId } }, select: { id: true, workspaceId: true } });
+      if (existing && existing.workspaceId !== account.workspaceId) return NextResponse.json({ error: 'Этот WhatsApp Phone Number уже подключён к другому рабочему пространству' }, { status: 409 });
+      if (!existing) {
+        try {
+          await assertWorkspaceQuota(account.workspaceId, 'CHANNELS');
+        } catch (error) {
+          if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+          throw error;
+        }
+      }
+      const channelId = existing?.id ?? randomUUID();
+      const webhookVerifyToken = randomBytes(24).toString('base64url');
+      const webhookUrl = whatsappWebhookUrl(webhookOrigin(request), channelId);
+      const data = {
+        username: profile.display_phone_number || externalId,
+        displayName: profile.verified_name || profile.display_phone_number || `WhatsApp ${externalId}`,
+        accessTokenEncrypted: encryptCredential(token),
+        webhookSecretEncrypted: encryptCredential(webhookVerifyToken),
+        status: 'ACTIVE'
+      };
+      const channel = existing
+        ? await prisma.channelAccount.update({ where: { id: channelId }, data, select: channelSelect })
+        : await prisma.channelAccount.create({ data: { id: channelId, workspaceId: account.workspaceId, provider, externalId, ...data }, select: channelSelect });
+      await writeAuditLog({ workspaceId: account.workspaceId, actorUserId: account.userId, action: existing ? 'CHANNEL_RECONNECTED' : 'CHANNEL_CONNECTED', entityType: 'CHANNEL', entityId: channel.id, request, metadata: { provider, externalId } });
+      return NextResponse.json({ channel, webhook: { url: webhookUrl, verifyToken: webhookVerifyToken, note: 'Добавьте этот URL и verify token в Meta App Webhooks для WhatsApp.' } }, { status: existing ? 200 : 201 });
+    } catch (error) {
+      if (error instanceof WhatsAppApiError) return NextResponse.json({ error: error.status === 401 || error.status === 403 ? 'WhatsApp отклонил access token или права приложения' : error.message }, { status: error.status >= 400 && error.status < 500 ? 400 : 502 });
+      console.error('[channels.whatsapp.connect]', error);
+      return NextResponse.json({ error: 'Не удалось подключить WhatsApp Cloud API' }, { status: 500 });
     }
   }
   if (provider !== 'TELEGRAM') return NextResponse.json({ error: 'Для этого провайдера ещё не настроен безопасный production-коннектор' }, { status: 400 });

@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ aut
     return NextResponse.json({ error: 'Перед публикацией добавьте триггер запуска' }, { status: 400 });
   }
   const triggerProviders = [...new Set(validated.graph.nodes.filter(node => node.type.startsWith('trigger.')).map(node => node.type.split('.')[1]?.toUpperCase()).filter((provider): provider is string => Boolean(provider)))];
-  const unsupportedProvider = triggerProviders.find(provider => !['TELEGRAM', 'INSTAGRAM', 'WEBHOOK'].includes(provider));
+  const unsupportedProvider = triggerProviders.find(provider => !['TELEGRAM', 'INSTAGRAM', 'WHATSAPP', 'WEBHOOK'].includes(provider));
   if (unsupportedProvider) return NextResponse.json({ error: `${unsupportedProvider}: production-подключение ещё не настроено` }, { status: 400 });
   const channelTriggerProviders = triggerProviders.filter(provider => provider !== 'WEBHOOK');
   const activeChannels = await prisma.channelAccount.count({ where: { workspaceId: account.workspaceId, provider: { in: channelTriggerProviders }, status: 'ACTIVE' } });

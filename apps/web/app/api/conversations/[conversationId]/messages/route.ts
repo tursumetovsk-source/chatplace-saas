@@ -4,6 +4,7 @@ import { getAccountContext } from '../../../../../lib/auth-context';
 import { decryptCredential } from '../../../../../lib/credentials';
 import { classifyTelegramAttachment, sendTelegramFile, sendTelegramMessage, TELEGRAM_ATTACHMENT_MAX_BYTES, TelegramApiError } from '../../../../../lib/telegram';
 import { sendInstagramMessage, InstagramApiError } from '../../../../../lib/instagram';
+import { sendWhatsAppMessage, WhatsAppApiError } from '../../../../../lib/whatsapp';
 import { assertWorkspaceQuota, QuotaExceededError, recordUsage } from '../../../../../lib/billing';
 
 export const runtime = 'nodejs';
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         type: attachmentType || 'TEXT',
         text: messageText,
         payload: attachment ? { attachment: { name: attachment.name.slice(0, 140), size: attachment.size, contentType: attachment.type || 'application/octet-stream' } } : undefined,
-        status: conversation.channelAccount.provider === 'TELEGRAM' || conversation.channelAccount.provider === 'INSTAGRAM' ? 'PENDING' : 'QUEUED'
+        status: ['TELEGRAM', 'INSTAGRAM', 'WHATSAPP'].includes(conversation.channelAccount.provider) ? 'PENDING' : 'QUEUED'
       }
     });
     await transaction.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now, mode: 'HUMAN', assignedToMemberId: membership?.id, assignedAt: membership ? now : undefined, handoffReason: null } });
@@ -125,6 +126,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message = await prisma.message.update({ where: { id: message.id }, data: { providerMessageId: sent.message_id || `instagram:${message.id}`, status: 'SENT', deliveredAt: new Date() } });
     } catch (error) {
       const reason = error instanceof InstagramApiError ? error.message : 'Ошибка отправки в Instagram';
+      const previousPayload = message.payload && typeof message.payload === 'object' && !Array.isArray(message.payload) ? message.payload as Record<string, unknown> : {};
+      message = await prisma.message.update({ where: { id: message.id }, data: { status: 'FAILED', payload: { ...previousPayload, deliveryError: reason } } });
+      return NextResponse.json({ error: reason, message }, { status: 502 });
+    }
+  } else if (
+    conversation.channelAccount.provider === 'WHATSAPP' &&
+    conversation.channelAccount.status === 'ACTIVE' &&
+    conversation.channelAccount.accessTokenEncrypted &&
+    conversation.channelAccount.externalId &&
+    conversation.externalThreadId &&
+    !attachment
+  ) {
+    try {
+      const token = decryptCredential(conversation.channelAccount.accessTokenEncrypted);
+      const sent = await sendWhatsAppMessage(token, conversation.channelAccount.externalId, conversation.externalThreadId, text);
+      message = await prisma.message.update({ where: { id: message.id }, data: { providerMessageId: sent.messages?.[0]?.id || `whatsapp:${message.id}`, status: 'SENT', deliveredAt: new Date() } });
+    } catch (error) {
+      const reason = error instanceof WhatsAppApiError ? error.message : 'Ошибка отправки в WhatsApp';
       const previousPayload = message.payload && typeof message.payload === 'object' && !Array.isArray(message.payload) ? message.payload as Record<string, unknown> : {};
       message = await prisma.message.update({ where: { id: message.id }, data: { status: 'FAILED', payload: { ...previousPayload, deliveryError: reason } } });
       return NextResponse.json({ error: reason, message }, { status: 502 });
