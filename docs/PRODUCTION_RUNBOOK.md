@@ -9,6 +9,7 @@ Updated: 2026-08-24
 - `CHANNEL_ENCRYPTION_KEY`: separate random 32+ byte secret.
 - `CRON_SECRET`: random 16+ byte secret used by Vercel Cron.
 - `OPENAI_API_KEY` and optional `OPENAI_MODEL`.
+- `BILLING_WEBHOOK_SECRET`: separate random secret shared with the selected payment provider.
 - `NEXT_PUBLIC_APP_URL=https://virale-ai.vercel.app`.
 
 Never put provider tokens into the repository. Telegram bot tokens are entered per workspace and stored with AES-256-GCM encryption.
@@ -29,6 +30,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 12. Create two staging contacts with the same normalized phone, choose the richer card as primary, merge them and verify that conversations, deals and consent state remain correct.
 13. In a staging Telegram conversation, send a small JPEG, MP4 and PDF from Inbox and verify that each appears in Telegram and persists with the correct message type/status. Keep larger media on a direct-storage upload roadmap; the current Vercel path is capped at 4 MB.
 14. In the AI-agent test chat, mark one answer «Полезно» and one «Исправить», reload the agent, and verify the correction is present in the audit log and influences a subsequent test response.
+15. In staging, send a signed event to `POST /api/webhooks/billing`, replay the same `eventId`, and verify the first request updates the subscription while the replay returns `duplicate: true` without a second state change.
 
 ## Backups and restore drills
 

@@ -20,6 +20,7 @@
 - редактируемый блок внешнего webhook/CRM: зашифрованная Bearer/HMAC-авторизация, защита от SSRF и DNS-rebinding, ограниченные ответы, idempotency key и retry временных ошибок;
 - PostgreSQL outbox и защищённый Vercel Cron: быстрый webhook, возобновление задержек, блокировка двойной обработки и retry с идемпотентными сообщениями/сделками;
 - реальные AI-агенты на Responses API: настройки, память диалога, база знаний через file search, тестовый чат, оценка ответа «полезно/исправить» с сохранением операторских правок, привязка к Telegram и передача оператору;
+- подписанный идемпотентный billing webhook-контракт для синхронизации тарифа, периода и статуса подписки с выбранным платёжным провайдером;
 - 14-дневный Pro-trial, тарифы в KZT, реальные usage-счётчики, серверные квоты и заявки на подключение платного плана;
 - реальные analytics и monitoring, audit log, health-check, rate limits, security headers и защищённая форма privacy-запросов;
 - Telegram-рассылки по тегам: доказуемое согласие, оценка аудитории, планирование, отмена, durable delivery queue, retry и автоматический opt-out по команде клиента;
@@ -52,7 +53,7 @@ pnpm build
 
 ## Важная граница MVP
 
-Без `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY`, `OPENAI_API_KEY` и `CRON_SECRET` публичная версия остаётся безопасным demo-workspace. После настройки доступны реальные аккаунты, контакты, CRM, Telegram, надёжные автоматизации, AI-агенты с базой знаний, Telegram-рассылки и generic HTTPS webhook/CRM actions. До полного запуска ещё нужны Instagram/WhatsApp/TikTok credentials, provider-specific CRM OAuth, платёжный провайдер и production-наблюдаемость. При росте нагрузки PostgreSQL outbox можно вынести в Redis/BullMQ без изменения продуктового API.
+Без `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY`, `OPENAI_API_KEY` и `CRON_SECRET` публичная версия остаётся безопасным demo-workspace. После настройки доступны реальные аккаунты, контакты, CRM, Telegram, надёжные автоматизации, AI-агенты с базой знаний, Telegram-рассылки и generic HTTPS webhook/CRM actions. Для боевой оплаты дополнительно задайте `BILLING_WEBHOOK_SECRET` и подключите провайдера к `POST /api/webhooks/billing`; до полного запуска ещё нужны Instagram/WhatsApp/TikTok credentials, provider-specific CRM OAuth, checkout провайдера и production-наблюдаемость. При росте нагрузки PostgreSQL outbox можно вынести в Redis/BullMQ без изменения продуктового API.
 
 Полный порядок работ и сравнение с ChatPlace: [`docs/CHATPLACE_PARITY.md`](docs/CHATPLACE_PARITY.md).
 Порядок production-развёртывания, резервного копирования и восстановления: [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md).
