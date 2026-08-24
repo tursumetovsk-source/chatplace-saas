@@ -14,6 +14,7 @@
 - реальное подключение Telegram Bot API: зашифрованный токен, подписанный webhook, входящие сообщения и ответы из Inbox;
 - сохранение, версионирование и публикация графов автоматизаций с журналом запусков и шагов;
 - запуск Telegram-сценариев по кодовому слову: автоответ, теги, переменные, условия и создание CRM-сделки;
+- реальные AI-агенты на Responses API: настройки, память диалога, база знаний через file search, тестовый чат, привязка к Telegram и передача оператору;
 - monorepo для web, API gateway, webhook gateway, workers и общих пакетов;
 - автоматическая production-сборка на Vercel из ветки `main`.
 
@@ -28,7 +29,7 @@ pnpm --filter @chatplace/database exec prisma migrate deploy --schema prisma/sch
 pnpm --filter web dev
 ```
 
-Укажите локальный `DATABASE_URL`, `AUTH_SECRET` и `CHANNEL_ENCRYPTION_KEY` перед запуском. Telegram webhook подключается только на публичном HTTPS-домене.
+Укажите локальный `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY` и `OPENAI_API_KEY` перед запуском. Telegram webhook подключается только на публичном HTTPS-домене. Модель можно переопределить через `OPENAI_MODEL`.
 
 Откройте `http://localhost:3000`.
 
@@ -41,6 +42,6 @@ pnpm build
 
 ## Важная граница MVP
 
-Без `DATABASE_URL`, `AUTH_SECRET` и `CHANNEL_ENCRYPTION_KEY` публичная версия остаётся безопасным demo-workspace. После настройки этих переменных доступны реальные аккаунты, контакты, CRM и Telegram. До полного запуска ещё нужны Redis/очереди, Instagram/WhatsApp/TikTok credentials, AI provider, платёжный провайдер и production-наблюдаемость.
+Без `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY` и `OPENAI_API_KEY` публичная версия остаётся безопасным demo-workspace. После настройки доступны реальные аккаунты, контакты, CRM, Telegram и AI-агенты с базой знаний. До полного запуска ещё нужны Redis/очереди, Instagram/WhatsApp/TikTok credentials, платёжный провайдер и production-наблюдаемость.
 
 Полный порядок работ и сравнение с ChatPlace: [`docs/CHATPLACE_PARITY.md`](docs/CHATPLACE_PARITY.md).

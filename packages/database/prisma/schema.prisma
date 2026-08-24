@@ -43,6 +43,8 @@ model Workspace {
   aiAgents        AiAgent[]
   deals           Deal[]
   automationRuns  AutomationRun[]
+  aiAgentChannels AiAgentChannel[]
+  knowledgeDocuments KnowledgeDocument[]
 
   @@map("workspaces")
 }
@@ -77,6 +79,7 @@ model ChannelAccount {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   conversations Conversation[]
+  aiAgentChannel AiAgentChannel?
 
   @@unique([provider, externalId])
   @@map("channel_accounts")
@@ -227,20 +230,66 @@ model AutomationStep {
 }
 
 model AiAgent {
+  id                 String              @id @default(uuid())
+  workspaceId        String              @map("workspace_id")
+  name               String
+  model              String              @default("gpt-5.6-terra")
+  systemPrompt       String              @map("system_prompt")
+  goal               String              @default("")
+  tone               String              @default("friendly")
+  temperature        Float               @default(0.4)
+  vectorStoreId      String?             @map("vector_store_id")
+  handoffMessage     String              @default("Передаю диалог менеджеру. Он скоро подключится.") @map("handoff_message")
+  handoffKeywords    String[]            @default(["оператор", "менеджер", "человек"]) @map("handoff_keywords")
+  fallbackMessage    String              @default("Не удалось подготовить ответ. Передаю диалог менеджеру.") @map("fallback_message")
+  memoryMessageLimit Int                 @default(12) @map("memory_message_limit")
+  maxOutputTokens    Int                 @default(600) @map("max_output_tokens")
+  status             String              @default("ACTIVE")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channelAssignments AiAgentChannel[]
+  knowledgeDocuments KnowledgeDocument[]
+
+  @@map("ai_agents")
+}
+
+model AiAgentChannel {
+  id               String         @id @default(uuid())
+  workspaceId      String         @map("workspace_id")
+  aiAgentId        String         @map("ai_agent_id")
+  channelAccountId String         @unique @map("channel_account_id")
+  status           String         @default("ACTIVE")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  workspace        Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  aiAgent          AiAgent        @relation(fields: [aiAgentId], references: [id], onDelete: Cascade)
+  channelAccount   ChannelAccount @relation(fields: [channelAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([aiAgentId, channelAccountId])
+  @@index([workspaceId, status])
+  @@map("ai_agent_channels")
+}
+
+model KnowledgeDocument {
   id           String    @id @default(uuid())
   workspaceId  String    @map("workspace_id")
-  name         String
-  model        String    @default("gpt-4o")
-  systemPrompt String    @map("system_prompt")
-  goal         String    @default("")
-  tone         String    @default("friendly")
-  temperature  Float     @default(0.4)
-  status       String    @default("ACTIVE")
+  aiAgentId    String    @map("ai_agent_id")
+  title        String
+  sourceType   String    @default("FILE") @map("source_type")
+  mimeType     String?   @map("mime_type")
+  sizeBytes    Int?      @map("size_bytes")
+  status       String    @default("PROCESSING")
+  openaiFileId String?   @map("openai_file_id")
+  textPreview  String?   @map("text_preview")
+  error        String?
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  aiAgent      AiAgent   @relation(fields: [aiAgentId], references: [id], onDelete: Cascade)
 
-  @@map("ai_agents")
+  @@index([aiAgentId, status])
+  @@map("knowledge_documents")
 }
 
 model Deal {

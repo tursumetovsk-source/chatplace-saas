@@ -144,5 +144,11 @@ export interface AiAgent {
   goal: string;
   tone: string;
   temperature: number;
+  vectorStoreId?: string;
+  handoffMessage: string;
+  handoffKeywords: string[];
+  fallbackMessage: string;
+  memoryMessageLimit: number;
+  maxOutputTokens: number;
   status: 'ACTIVE' | 'INACTIVE';
 }

@@ -121,7 +121,7 @@ const nodeTypes = { channelTrigger: ChannelTriggerNode, instagramTrigger: Channe
 const initialNodes: Node[] = [
   { id: 'n1', type: 'channelTrigger', position: { x: 70, y: 70 }, data: { title: 'Клиент пишет «ПРАЙС»', keyword: 'ПРАЙС', scope: 'В личном сообщении подключённому Telegram-боту', provider: 'TELEGRAM' } },
   { id: 'n2', type: 'instagramMessage', position: { x: 560, y: 40 }, data: { text: 'Отправляем прайс и помогаем выбрать подходящий тариф.', buttons: ['Старт · 45 000 ₸', 'Про · 95 000 ₸'], delay: 'через 2 сек', provider: 'TELEGRAM' } },
-  { id: 'n3', type: 'aiAgent', position: { x: 560, y: 390 }, data: { agentName: 'AI-консультант продаж', model: 'GPT-4o', kbChunks: '142 материала' } },
+  { id: 'n3', type: 'aiAgent', position: { x: 560, y: 390 }, data: { agentName: 'AI-консультант продаж', model: 'GPT-5.6 Terra', kbChunks: 'База агента' } },
   { id: 'n4', type: 'kaspiPay', position: { x: 70, y: 410 }, data: { title: 'Ссылка на оплату Kaspi Pay', amount: '95 000 ₸', provider: 'Kaspi Pay' } }
 ];
 
@@ -223,7 +223,7 @@ export default function AutomationsPage() {
     const dataByType: Record<string, Record<string, unknown>> = {
       channelTrigger: { title: 'Новое входящее сообщение', keyword: 'СЛОВО', scope: 'Сообщение подключённому Telegram-боту', provider: 'TELEGRAM' },
       instagramMessage: { text: 'Введите текст сообщения для клиента.', buttons: ['Первый вариант'], delay: 'без паузы', provider: 'TELEGRAM' },
-      aiAgent: { agentName: 'Новый AI-консультант', model: 'GPT-4o', kbChunks: 'База не выбрана' },
+      aiAgent: { agentName: 'Новый AI-консультант', model: 'GPT-5.6 Terra', kbChunks: 'База не выбрана' },
       kaspiPay: { title: 'Новое действие оплаты', amount: '0 ₸', provider: 'Kaspi Pay' }
     };
     setNodes(current => [...current, { id, type, position: { x: 80 + (blockIndex % 2) * 490, y: 740 + Math.floor((blockIndex - 4) / 2) * 300 }, data: dataByType[type] }]);

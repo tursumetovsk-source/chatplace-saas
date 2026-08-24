@@ -1,6 +1,7 @@
 import { Prisma, prisma } from '@chatplace/database';
 import { validateAutomationGraph, type ValidatedAutomationGraph } from './automation-graph';
 import { decryptCredential } from './credentials';
+import { generateAgentReply } from './openai';
 import { sendTelegramMessage } from './telegram';
 
 interface InboundAutomationEvent {
@@ -98,6 +99,107 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
   }
 }
 
+async function executeAiAgentNode(config: Record<string, unknown>, event: InboundAutomationEvent) {
+  const requestedAgentId = typeof config.agentId === 'string' ? config.agentId.trim() : '';
+  const agent = await prisma.aiAgent.findFirst({
+    where: requestedAgentId
+      ? { id: requestedAgentId, workspaceId: event.workspaceId, status: 'ACTIVE' }
+      : {
+          workspaceId: event.workspaceId,
+          status: 'ACTIVE',
+          OR: [
+            { channelAssignments: { some: { channelAccountId: event.channelAccountId, status: 'ACTIVE' } } },
+            { channelAssignments: { none: {} } }
+          ]
+        },
+    orderBy: { updatedAt: 'desc' }
+  });
+  if (!agent) throw new Error('Активный AI-агент для этого канала не найден');
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: event.conversationId, workspaceId: event.workspaceId },
+    include: {
+      channelAccount: true,
+      messages: { orderBy: { createdAt: 'desc' }, take: agent.memoryMessageLimit }
+    }
+  });
+  if (!conversation) throw new Error('Диалог AI-агента не найден');
+  if (conversation.mode === 'HUMAN') return { skipped: true, reason: 'HUMAN_MODE', agentId: agent.id };
+
+  const lowerText = event.text.toLocaleLowerCase('ru');
+  const keywordHandoff = agent.handoffKeywords.some(keyword => lowerText.includes(keyword.toLocaleLowerCase('ru')));
+  let reply;
+  try {
+    reply = keywordHandoff
+      ? { answer: agent.handoffMessage, handoff: true, reason: 'Запрос пользователя на оператора' }
+      : await generateAgentReply({
+          model: agent.model,
+          systemPrompt: agent.systemPrompt,
+          goal: agent.goal,
+          tone: agent.tone,
+          history: conversation.messages.reverse().flatMap(message => {
+            if (!message.text.trim()) return [];
+            return [{ role: message.direction === 'INBOUND' ? 'user' as const : 'assistant' as const, content: message.text }];
+          }),
+          vectorStoreId: agent.vectorStoreId,
+          maxOutputTokens: agent.maxOutputTokens,
+          temperature: agent.temperature
+        });
+  } catch (error) {
+    reply = {
+      answer: agent.fallbackMessage,
+      handoff: true,
+      reason: error instanceof Error ? error.message : 'Ошибка AI-провайдера'
+    };
+  }
+
+  let message = await prisma.message.create({
+    data: {
+      workspaceId: event.workspaceId,
+      conversationId: event.conversationId,
+      direction: 'OUTBOUND',
+      senderType: 'AI',
+      type: 'TEXT',
+      text: reply.answer,
+      status: 'PENDING',
+      payload: { automation: true, aiAgentId: agent.id, handoff: reply.handoff, handoffReason: reply.reason }
+    }
+  });
+
+  try {
+    if (
+      conversation.channelAccount.provider !== 'TELEGRAM' ||
+      conversation.channelAccount.status !== 'ACTIVE' ||
+      !conversation.channelAccount.accessTokenEncrypted ||
+      !conversation.externalThreadId
+    ) {
+      throw new Error('Для этого канала отправка AI-ответа пока недоступна');
+    }
+    const chatId = conversation.externalThreadId.split(':')[0];
+    const sent = await sendTelegramMessage(
+      decryptCredential(conversation.channelAccount.accessTokenEncrypted),
+      chatId,
+      reply.answer
+    );
+    message = await prisma.message.update({
+      where: { id: message.id },
+      data: { providerMessageId: String(sent.message_id), status: 'SENT', deliveredAt: new Date(sent.date * 1000) }
+    });
+    await prisma.conversation.update({
+      where: { id: event.conversationId },
+      data: { lastMessageAt: new Date(), mode: reply.handoff ? 'HUMAN' : 'AI' }
+    });
+    return { messageId: message.id, agentId: agent.id, handoff: reply.handoff, reason: reply.reason };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Ошибка доставки AI-ответа';
+    await prisma.message.update({
+      where: { id: message.id },
+      data: { status: 'FAILED', payload: { automation: true, aiAgentId: agent.id, deliveryError: reason } }
+    });
+    throw error;
+  }
+}
+
 async function executeNode(
   node: ValidatedAutomationGraph['nodes'][number],
   event: InboundAutomationEvent,
@@ -159,7 +261,7 @@ async function executeNode(
     return { status: 'WAITING', resumeAt: new Date(Date.now() + seconds * 1000), output: { seconds } };
   }
   if (node.type === 'ai.agent') {
-    return { status: 'WAITING', output: { reason: 'AI_AGENT_PENDING' } };
+    return { status: 'SUCCESS', output: await executeAiAgentNode(node.config, event) };
   }
   return { status: 'FAILED', output: { reason: `Неподдерживаемый блок: ${node.type}` } };
 }
