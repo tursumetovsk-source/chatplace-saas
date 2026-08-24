@@ -1,318 +1,237 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  MessageSquare,
-  Instagram,
-  Send,
-  MessageCircle,
-  Video,
-  SendHorizontal,
-  Phone,
-  Sparkles,
-  CreditCard
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CreditCard, Instagram, MessageCircle, Phone, Send, SendHorizontal, Sparkles, Video } from 'lucide-react';
+import { useAccountMode } from '../../../lib/use-account-mode';
+
+type Provider = 'INSTAGRAM' | 'TELEGRAM' | 'WHATSAPP' | 'TIKTOK';
+type OperatorMode = 'AI' | 'HUMAN' | 'HYBRID';
 
 interface Chat {
   id: string;
   name: string;
   username: string;
-  provider: 'INSTAGRAM' | 'TELEGRAM' | 'WHATSAPP' | 'TIKTOK';
+  provider: Provider;
   lastMessage: string;
   time: string;
-  mode: 'AI' | 'HUMAN' | 'HYBRID';
+  mode: OperatorMode;
   unread: number;
   tags: string[];
+  phone?: string;
+  city?: string;
   followers?: string;
   triggerContext?: string;
 }
 
+interface ChatMessage {
+  id: string;
+  sender: 'CONTACT' | 'AI' | 'MANAGER' | 'SYSTEM' | 'KASPI_PAY';
+  text: string;
+  time: string;
+  status?: string;
+  trigger?: string;
+  payStatus?: string;
+}
+
+interface ApiConversation {
+  id: string;
+  mode: OperatorMode;
+  unreadCount: number;
+  lastMessageAt: string;
+  contact: { firstName: string; lastName?: string | null; username?: string | null; phone?: string | null; city?: string | null; tags: string[] };
+  channelAccount: { provider: string; username?: string | null };
+  messages: Array<{ text: string }>;
+}
+
+interface ApiMessage {
+  id: string;
+  senderType: 'CONTACT' | 'AI' | 'MANAGER' | 'SYSTEM';
+  text: string;
+  status: string;
+  createdAt: string;
+}
+
+const demoChats: Chat[] = [
+  { id: 'c1', name: 'Айдос Нурланов', username: '@aidos_nurlan', provider: 'INSTAGRAM', lastMessage: 'Здравствуйте! Какая цена на курс по автоматизации?', time: '14:22', mode: 'AI', unread: 1, tags: ['Горячий лид', 'Алматы', 'Kaspi Pay'], phone: '+7 (707) 890-12-34', city: 'Алматы', followers: '14.2K', triggerContext: 'Reels #143 "ПРАЙС"' },
+  { id: 'c2', name: 'Елена Смирнова', username: '@elena_smirnova', provider: 'TELEGRAM', lastMessage: 'Хочу подключить систему к нашему интернет-магазину', time: '13:05', mode: 'HYBRID', unread: 0, tags: ['SaaS Клиент'], followers: '3.1K' },
+  { id: 'c3', name: 'Аскар Болатов', username: '+7 (701) 999-88-77', provider: 'WHATSAPP', lastMessage: 'Оплату отправил через Kaspi Pay, проверьте чек', time: '11:45', mode: 'HUMAN', unread: 2, tags: ['Счет Выставлен'] },
+  { id: 'c4', name: 'Динара Серикова', username: '@dinara_tok', provider: 'TIKTOK', lastMessage: 'Пришлите прайс-лист в Direct', time: 'Вчера', mode: 'AI', unread: 0, tags: ['Новый подписчик'] }
+];
+
+const demoMessages: ChatMessage[] = [
+  { id: 'm1', sender: 'CONTACT', text: 'Здравствуйте! Какая цена на курс по автоматизации?', time: '14:20', trigger: 'Ответ на комментарий к Reels: "ПРАЙС"' },
+  { id: 'm2', sender: 'AI', text: 'Здравствуйте, Айдос! Наш курс включает 12 модулей + практические кейсы на Instagram & Telegram. Тариф Старт — 45 000 ₸, Про — 95 000 ₸. Из какого вы города?', time: '14:21' },
+  { id: 'm3', sender: 'CONTACT', text: 'Я из Алматы, интересует тариф Про', time: '14:22' },
+  { id: 'm4', sender: 'KASPI_PAY', text: 'Выставлен счет Kaspi Pay: 95 000 ₸ (Тариф Про)', time: '14:23', payStatus: 'PAID' }
+];
+
+const formatTime = (value: string) => new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+
+const mapConversation = (conversation: ApiConversation): Chat => {
+  const provider = ['INSTAGRAM', 'TELEGRAM', 'WHATSAPP', 'TIKTOK'].includes(conversation.channelAccount.provider)
+    ? conversation.channelAccount.provider as Provider
+    : 'INSTAGRAM';
+  return {
+    id: conversation.id,
+    name: [conversation.contact.firstName, conversation.contact.lastName].filter(Boolean).join(' '),
+    username: conversation.contact.username || conversation.contact.phone || conversation.channelAccount.username || 'Без username',
+    provider,
+    lastMessage: conversation.messages[0]?.text || 'Диалог создан — сообщений пока нет',
+    time: formatTime(conversation.lastMessageAt),
+    mode: conversation.mode,
+    unread: conversation.unreadCount,
+    tags: conversation.contact.tags,
+    phone: conversation.contact.phone || undefined,
+    city: conversation.contact.city || undefined
+  };
+};
+
+const initials = (name: string) => name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'К';
+
 export default function InboxPage() {
-  const [chats] = useState<Chat[]>([
-    {
-      id: 'c1',
-      name: 'Айдос Нурланов',
-      username: '@aidos_nurlan',
-      provider: 'INSTAGRAM',
-      lastMessage: 'Здравствуйте! Какая цена на курс по автоматизации?',
-      time: '14:22',
-      mode: 'AI',
-      unread: 1,
-      tags: ['Горячий лид', 'Алматы', 'Kaspi Pay'],
-      followers: '14.2K',
-      triggerContext: 'Reels #143 "ПРАЙС"'
-    },
-    {
-      id: 'c2',
-      name: 'Елена Смирнова',
-      username: '@elena_smirnova',
-      provider: 'TELEGRAM',
-      lastMessage: 'Хочу подключить систему к нашему интернет-магазину',
-      time: '13:05',
-      mode: 'HYBRID',
-      unread: 0,
-      tags: ['SaaS Клиент'],
-      followers: '3.1K'
-    },
-    {
-      id: 'c3',
-      name: 'Аскар Болатов',
-      username: '+7 (701) 999-88-77',
-      provider: 'WHATSAPP',
-      lastMessage: 'Оплату отправил через Kaspi Pay, проверьте чек',
-      time: '11:45',
-      mode: 'HUMAN',
-      unread: 2,
-      tags: ['Счет Выставлен']
-    },
-    {
-      id: 'c4',
-      name: 'Динара Серикова',
-      username: '@dinara_tok',
-      provider: 'TIKTOK',
-      lastMessage: 'Пришлите прайс-лист в Direct',
-      time: 'Вчера',
-      mode: 'AI',
-      unread: 0,
-      tags: ['Новый подписчик']
-    }
-  ]);
-
-  const [activeChat, setActiveChat] = useState<Chat>(chats[0]);
-  const [operatorMode, setOperatorMode] = useState<'AI' | 'HUMAN'>(chats[0].mode === 'HUMAN' ? 'HUMAN' : 'AI');
-  const [messages, setMessages] = useState([
-    { 
-      id: 'm1', 
-      sender: 'CONTACT', 
-      text: 'Здравствуйте! Какая цена на курс по автоматизации?', 
-      time: '14:20',
-      trigger: 'Ответ на комментарий к Reels: "ПРАЙС"'
-    },
-    { 
-      id: 'm2', 
-      sender: 'AI', 
-      text: 'Здравствуйте, Айдос! Наш курс включает 12 модулей + практические кейсы на Instagram & Telegram. Тариф Старт — 45 000 ₸, Про — 95 000 ₸. Из какого вы города?', 
-      time: '14:21' 
-    },
-    { 
-      id: 'm3', 
-      sender: 'CONTACT', 
-      text: 'Я из Алматы, интересует тариф Про', 
-      time: '14:22' 
-    },
-    {
-      id: 'm4',
-      sender: 'KASPI_PAY',
-      text: 'Выставлен счет Kaspi Pay: 95 000 ₸ (Тариф Про)',
-      time: '14:23',
-      payStatus: 'PAID'
-    }
-  ]);
+  const { mode } = useAccountMode();
+  const [chats, setChats] = useState<Chat[]>(demoChats);
+  const [activeChat, setActiveChat] = useState<Chat | null>(demoChats[0]);
+  const [operatorMode, setOperatorMode] = useState<OperatorMode>(demoChats[0].mode);
+  const [messages, setMessages] = useState<ChatMessage[]>(demoMessages);
   const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
-    setMessages(prev => [
-      ...prev,
-      { id: `m_${Date.now()}`, sender: 'MANAGER', text: inputText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-    ]);
-    setInputText('');
+  useEffect(() => {
+    if (mode !== 'account') return;
+    setLoading(true);
+    void fetch('/api/conversations', { cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) throw new Error('Не удалось загрузить Inbox');
+        const data = await response.json() as { conversations: ApiConversation[] };
+        const mapped = data.conversations.map(mapConversation);
+        setChats(mapped);
+        setActiveChat(mapped[0] ?? null);
+        setOperatorMode(mapped[0]?.mode ?? 'AI');
+        if (!mapped.length) setMessages([]);
+      })
+      .catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить Inbox'))
+      .finally(() => setLoading(false));
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== 'account' || !activeChat) return;
+    setLoading(true);
+    void fetch(`/api/conversations/${activeChat.id}/messages`, { cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) throw new Error('Не удалось загрузить сообщения');
+        const data = await response.json() as { messages: ApiMessage[] };
+        setMessages(data.messages.map(message => ({ id: message.id, sender: message.senderType, text: message.text, status: message.status, time: formatTime(message.createdAt) })));
+      })
+      .catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить сообщения'))
+      .finally(() => setLoading(false));
+  }, [activeChat?.id, mode]);
+
+  const selectChat = (chat: Chat) => {
+    setActiveChat(chat);
+    setOperatorMode(chat.mode);
+    if (mode === 'demo') setMessages(chat.id === 'c1' ? demoMessages : []);
   };
 
-  const getProviderIcon = (provider: Chat['provider']) => {
-    switch (provider) {
-      case 'INSTAGRAM': return <Instagram className="w-4 h-4 text-pink-600" />;
-      case 'TELEGRAM': return <Send className="w-4 h-4 text-sky-500" />;
-      case 'WHATSAPP': return <MessageCircle className="w-4 h-4 text-emerald-600" />;
-      case 'TIKTOK': return <Video className="w-4 h-4 text-zinc-900" />;
+  const changeOperatorMode = async (nextMode: 'AI' | 'HUMAN') => {
+    setOperatorMode(nextMode);
+    if (!activeChat) return;
+    setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, mode: nextMode } : chat));
+    setActiveChat(current => current ? { ...current, mode: nextMode } : current);
+    if (mode === 'account') {
+      const response = await fetch(`/api/conversations/${activeChat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: nextMode }) });
+      if (!response.ok) setError('Не удалось изменить режим диалога');
     }
+  };
+
+  const handleSend = async () => {
+    const text = inputText.trim();
+    if (!text || !activeChat || sending) return;
+    setSending(true);
+    setError('');
+    try {
+      if (mode === 'account') {
+        const response = await fetch(`/api/conversations/${activeChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось отправить сообщение');
+        const message = data.message as ApiMessage;
+        setMessages(current => [...current, { id: message.id, sender: 'MANAGER', text: message.text, status: message.status, time: formatTime(message.createdAt) }]);
+      } else {
+        setMessages(current => [...current, { id: `m_${Date.now()}`, sender: 'MANAGER', text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+      }
+      setInputText('');
+      setOperatorMode('HUMAN');
+      setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, lastMessage: text, time: 'сейчас', mode: 'HUMAN' } : chat));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось отправить сообщение');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const getProviderIcon = (provider: Provider) => {
+    if (provider === 'INSTAGRAM') return <Instagram className="w-4 h-4 text-pink-600" />;
+    if (provider === 'TELEGRAM') return <Send className="w-4 h-4 text-sky-500" />;
+    if (provider === 'WHATSAPP') return <MessageCircle className="w-4 h-4 text-emerald-600" />;
+    return <Video className="w-4 h-4 text-zinc-900" />;
   };
 
   return (
-    <div className="h-[calc(100vh-9rem)] md:h-[calc(100vh-6rem)] min-h-[560px] flex rounded-[24px] border border-zinc-200 bg-white overflow-hidden shadow-subtle">
-      {/* Conversations List */}
-      <div className="hidden md:flex w-72 lg:w-80 border-r border-zinc-200 flex-col bg-[#F6F5F8] shrink-0">
-        <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-white">
-          <h2 className="font-display-extended font-bold text-[#0C0C0C] text-sm">
-            Единый Inbox
-          </h2>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold">
-            4 соцсети
-          </span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto divide-y divide-zinc-200/60">
-          {chats.map(chat => (
-            <div
-              key={chat.id}
-              onClick={() => { setActiveChat(chat); setOperatorMode(chat.mode === 'HUMAN' ? 'HUMAN' : 'AI'); }}
-              className={`p-4 cursor-pointer transition ${
-                activeChat.id === chat.id ? 'bg-white border-l-4 border-[#261930] shadow-subtle' : 'hover:bg-white/60'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  {getProviderIcon(chat.provider)}
-                  <span className="text-sm font-bold text-[#0C0C0C] truncate max-w-[130px]">{chat.name}</span>
-                </div>
-                <span className="text-[11px] text-[#727272] font-mono">{chat.time}</span>
-              </div>
-              <p className="text-xs text-[#727272] truncate mb-2">{chat.lastMessage}</p>
-              <div className="flex items-center justify-between">
-                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                  chat.mode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'bg-emerald-100 text-emerald-800'
-                }`}>
-                  {chat.mode === 'AI' ? '🤖 AI Copilot' : '👤 Менеджер'}
-                </span>
-                {chat.unread > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-[#261930] text-[#BEFF53] font-bold text-[10px] flex items-center justify-center">
-                    {chat.unread}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Chat Thread */}
-      <div className="flex-1 flex flex-col bg-white">
-        {/* Thread Header */}
-        <div className="p-3 sm:p-4 border-b border-zinc-200 bg-white flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#261930] text-[#BEFF53] flex items-center justify-center font-bold text-sm">
-              AN
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-[#0C0C0C] text-sm">{activeChat.name}</h3>
-                <span className="hidden sm:inline text-xs text-pink-600 font-mono">{activeChat.username}</span>
-              </div>
-              {activeChat.triggerContext && (
-                <div className="text-[11px] text-[#727272] flex items-center gap-1.5 mt-0.5">
-                  <Instagram className="w-3 h-3 text-pink-600" />
-                  <span className="hidden sm:inline">Триггер: <strong>{activeChat.triggerContext}</strong></span>
-                </div>
-              )}
-            </div>
+    <div className="space-y-3">
+      {error && <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-xs font-bold text-red-700" role="alert">{error}</div>}
+      <div className="h-[calc(100vh-10rem)] md:h-[calc(100vh-7rem)] min-h-[560px] flex rounded-[24px] border border-zinc-200 bg-white overflow-hidden shadow-subtle">
+        <div className="hidden md:flex w-72 lg:w-80 border-r border-zinc-200 flex-col bg-[#F6F5F8] shrink-0">
+          <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-white">
+            <h2 className="font-display-extended font-bold text-[#0C0C0C] text-base">Единый Inbox</h2>
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-extrabold">{chats.length} диалогов</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 p-1 rounded-full bg-[#F6F5F8] border border-zinc-200 text-xs">
-              <button onClick={() => setOperatorMode('AI')} className={`px-2 sm:px-3.5 py-1 rounded-full font-semibold transition ${operatorMode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'text-[#727272]'}`}>
-                🤖 <span className="hidden sm:inline">AI Copilot</span>
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-200/60">
+            {chats.map(chat => (
+              <button key={chat.id} onClick={() => selectChat(chat)} className={`w-full p-4 text-left transition ${activeChat?.id === chat.id ? 'bg-white border-l-4 border-[#261930] shadow-subtle' : 'hover:bg-white/60'}`}>
+                <div className="flex items-center justify-between mb-1"><div className="flex items-center gap-2 min-w-0">{getProviderIcon(chat.provider)}<span className="text-sm font-bold text-[#0C0C0C] truncate">{chat.name}</span></div><span className="text-[11px] text-[#727272] shrink-0">{chat.time}</span></div>
+                <p className="text-xs text-[#727272] truncate mb-2">{chat.lastMessage}</p>
+                <div className="flex items-center justify-between"><span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${chat.mode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'bg-emerald-100 text-emerald-800'}`}>{chat.mode === 'AI' ? 'AI-агент' : chat.mode === 'HYBRID' ? 'AI + менеджер' : 'Менеджер'}</span>{chat.unread > 0 && <span className="w-5 h-5 rounded-full bg-[#1E5CFB] text-white font-bold text-[10px] flex items-center justify-center">{chat.unread}</span>}</div>
               </button>
-              <button onClick={() => setOperatorMode('HUMAN')} className={`px-2 sm:px-3.5 py-1 rounded-full font-semibold transition ${operatorMode === 'HUMAN' ? 'bg-[#261930] text-white' : 'text-[#727272]'}`}>
-                👤 <span className="hidden sm:inline">Менеджер</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Message History */}
-        <div className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4 bg-[#F6F5F8]/40">
-          {messages.map(msg => (
-            <div key={msg.id} className={`flex flex-col ${msg.sender === 'CONTACT' ? 'items-start' : 'items-end'}`}>
-              {msg.trigger && (
-                <div className="text-[10px] font-mono text-pink-600 bg-pink-50 border border-pink-200 px-3 py-1 rounded-full mb-1.5 flex items-center gap-1.5">
-                  <Instagram className="w-3 h-3 text-pink-600" />
-                  {msg.trigger}
-                </div>
-              )}
-
-              {msg.sender === 'KASPI_PAY' ? (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 max-w-md w-full my-2 shadow-subtle">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 font-bold text-xs text-emerald-800">
-                      <CreditCard className="w-4 h-4" />
-                      СЧЕТ KASPI PAY
-                    </div>
-                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-extrabold">
-                      ОПЛАЧЕНО
-                    </span>
-                  </div>
-                  <div className="text-sm font-bold text-[#0C0C0C] mb-1">{msg.text}</div>
-                  <div className="text-xs text-emerald-700 flex items-center justify-between border-t border-emerald-200 pt-2 mt-2 font-mono">
-                    <span>Чек #KP-98412</span>
-                    <span>{msg.time}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed ${
-                  msg.sender === 'CONTACT'
-                    ? 'bg-white border border-zinc-200 text-[#0C0C0C] rounded-bl-none shadow-subtle'
-                    : msg.sender === 'AI'
-                    ? 'bg-[#261930] text-white rounded-br-none shadow-subtle'
-                    : 'bg-[#BEFF53] text-[#0C0C0C] font-semibold rounded-br-none shadow-subtle'
-                }`}>
-                  <div className="flex items-center gap-1.5 mb-1 font-semibold opacity-75 text-[10px]">
-                    {msg.sender === 'CONTACT' && <span>Клиент (Instagram)</span>}
-                    {msg.sender === 'AI' && <span className="flex items-center gap-1 text-[#BEFF53]"><Sparkles className="w-3 h-3" /> AI Copilot</span>}
-                    {msg.sender === 'MANAGER' && <span>Вы (Оператор)</span>}
-                    <span className="ml-auto opacity-60 font-mono">{msg.time}</span>
-                  </div>
-                  <p>{msg.text}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Input Bar */}
-        <div className="p-4 border-t border-zinc-200 bg-white flex items-center gap-3">
-          <input
-            type="text"
-            value={inputText}
-            onChange={e => setInputText(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSend()}
-            placeholder="Напишите сообщение в Instagram Direct..."
-            className="flex-1 bg-[#F6F5F8] border border-zinc-200 rounded-full px-5 py-3 text-xs text-[#0C0C0C] placeholder-[#727272] focus:outline-none focus:border-[#261930]"
-          />
-          <button
-            onClick={handleSend}
-            className="p-3 rounded-full bg-[#261930] text-[#BEFF53] transition hover:bg-[#392648] shrink-0"
-          >
-            <SendHorizontal className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Contact Profile Sidebar */}
-      <div className="w-72 border-l border-zinc-200 bg-[#F6F5F8] p-5 shrink-0 space-y-6 hidden lg:block">
-        <div>
-          <h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Профиль Instagram</h4>
-          <div className="p-4 rounded-2xl bg-white border border-zinc-200 shadow-subtle space-y-2">
-            <div className="text-sm font-bold text-[#0C0C0C]">{activeChat.name}</div>
-            <div className="text-xs text-pink-600 font-mono">{activeChat.username}</div>
-            {activeChat.followers && (
-              <div className="text-xs text-[#727272]">Подписчиков: <strong>{activeChat.followers}</strong></div>
-            )}
-            <div className="text-xs text-[#727272] flex items-center gap-2 pt-2 border-t border-zinc-100">
-              <Phone className="w-3.5 h-3.5 text-[#261930]" />
-              +7 (707) 890-12-34
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Память AI-ассистента</h4>
-          <div className="p-4 rounded-2xl bg-white border border-zinc-200 shadow-subtle text-xs text-[#0C0C0C] space-y-2">
-            <div>📍 <strong>Город:</strong> Алматы</div>
-            <div>🎯 <strong>Интерес:</strong> Автоматизация Instagram + Kaspi Pay</div>
-            <div>💰 <strong>Счет Kaspi:</strong> 95 000 ₸ (Оплачен)</div>
-          </div>
-        </div>
-
-        <div>
-          <h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Теги контакта</h4>
-          <div className="flex flex-wrap gap-1.5">
-            {activeChat.tags.map((t, i) => (
-              <span key={i} className="px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-xs font-semibold text-[#0C0C0C] shadow-subtle">
-                {t}
-              </span>
             ))}
+            {(loading || mode === 'loading') && <div className="p-8 text-center text-sm text-[#727272]">Загружаем диалоги…</div>}
+            {!loading && mode !== 'loading' && !chats.length && <div className="p-8 text-center text-sm text-[#727272]">Подключите первый канал — новые обращения появятся здесь автоматически.</div>}
           </div>
         </div>
+
+        {activeChat ? <>
+          <div className="flex-1 flex flex-col bg-white min-w-0">
+            <div className="p-3 sm:p-4 border-b border-zinc-200 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0"><div className="w-10 h-10 rounded-full bg-[#261930] text-[#BEFF53] flex items-center justify-center font-bold text-sm shrink-0">{initials(activeChat.name)}</div><div className="min-w-0"><div className="flex items-center gap-2"><h3 className="font-bold text-[#0C0C0C] text-sm truncate">{activeChat.name}</h3><span className="hidden 2xl:inline text-xs text-[#737378] truncate">{activeChat.username}</span></div><div className="text-[11px] text-[#727272] flex items-center gap-1.5 mt-0.5">{getProviderIcon(activeChat.provider)}<span className="truncate">{activeChat.triggerContext ? `Триггер: ${activeChat.triggerContext}` : activeChat.provider}</span></div></div></div>
+              <div className="flex items-center gap-1.5 p-1 rounded-full bg-[#F6F5F8] border border-zinc-200 text-xs shrink-0"><button onClick={() => void changeOperatorMode('AI')} className={`px-2 sm:px-3.5 py-1.5 rounded-full font-semibold transition ${operatorMode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'text-[#727272]'}`}>AI</button><button onClick={() => void changeOperatorMode('HUMAN')} className={`px-2 sm:px-3.5 py-1.5 rounded-full font-semibold transition ${operatorMode === 'HUMAN' ? 'bg-[#1E5CFB] text-white' : 'text-[#727272]'}`}>Менеджер</button></div>
+            </div>
+
+            <div className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4 bg-[#F6F5F8]/40">
+              {!loading && !messages.length && <div className="h-full flex items-center justify-center text-sm text-[#727272]">Сообщений пока нет — начните диалог.</div>}
+              {messages.map(message => (
+                <div key={message.id} className={`flex flex-col ${message.sender === 'CONTACT' ? 'items-start' : 'items-end'}`}>
+                  {message.trigger && <div className="text-[10px] text-pink-600 bg-pink-50 border border-pink-200 px-3 py-1 rounded-full mb-1.5 flex items-center gap-1.5"><Instagram className="w-3 h-3" />{message.trigger}</div>}
+                  {message.sender === 'KASPI_PAY' ? (
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 max-w-md w-full my-2 shadow-subtle"><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2 font-bold text-xs text-emerald-800"><CreditCard className="w-4 h-4" />СЧЕТ KASPI PAY</div><span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-extrabold">ОПЛАЧЕНО</span></div><div className="text-sm font-bold text-[#0C0C0C]">{message.text}</div><div className="text-xs text-emerald-700 border-t border-emerald-200 pt-2 mt-2">{message.time}</div></div>
+                  ) : (
+                    <div className={`max-w-md p-4 rounded-2xl text-sm leading-relaxed ${message.sender === 'CONTACT' ? 'bg-white border border-zinc-200 text-[#0C0C0C] rounded-bl-none shadow-subtle' : message.sender === 'AI' ? 'bg-[#261930] text-white rounded-br-none shadow-subtle' : 'bg-[#BEFF53] text-[#0C0C0C] font-semibold rounded-br-none shadow-subtle'}`}>
+                      <div className="flex items-center gap-1.5 mb-1 font-semibold opacity-75 text-[10px]">{message.sender === 'CONTACT' && <span>Клиент</span>}{message.sender === 'AI' && <span className="flex items-center gap-1 text-[#BEFF53]"><Sparkles className="w-3 h-3" /> AI-агент</span>}{message.sender === 'MANAGER' && <span>Вы</span>}{message.sender === 'SYSTEM' && <span>Система</span>}<span className="ml-auto opacity-60">{message.time}</span></div><p>{message.text}</p>{message.status === 'QUEUED' && <div className="mt-1 text-[10px] opacity-60">В очереди на отправку</div>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 border-t border-zinc-200 bg-white flex items-center gap-3"><input value={inputText} onChange={event => setInputText(event.target.value)} onKeyDown={event => event.key === 'Enter' && void handleSend()} placeholder={`Напишите сообщение в ${activeChat.provider.toLowerCase()}…`} className="flex-1 bg-[#F6F5F8] border border-zinc-200 rounded-full px-5 py-3 text-sm text-[#0C0C0C] placeholder-[#727272] focus:outline-none focus:border-[#261930]" /><button disabled={sending} onClick={() => void handleSend()} aria-label="Отправить" className="p-3 rounded-full bg-[#261930] text-[#BEFF53] transition hover:bg-[#392648] disabled:opacity-50"><SendHorizontal className="w-4 h-4" /></button></div>
+          </div>
+
+          <aside className="w-72 border-l border-zinc-200 bg-[#F6F5F8] p-5 shrink-0 space-y-6 hidden lg:block">
+            <div><h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Профиль клиента</h4><div className="p-4 rounded-2xl bg-white border border-zinc-200 shadow-subtle space-y-2"><div className="text-sm font-bold">{activeChat.name}</div><div className="text-xs text-[#1E5CFB]">{activeChat.username}</div>{activeChat.followers && <div className="text-xs text-[#727272]">Подписчиков: <strong>{activeChat.followers}</strong></div>}{activeChat.phone && <div className="text-xs text-[#727272] flex items-center gap-2 pt-2 border-t border-zinc-100"><Phone className="w-3.5 h-3.5" />{activeChat.phone}</div>}</div></div>
+            <div><h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Контекст</h4><div className="p-4 rounded-2xl bg-white border border-zinc-200 shadow-subtle text-xs space-y-2"><div>📍 <strong>Город:</strong> {activeChat.city || 'не указан'}</div><div>💬 <strong>Канал:</strong> {activeChat.provider}</div><div>⚙️ <strong>Режим:</strong> {operatorMode === 'AI' ? 'AI отвечает' : 'ведёт менеджер'}</div></div></div>
+            <div><h4 className="text-xs font-bold text-[#727272] uppercase tracking-wider mb-3">Теги контакта</h4><div className="flex flex-wrap gap-1.5">{activeChat.tags.length ? activeChat.tags.map(tag => <span key={tag} className="px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-xs font-semibold shadow-subtle">{tag}</span>) : <span className="text-xs text-[#727272]">Тегов пока нет</span>}</div></div>
+          </aside>
+        </> : <div className="flex-1 flex flex-col items-center justify-center px-6 text-center"><div className="w-14 h-14 rounded-2xl bg-[#261930] text-[#BEFF53] flex items-center justify-center mb-4"><MessageCircle className="w-6 h-6" /></div><h2 className="text-xl font-extrabold">Inbox готов к обращениям</h2><p className="text-sm text-[#727272] mt-2 max-w-md">Подключите Instagram или Telegram в разделе «Каналы». Диалоги и контакты будут создаваться автоматически.</p><a href="/channels" className="mt-5 rounded-xl bg-[#1E5CFB] px-5 py-3 text-sm font-bold text-white">Подключить канал</a></div>}
       </div>
     </div>
   );
