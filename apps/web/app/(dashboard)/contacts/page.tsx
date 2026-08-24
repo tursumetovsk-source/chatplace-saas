@@ -16,6 +16,8 @@ interface ContactView {
   lastSeen: string;
   conversations: number;
   initials: string;
+  marketingConsent: boolean;
+  tags: string[];
 }
 interface ApiContact {
   id: string;
@@ -27,16 +29,18 @@ interface ApiContact {
   city?: string | null;
   status: string;
   lastActivityAt: string;
+  marketingConsent: boolean;
+  tags: string[];
   conversations?: Array<{ channelAccount: { provider: string; username?: string | null } }>;
   _count?: { conversations: number };
 }
 
 const demoContacts: ContactView[] = [
-  { id: '1', name: 'Айдос Нурланов', handle: '@aidos_nurlan', channel: 'Instagram', status: 'Горячий лид', city: 'Алматы', lastSeen: '2 мин назад', conversations: 12, initials: 'АН' },
-  { id: '2', name: 'Елена Смирнова', handle: '@elena_smirnova', channel: 'Telegram', status: 'Квалифицирован', city: 'Астана', lastSeen: '18 мин назад', conversations: 8, initials: 'ЕС' },
-  { id: '3', name: 'Аскар Болатов', handle: '+7 701 999 88 77', channel: 'WhatsApp', status: 'Клиент', city: 'Шымкент', lastSeen: '1 ч назад', conversations: 21, initials: 'АБ' },
-  { id: '4', name: 'Динара Серикова', handle: '@dinara_tok', channel: 'TikTok', status: 'Новый лид', city: 'Караганда', lastSeen: 'вчера', conversations: 3, initials: 'ДС' },
-  { id: '5', name: 'Мадина Оспанова', handle: '@madina_shop', channel: 'Instagram', status: 'Нужен ответ', city: 'Алматы', lastSeen: 'вчера', conversations: 6, initials: 'МО' }
+  { id: '1', name: 'Айдос Нурланов', handle: '@aidos_nurlan', channel: 'Instagram', status: 'Горячий лид', city: 'Алматы', lastSeen: '2 мин назад', conversations: 12, initials: 'АН', marketingConsent: true, tags: ['Тёплый лид'] },
+  { id: '2', name: 'Елена Смирнова', handle: '@elena_smirnova', channel: 'Telegram', status: 'Квалифицирован', city: 'Астана', lastSeen: '18 мин назад', conversations: 8, initials: 'ЕС', marketingConsent: true, tags: ['Вебинар'] },
+  { id: '3', name: 'Аскар Болатов', handle: '+7 701 999 88 77', channel: 'WhatsApp', status: 'Клиент', city: 'Шымкент', lastSeen: '1 ч назад', conversations: 21, initials: 'АБ', marketingConsent: false, tags: ['Клиент'] },
+  { id: '4', name: 'Динара Серикова', handle: '@dinara_tok', channel: 'TikTok', status: 'Новый лид', city: 'Караганда', lastSeen: 'вчера', conversations: 3, initials: 'ДС', marketingConsent: false, tags: [] },
+  { id: '5', name: 'Мадина Оспанова', handle: '@madina_shop', channel: 'Instagram', status: 'Нужен ответ', city: 'Алматы', lastSeen: 'вчера', conversations: 6, initials: 'МО', marketingConsent: true, tags: ['Тёплый лид'] }
 ];
 
 const channelName = (provider?: string): ContactView['channel'] => {
@@ -70,7 +74,9 @@ const mapContact = (contact: ApiContact): ContactView => {
     city: contact.city || 'Не указан',
     lastSeen: relativeTime(contact.lastActivityAt),
     conversations: contact._count?.conversations ?? contact.conversations?.length ?? 0,
-    initials: name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'К'
+    initials: name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'К',
+    marketingConsent: contact.marketingConsent,
+    tags: contact.tags
   };
 };
 
@@ -90,7 +96,7 @@ export default function ContactsPage() {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ firstName: '', lastName: '', username: '', phone: '', city: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', username: '', phone: '', city: '', tags: '', marketingConsent: false });
 
   useEffect(() => {
     if (mode !== 'account') return;
@@ -125,20 +131,39 @@ export default function ContactsPage() {
     }
     setLoading(true);
     try {
-      const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, tags: form.tags.split(',').map(tag => tag.trim()).filter(Boolean) }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Не удалось создать контакт');
       const created = mapContact(data.contact as ApiContact);
       setContacts(current => [created, ...current]);
       setActiveId(created.id);
       setShowCreate(false);
-      setForm({ firstName: '', lastName: '', username: '', phone: '', city: '' });
+      setForm({ firstName: '', lastName: '', username: '', phone: '', city: '', tags: '', marketingConsent: false });
       setNotice('Контакт добавлен в рабочее пространство');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Не удалось создать контакт');
     } finally {
       setLoading(false);
     }
+  };
+
+  const setMarketingConsent = async (contact: ContactView, enabled: boolean) => {
+    if (mode !== 'account') {
+      setContacts(current => current.map(item => item.id === contact.id ? { ...item, marketingConsent: enabled } : item));
+      setNotice(enabled ? 'Согласие включено в демо' : 'Контакт исключён из рассылок в демо');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/contacts/${contact.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ marketingConsent: enabled }) });
+      const data = await response.json() as { contact?: ApiContact; error?: string };
+      if (!response.ok || !data.contact) throw new Error(data.error || 'Не удалось обновить согласие');
+      const updated = mapContact(data.contact);
+      setContacts(current => current.map(item => item.id === updated.id ? updated : item));
+      setNotice(enabled ? 'Согласие на рассылки зафиксировано' : 'Контакт исключён из будущих рассылок');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Не удалось обновить согласие');
+    } finally { setLoading(false); }
   };
 
   return (
@@ -194,7 +219,10 @@ export default function ContactsPage() {
               <div className="flex justify-between gap-4"><dt className="text-[#737378]">Город</dt><dd className="font-bold text-right">{active.city}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-[#737378]">Диалогов</dt><dd className="font-bold text-right">{active.conversations}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-[#737378]">Последняя активность</dt><dd className="font-bold text-right">{active.lastSeen}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-[#737378]">Рассылки</dt><dd className={`font-bold text-right ${active.marketingConsent ? 'text-emerald-700' : 'text-zinc-500'}`}>{active.marketingConsent ? 'Согласие есть' : 'Нет согласия'}</dd></div>
             </dl>
+            {active.tags.length > 0 && <div className="mt-4 flex flex-wrap gap-1.5">{active.tags.map(tag => <span key={tag} className="rounded-full bg-white border border-zinc-200 px-2.5 py-1 text-[11px] font-semibold">{tag}</span>)}</div>}
+            <button disabled={loading} onClick={() => void setMarketingConsent(active, !active.marketingConsent)} className={`mt-5 w-full rounded-xl border py-2.5 text-xs font-bold disabled:opacity-50 ${active.marketingConsent ? 'border-zinc-300 text-zinc-600' : 'border-emerald-300 bg-emerald-50 text-emerald-800'}`}>{active.marketingConsent ? 'Исключить из рассылок' : 'Зафиксировать согласие'}</button>
             <a href="/inbox" className="mt-6 w-full rounded-xl bg-[#1E5CFB] text-white py-2.5 text-xs font-bold flex items-center justify-center hover:bg-[#184AC9] transition">Открыть диалог</a>
           </> : <div className="py-10 text-center text-sm text-[#737378]">Выберите контакт</div>}
         </aside>
@@ -210,7 +238,9 @@ export default function ContactsPage() {
               <input value={form.username} onChange={event => setForm(current => ({ ...current, username: event.target.value }))} placeholder="@username" className="rounded-xl border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E5CFB]" />
               <input value={form.phone} onChange={event => setForm(current => ({ ...current, phone: event.target.value }))} placeholder="Телефон" className="rounded-xl border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E5CFB]" />
               <input value={form.city} onChange={event => setForm(current => ({ ...current, city: event.target.value }))} placeholder="Город" className="col-span-2 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E5CFB]" />
+              <input value={form.tags} onChange={event => setForm(current => ({ ...current, tags: event.target.value }))} placeholder="Теги через запятую" className="col-span-2 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E5CFB]" />
             </div>
+            <label className="mt-4 flex items-start gap-3 rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-950"><input type="checkbox" checked={form.marketingConsent} onChange={event => setForm(current => ({ ...current, marketingConsent: event.target.checked }))} className="mt-0.5" /><span><strong className="block">Контакт дал согласие на рассылки</strong>Отмечайте только если можете подтвердить согласие клиента.</span></label>
             <button disabled={loading} className="mt-5 w-full rounded-xl bg-[#1E5CFB] text-white py-3 text-sm font-bold disabled:opacity-50">{loading ? 'Сохраняем…' : 'Добавить контакт'}</button>
           </form>
         </div>

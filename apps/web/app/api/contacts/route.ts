@@ -77,7 +77,9 @@ export async function POST(request: NextRequest) {
       city: optional(body?.city),
       status: optional(body?.status) ?? 'NEW',
       tags,
-      note: optional(body?.note)
+      note: optional(body?.note),
+      marketingConsent: body?.marketingConsent === true,
+      marketingConsentAt: body?.marketingConsent === true ? new Date() : null
     },
     include: { _count: { select: { conversations: true, deals: true } } }
   });

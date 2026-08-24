@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Prisma, prisma } from '@chatplace/database';
 import { resumeAutomationRun, runInboundAutomations, type InboundAutomationEvent } from './automation-runtime';
+import { processBroadcastQueue } from './broadcast-queue';
 
 const STALE_LOCK_MS = 5 * 60 * 1000;
 
@@ -124,11 +125,12 @@ async function processDueRuns(limit: number) {
   return results;
 }
 
-export async function processAutomationQueue(options: { eventLimit?: number; runLimit?: number } = {}) {
+export async function processAutomationQueue(options: { eventLimit?: number; runLimit?: number; broadcastLimit?: number } = {}) {
   const startedAt = new Date();
-  const [events, runs] = await Promise.all([
+  const [events, runs, broadcasts] = await Promise.all([
     processEvents(options.eventLimit ?? 5),
-    processDueRuns(options.runLimit ?? 10)
+    processDueRuns(options.runLimit ?? 10),
+    processBroadcastQueue(options.broadcastLimit ?? 10)
   ]);
   const housekeeping = await Promise.all([
     prisma.rateLimitBucket.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
@@ -139,6 +141,7 @@ export async function processAutomationQueue(options: { eventLimit?: number; run
     completedAt: new Date().toISOString(),
     events,
     runs,
+    broadcasts,
     housekeeping: { rateLimitBucketsDeleted: housekeeping[0].count, processedEventsDeleted: housekeeping[1].count }
   };
 }

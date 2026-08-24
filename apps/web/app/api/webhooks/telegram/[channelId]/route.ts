@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma, prisma } from '@chatplace/database';
 import { decryptCredential } from '../../../../../lib/credentials';
+import { telegramMarketingAction } from '../../../../../lib/broadcasts';
 
 interface TelegramUser {
   id: number;
@@ -68,6 +69,7 @@ async function ingestUpdate(channel: { id: string; workspaceId: string }, update
   const content = messageContent(message);
   const providerMessageId = String(message.message_id);
   const isEdited = Boolean(update.edited_message);
+  const marketingAction = content.type === 'TEXT' ? telegramMarketingAction(content.text) : null;
 
   return prisma.$transaction(async transaction => {
     let identity = await transaction.contactIdentity.findUnique({
@@ -129,7 +131,8 @@ async function ingestUpdate(channel: { id: string; workspaceId: string }, update
       telegramUserId: senderId,
       chatType: message.chat.type,
       mediaFileId: content.mediaId,
-      edited: isEdited
+      edited: isEdited,
+      marketingAction
     };
     const existing = await transaction.message.findUnique({
       where: { conversationId_providerMessageId: { conversationId: conversation.id, providerMessageId } }
@@ -159,6 +162,15 @@ async function ingestUpdate(channel: { id: string; workspaceId: string }, update
       where: { id: conversation.id },
       data: { unreadCount: { increment: 1 }, lastMessageAt: new Date(message.date * 1000) }
     });
+    if (marketingAction) {
+      await transaction.contact.update({
+        where: { id: identity.contactId },
+        data: marketingAction === 'OPT_IN'
+          ? { marketingConsent: true, marketingConsentAt: new Date(), marketingOptOutAt: null }
+          : { marketingConsent: false, marketingOptOutAt: new Date() }
+      });
+      return { accepted: true, consentUpdated: marketingAction, conversationId: conversation.id, contactId: identity.contactId, text: content.text };
+    }
     await transaction.automationEvent.create({
       data: {
         workspaceId: channel.workspaceId,

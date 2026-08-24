@@ -40,7 +40,7 @@ async function telegramRequest<T>(token: string, method: string, body?: Record<s
     });
     const data = await response.json().catch(() => null) as TelegramResponse<T> | null;
     if (!response.ok || !data?.ok || data.result === undefined) {
-      throw new TelegramApiError(data?.description || `Telegram API returned ${response.status}`, response.status || 502);
+      throw new TelegramApiError(data?.description || `Telegram API returned ${response.status}`, data?.error_code || response.status || 502);
     }
     return data.result;
   } catch (error) {
@@ -76,4 +76,3 @@ export function sendTelegramMessage(token: string, chatId: string, text: string)
     link_preview_options: { is_disabled: true }
   });
 }
-

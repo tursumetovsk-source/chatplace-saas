@@ -21,7 +21,8 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 4. Deploy `main` to Vercel. The deployment registers `/api/internal/cron/automations` every minute.
 5. Check `/api/health`; it must return HTTP 200 with `database: ok`.
 6. Register a real account, connect a disposable Telegram bot, publish a small scenario and confirm Inbox → outbox → automation → reply.
-7. Confirm that the run appears in Analytics and that no failed/retrying jobs remain.
+7. Create one opted-in test contact, schedule a Telegram broadcast and confirm that the delivery reaches `SENT` in Analytics.
+8. Confirm that the automation run appears in Analytics and that no failed/retrying jobs remain.
 
 ## Backups and restore drills
 
@@ -33,10 +34,11 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 
 ## Queue incident response
 
-- Analytics shows pending/retrying events and failed runs for the last 24 hours.
+- Analytics shows pending/retrying automation events, broadcast deliveries and failures for the last 24 hours.
 - Verify that Vercel Cron is enabled and `CRON_SECRET` matches.
 - Inspect the failed node and delivery error. A temporary Telegram error is retried up to five times with exponential backoff.
 - Do not manually replay a webhook before checking the event/run idempotency key.
+- A provider request can succeed immediately before the worker loses its database connection. This rare boundary can produce a duplicate on retry because Telegram does not offer an idempotency key for `sendMessage`; keep copy safe for an occasional duplicate and review stale-lock incidents before replaying them.
 
 ## Secret rotation
 

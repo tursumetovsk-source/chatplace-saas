@@ -21,6 +21,7 @@ export async function GET(request: Request) {
       subscription: { select: { plan: true, status: true, trialEndsAt: true, currentPeriodStart: true, currentPeriodEnd: true, cancelAtPeriodEnd: true } },
       usageCounters: true,
       usageEvents: { orderBy: { createdAt: 'desc' }, take: 10_000 },
+      broadcastCampaigns: { include: { deliveries: { orderBy: { createdAt: 'desc' }, take: 10_000 } } },
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10_000 }
     }
   });

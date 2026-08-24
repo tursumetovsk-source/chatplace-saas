@@ -18,6 +18,7 @@
 - реальные AI-агенты на Responses API: настройки, память диалога, база знаний через file search, тестовый чат, привязка к Telegram и передача оператору;
 - 14-дневный Pro-trial, тарифы в KZT, реальные usage-счётчики, серверные квоты и заявки на подключение платного плана;
 - реальные analytics и monitoring, audit log, health-check, rate limits, security headers и защищённая форма privacy-запросов;
+- Telegram-рассылки по тегам: доказуемое согласие, оценка аудитории, планирование, отмена, durable delivery queue, retry и автоматический opt-out по команде клиента;
 - политика конфиденциальности/условия, подтверждаемое согласие, owner JSON-export, backup script и production runbook;
 - monorepo для web, API gateway, webhook gateway, workers и общих пакетов;
 - автоматическая production-сборка на Vercel из ветки `main`.
@@ -46,7 +47,7 @@ pnpm build
 
 ## Важная граница MVP
 
-Без `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY`, `OPENAI_API_KEY` и `CRON_SECRET` публичная версия остаётся безопасным demo-workspace. После настройки доступны реальные аккаунты, контакты, CRM, Telegram, надёжные автоматизации и AI-агенты с базой знаний. До полного запуска ещё нужны Instagram/WhatsApp/TikTok credentials, платёжный провайдер и production-наблюдаемость. При росте нагрузки PostgreSQL outbox можно вынести в Redis/BullMQ без изменения продуктового API.
+Без `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY`, `OPENAI_API_KEY` и `CRON_SECRET` публичная версия остаётся безопасным demo-workspace. После настройки доступны реальные аккаунты, контакты, CRM, Telegram, надёжные автоматизации, AI-агенты с базой знаний и Telegram-рассылки. До полного запуска ещё нужны Instagram/WhatsApp/TikTok credentials, платёжный провайдер и production-наблюдаемость. При росте нагрузки PostgreSQL outbox можно вынести в Redis/BullMQ без изменения продуктового API.
 
 Полный порядок работ и сравнение с ChatPlace: [`docs/CHATPLACE_PARITY.md`](docs/CHATPLACE_PARITY.md).
 Порядок production-развёртывания, резервного копирования и восстановления: [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md).

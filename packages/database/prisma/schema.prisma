@@ -56,6 +56,7 @@ model Workspace {
   billingRequests BillingRequest[]
   auditLogs       AuditLog[]
   privacyRequests PrivacyRequest[]
+  broadcastCampaigns BroadcastCampaign[]
 
   @@map("workspaces")
 }
@@ -92,6 +93,7 @@ model ChannelAccount {
   conversations Conversation[]
   aiAgentChannel AiAgentChannel?
   automationEvents AutomationEvent[]
+  broadcastCampaigns BroadcastCampaign[]
 
   @@unique([provider, externalId])
   @@map("channel_accounts")
@@ -110,6 +112,9 @@ model Contact {
   tags           String[]       @default([])
   note           String?
   language       String         @default("ru")
+  marketingConsent Boolean      @default(false) @map("marketing_consent")
+  marketingConsentAt DateTime?  @map("marketing_consent_at")
+  marketingOptOutAt DateTime?   @map("marketing_opt_out_at")
   createdAt      DateTime       @default(now()) @map("created_at")
   lastActivityAt DateTime       @default(now()) @map("last_activity_at")
   workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -118,6 +123,7 @@ model Contact {
   deals          Deal[]
   automationRuns AutomationRun[]
   automationEvents AutomationEvent[]
+  broadcastDeliveries BroadcastDelivery[]
 
   @@map("contacts")
 }
@@ -156,6 +162,7 @@ model Conversation {
   messages         Message[]
   automationRuns   AutomationRun[]
   automationEvents AutomationEvent[]
+  broadcastDeliveries BroadcastDelivery[]
 
   @@unique([channelAccountId, externalThreadId])
   @@map("conversations")
@@ -448,6 +455,59 @@ model PrivacyRequest {
   @@index([email, status])
   @@index([workspaceId, createdAt])
   @@map("privacy_requests")
+}
+
+model BroadcastCampaign {
+  id               String              @id @default(uuid())
+  workspaceId      String              @map("workspace_id")
+  channelAccountId String              @map("channel_account_id")
+  name             String
+  message          String
+  tags             String[]            @default([])
+  tagMatch         String              @default("ANY") @map("tag_match")
+  status           String              @default("DRAFT")
+  scheduledAt      DateTime?           @map("scheduled_at")
+  startedAt        DateTime?           @map("started_at")
+  completedAt      DateTime?           @map("completed_at")
+  audienceCount    Int                 @default(0) @map("audience_count")
+  sentCount        Int                 @default(0) @map("sent_count")
+  failedCount      Int                 @default(0) @map("failed_count")
+  skippedCount     Int                 @default(0) @map("skipped_count")
+  createdBy        String              @map("created_by")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channelAccount   ChannelAccount      @relation(fields: [channelAccountId], references: [id], onDelete: Restrict)
+  deliveries       BroadcastDelivery[]
+
+  @@index([workspaceId, status, scheduledAt])
+  @@map("broadcast_campaigns")
+}
+
+model BroadcastDelivery {
+  id                String            @id @default(uuid())
+  campaignId        String            @map("campaign_id")
+  contactId         String            @map("contact_id")
+  conversationId    String            @map("conversation_id")
+  status            String            @default("PENDING")
+  attempts          Int               @default(0)
+  maxAttempts       Int               @default(5) @map("max_attempts")
+  availableAt       DateTime          @default(now()) @map("available_at")
+  lockedAt          DateTime?         @map("locked_at")
+  lockedBy          String?           @map("locked_by")
+  providerMessageId String?           @map("provider_message_id")
+  error             String?
+  sentAt            DateTime?         @map("sent_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  campaign          BroadcastCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact           Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  conversation      Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contactId])
+  @@index([status, availableAt])
+  @@index([campaignId, status])
+  @@map("broadcast_deliveries")
 }
 
 model Deal {
