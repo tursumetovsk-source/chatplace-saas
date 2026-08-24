@@ -46,6 +46,10 @@ model Workspace {
   aiAgentChannels AiAgentChannel[]
   knowledgeDocuments KnowledgeDocument[]
   automationEvents AutomationEvent[]
+  subscription    WorkspaceSubscription?
+  usageCounters   UsageCounter[]
+  usageEvents     UsageEvent[]
+  billingRequests BillingRequest[]
 
   @@map("workspaces")
 }
@@ -332,6 +336,66 @@ model KnowledgeDocument {
 
   @@index([aiAgentId, status])
   @@map("knowledge_documents")
+}
+
+model WorkspaceSubscription {
+  id                     String    @id @default(uuid())
+  workspaceId            String    @unique @map("workspace_id")
+  plan                   String    @default("PRO")
+  status                 String    @default("TRIALING")
+  trialEndsAt            DateTime? @map("trial_ends_at")
+  currentPeriodStart     DateTime  @map("current_period_start")
+  currentPeriodEnd       DateTime  @map("current_period_end")
+  externalCustomerId     String?   @map("external_customer_id")
+  externalSubscriptionId String?   @map("external_subscription_id")
+  cancelAtPeriodEnd      Boolean   @default(false) @map("cancel_at_period_end")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  workspace              Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_subscriptions")
+}
+
+model UsageCounter {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  periodStart DateTime  @map("period_start")
+  metric      String
+  quantity    Int       @default(0)
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, periodStart, metric])
+  @@map("usage_counters")
+}
+
+model UsageEvent {
+  id             String    @id @default(uuid())
+  workspaceId    String    @map("workspace_id")
+  metric         String
+  quantity       Int       @default(1)
+  idempotencyKey String?   @unique @map("idempotency_key")
+  metadata       Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, metric, createdAt])
+  @@map("usage_events")
+}
+
+model BillingRequest {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  requestedBy String    @map("requested_by")
+  plan        String
+  status      String    @default("REQUESTED")
+  note        String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@map("billing_requests")
 }
 
 model Deal {

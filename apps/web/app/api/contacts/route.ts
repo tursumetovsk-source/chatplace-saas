@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../lib/auth-context';
+import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
 
 function unauthorized() {
   return NextResponse.json({ error: 'Требуется вход в аккаунт' }, { status: 401 });
@@ -59,6 +60,12 @@ export async function POST(request: NextRequest) {
     ? body.tags.filter((tag): tag is string => typeof tag === 'string').map(tag => tag.trim()).filter(Boolean).slice(0, 20)
     : [];
 
+  try {
+    await assertWorkspaceQuota(account.workspaceId, 'CONTACTS');
+  } catch (error) {
+    if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+    throw error;
+  }
   const contact = await prisma.contact.create({
     data: {
       workspaceId: account.workspaceId,
@@ -77,4 +84,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ contact }, { status: 201 });
 }
-

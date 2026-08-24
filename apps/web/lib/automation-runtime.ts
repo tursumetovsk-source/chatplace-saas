@@ -3,6 +3,7 @@ import { validateAutomationGraph, type ValidatedAutomationGraph } from './automa
 import { decryptCredential } from './credentials';
 import { generateAgentReply } from './openai';
 import { sendTelegramMessage, TelegramApiError } from './telegram';
+import { assertWorkspaceQuota, recordUsage } from './billing';
 
 export interface InboundAutomationEvent {
   workspaceId: string;
@@ -64,8 +65,11 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
 
   let message = await prisma.message.findUnique({ where: { automationStepId } });
   if (message?.status === 'SENT' || message?.status === 'DELIVERED' || message?.status === 'READ') {
+    await recordUsage({ workspaceId: event.workspaceId, metric: 'OUTBOUND_MESSAGES', idempotencyKey: message.id, metadata: { senderType: 'SYSTEM' } })
+      .catch(error => console.error('[usage.outbound.automation.repair]', error));
     return { messageId: message.id, providerMessageId: message.providerMessageId, text: message.text, duplicatePrevented: true };
   }
+  await assertWorkspaceQuota(event.workspaceId, 'OUTBOUND_MESSAGES');
   message = message
     ? await prisma.message.update({ where: { id: message.id }, data: { status: 'PENDING' } })
     : await prisma.message.create({
@@ -98,6 +102,8 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
       data: { providerMessageId: String(sent.message_id), status: 'SENT', deliveredAt: new Date(sent.date * 1000) }
     });
     await prisma.conversation.update({ where: { id: event.conversationId }, data: { lastMessageAt: new Date(), mode: 'HYBRID' } });
+    await recordUsage({ workspaceId: event.workspaceId, metric: 'OUTBOUND_MESSAGES', idempotencyKey: message.id, metadata: { senderType: 'SYSTEM' } })
+      .catch(error => console.error('[usage.outbound.automation]', error));
     return { messageId: message.id, providerMessageId: message.providerMessageId, text };
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Ошибка доставки';
@@ -135,8 +141,16 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
 
   const existingMessage = await prisma.message.findUnique({ where: { automationStepId } });
   if (existingMessage?.status === 'SENT' || existingMessage?.status === 'DELIVERED' || existingMessage?.status === 'READ') {
+    await Promise.all([
+      recordUsage({ workspaceId: event.workspaceId, metric: 'OUTBOUND_MESSAGES', idempotencyKey: existingMessage.id, metadata: { senderType: 'AI' } }),
+      recordUsage({ workspaceId: event.workspaceId, metric: 'AI_REPLIES', idempotencyKey: existingMessage.id, metadata: { aiAgentId: agent.id } })
+    ]).catch(error => console.error('[usage.ai.repair]', error));
     return { messageId: existingMessage.id, agentId: agent.id, duplicatePrevented: true };
   }
+  await Promise.all([
+    assertWorkspaceQuota(event.workspaceId, 'OUTBOUND_MESSAGES'),
+    assertWorkspaceQuota(event.workspaceId, 'AI_REPLIES')
+  ]);
   let reply: { answer: string; handoff: boolean; reason: string };
   if (existingMessage) {
     const payload = existingMessage.payload && typeof existingMessage.payload === 'object' && !Array.isArray(existingMessage.payload)
@@ -214,6 +228,10 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
       where: { id: event.conversationId },
       data: { lastMessageAt: new Date(), mode: reply.handoff ? 'HUMAN' : 'AI' }
     });
+    await Promise.all([
+      recordUsage({ workspaceId: event.workspaceId, metric: 'OUTBOUND_MESSAGES', idempotencyKey: message.id, metadata: { senderType: 'AI' } }),
+      recordUsage({ workspaceId: event.workspaceId, metric: 'AI_REPLIES', idempotencyKey: message.id, metadata: { aiAgentId: agent.id } })
+    ]).catch(error => console.error('[usage.ai]', error));
     return { messageId: message.id, agentId: agent.id, handoff: reply.handoff, reason: reply.reason };
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Ошибка доставки AI-ответа';

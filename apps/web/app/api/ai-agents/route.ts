@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../lib/auth-context';
+import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
 
 const agentInclude = {
   knowledgeDocuments: { orderBy: { createdAt: 'desc' as const } },
@@ -33,6 +34,12 @@ export async function POST(request: NextRequest) {
   const systemPrompt = typeof body?.systemPrompt === 'string' && body.systemPrompt.trim()
     ? body.systemPrompt.trim()
     : 'Вы — консультант компании. Отвечайте точно, кратко и помогайте клиенту перейти к следующему шагу.';
+  try {
+    await assertWorkspaceQuota(account.workspaceId, 'AI_AGENTS');
+  } catch (error) {
+    if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+    throw error;
+  }
   const agent = await prisma.aiAgent.create({
     data: {
       workspaceId: account.workspaceId,

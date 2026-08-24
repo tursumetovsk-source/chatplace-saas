@@ -1,7 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../../lib/auth-context';
 import { generateAgentReply, OpenAIRequestError, type AgentHistoryMessage } from '../../../../../lib/openai';
+import { assertWorkspaceQuota, QuotaExceededError, recordUsage } from '../../../../../lib/billing';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ agentId: string }> }) {
   const account = await getAccountContext();
@@ -23,6 +25,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }).slice(-agent.memoryMessageLimit)
     : [];
   try {
+    await assertWorkspaceQuota(account.workspaceId, 'AI_REPLIES');
     const reply = await generateAgentReply({
       model: agent.model,
       systemPrompt: agent.systemPrompt,
@@ -33,8 +36,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       maxOutputTokens: agent.maxOutputTokens,
       temperature: agent.temperature
     });
+    await recordUsage({
+      workspaceId: account.workspaceId,
+      metric: 'AI_REPLIES',
+      idempotencyKey: `test:${randomUUID()}`,
+      metadata: { aiAgentId: agent.id, source: 'TEST_CHAT' }
+    }).catch(error => console.error('[usage.ai.test]', error));
     return NextResponse.json({ reply });
   } catch (error) {
+    if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
     const status = error instanceof OpenAIRequestError ? error.status : 500;
     return NextResponse.json({ error: error instanceof Error ? error.message : agent.fallbackMessage }, { status });
   }

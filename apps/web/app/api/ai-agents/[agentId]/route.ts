@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../lib/auth-context';
+import { assertWorkspaceQuota, QuotaExceededError } from '../../../../lib/billing';
 
 const agentInclude = {
   knowledgeDocuments: { orderBy: { createdAt: 'desc' as const } },
@@ -18,7 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!account) return NextResponse.json({ error: 'Требуется вход в аккаунт' }, { status: 401 });
   if (account.role !== 'OWNER' && account.role !== 'ADMIN') return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 });
   const { agentId } = await params;
-  const existing = await prisma.aiAgent.findFirst({ where: { id: agentId, workspaceId: account.workspaceId }, select: { id: true } });
+  const existing = await prisma.aiAgent.findFirst({ where: { id: agentId, workspaceId: account.workspaceId }, select: { id: true, status: true } });
   if (!existing) return NextResponse.json({ error: 'AI-агент не найден' }, { status: 404 });
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -42,6 +43,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const maxOutputTokens = body.maxOutputTokens === undefined ? undefined : Math.min(2_000, Math.max(100, Number(body.maxOutputTokens) || 600));
   const temperature = body.temperature === undefined ? undefined : Math.min(1, Math.max(0, Number(body.temperature) || 0));
   const status = body.status === 'INACTIVE' ? 'INACTIVE' : body.status === 'ACTIVE' ? 'ACTIVE' : undefined;
+  if (status === 'ACTIVE' && existing.status !== 'ACTIVE') {
+    try {
+      await assertWorkspaceQuota(account.workspaceId, 'AI_AGENTS');
+    } catch (error) {
+      if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+      throw error;
+    }
+  }
 
   const agent = await prisma.$transaction(async transaction => {
     if (channelIds) {

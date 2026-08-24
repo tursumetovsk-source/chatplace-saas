@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../lib/auth-context';
+import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
 import { graphAsJson, validateAutomationGraph } from '../../../lib/automation-graph';
 
 export async function GET() {
@@ -28,10 +29,15 @@ export async function POST(request: NextRequest) {
   if (!name || name.length > 120) return NextResponse.json({ error: 'Укажите название до 120 символов' }, { status: 400 });
   const validated = validateAutomationGraph(body?.graph);
   if (!validated.graph) return NextResponse.json({ error: validated.error }, { status: 400 });
+  try {
+    await assertWorkspaceQuota(account.workspaceId, 'AUTOMATIONS');
+  } catch (error) {
+    if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+    throw error;
+  }
 
   const automation = await prisma.automation.create({
     data: { workspaceId: account.workspaceId, name, status: 'DRAFT', graph: graphAsJson(validated.graph) }
   });
   return NextResponse.json({ automation }, { status: 201 });
 }
-

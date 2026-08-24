@@ -17,7 +17,7 @@ This document tracks product parity against current public ChatPlace materials a
 | AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Responses API, local conversation memory, file-search knowledge, channel assignment, testing and operator handoff; account scan/corrections analytics remain | Partial |
 | CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM board and `crm.create_deal` type; amoCRM connector missing | Partial |
 | Analytics | Contact, automation and knowledge-topic analytics | Dashboard and analytics screens | Demo only |
-| Billing and limits | Free/Pro/Creator/Premium, active-contact and AI-credit limits | Billing/settings screen | Demo only |
+| Billing and limits | Free/Pro/Creator/Premium, active-contact and AI-credit limits | Subscription/trial records, KZT plans, monthly usage ledger, server-enforced quotas and upgrade requests; payment provider webhooks remain | Partial |
 | Gamification | Instagram games, points, leaderboards and related conditions | Not implemented | Missing |
 | AI creator | Reels analysis plus carousel/image/video/script generation | Not implemented | Missing |
 
@@ -40,7 +40,7 @@ This document tracks product parity against current public ChatPlace materials a
 
 ### P1 — commercial launch
 
-10. Subscriptions, trials, quotas, AI credits, invoices and plan enforcement.
+10. Subscriptions, trials, quotas, AI credits, invoices and plan enforcement. **Trials, quotas and usage ledger implemented; provider checkout/webhooks and invoices remain.**
 11. Broadcast scheduling, consent/opt-out rules and audience estimation.
 12. Monitoring, audit logs, backups, rate limits, abuse prevention and support tooling.
 13. Unit, integration, webhook-contract and browser end-to-end tests.

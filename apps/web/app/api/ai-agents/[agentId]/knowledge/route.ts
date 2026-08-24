@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../../lib/auth-context';
 import { addFileToVectorStore, createVectorStore, OpenAIRequestError, uploadKnowledgeFile } from '../../../../../lib/openai';
+import { assertWorkspaceQuota, QuotaExceededError } from '../../../../../lib/billing';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'txt', 'md', 'csv', 'json', 'html', 'pptx']);
@@ -20,6 +21,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
   if (!ALLOWED_EXTENSIONS.has(extension)) return NextResponse.json({ error: 'Поддерживаются PDF, DOC/DOCX, TXT, MD, CSV, JSON, HTML и PPTX' }, { status: 400 });
   if (file.size <= 0 || file.size > MAX_FILE_SIZE) return NextResponse.json({ error: 'Размер документа должен быть от 1 байта до 20 МБ' }, { status: 400 });
+  try {
+    await assertWorkspaceQuota(account.workspaceId, 'KNOWLEDGE_BYTES', file.size);
+  } catch (error) {
+    if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+    throw error;
+  }
 
   const document = await prisma.knowledgeDocument.create({
     data: {

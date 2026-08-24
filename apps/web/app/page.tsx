@@ -528,32 +528,33 @@ export default function LandingPage() {
             <h2 id="pricing-title" className="font-display-extended text-3xl sm:text-5xl font-extrabold tracking-tight">
               Начните с демо. Масштабируйтесь без смены платформы.
             </h2>
-            <p className="text-[#727272] text-base sm:text-lg">Финальный тариф зависит от каналов, объёма диалогов и задач команды.</p>
+            <p className="text-[#727272] text-base sm:text-lg">Понятные месячные лимиты без скрытых списаний. Для новых аккаунтов — 14 дней тарифа «Про».</p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
             {[
-              { name: 'Демо', eyebrow: 'Познакомиться с продуктом', price: 'Бесплатно', accent: 'bg-white', features: ['Интерактивный кабинет', 'Готовая автоворонка', 'Пример Inbox и CRM'], cta: 'Открыть демо' },
-              { name: 'Рост', eyebrow: 'Для отдела продаж', price: 'По запросу', accent: 'bg-[#BEFF53]', features: ['Омниканальный Inbox', 'AI-агенты и база знаний', 'Автоматизации и аналитика'], cta: 'Запросить доступ' },
-              { name: 'Бизнес', eyebrow: 'Для нескольких команд', price: 'Индивидуально', accent: 'bg-[#261930] text-white', features: ['Роли и рабочие пространства', 'Расширенные лимиты', 'Приоритетное внедрение'], cta: 'Обсудить проект' }
+              { name: 'Демо', eyebrow: 'Посмотреть продукт', price: 'Бесплатно', accent: 'bg-white', features: ['Интерактивный кабинет', 'Готовая автоворонка', 'Пример Inbox и CRM'], cta: 'Открыть демо', dark: false },
+              { name: 'Старт', eyebrow: 'Для малого бизнеса', price: '29 000 ₸ / мес', accent: 'bg-white', features: ['1 000 контактов', '5 000 сообщений', '500 ответов AI'], cta: 'Начать 14 дней', dark: false },
+              { name: 'Про', eyebrow: 'Для отдела продаж', price: '79 000 ₸ / мес', accent: 'bg-[#BEFF53]', features: ['10 000 контактов', '30 автоматизаций', '5 000 ответов AI'], cta: 'Начать 14 дней', dark: false },
+              { name: 'Бизнес', eyebrow: 'Для нескольких команд', price: 'По запросу', accent: 'bg-[#261930] text-white', features: ['До 20 каналов', 'Повышенные лимиты', 'Приоритетное внедрение'], cta: 'Обсудить проект', dark: true }
             ].map((plan, index) => (
               <article key={plan.name} className={`rounded-[26px] border border-black/10 p-6 sm:p-7 shadow-subtle flex flex-col min-h-[390px] ${plan.accent}`}>
                 <div className="mb-8">
-                  <p className={`text-xs font-bold mb-2 ${index === 2 ? 'text-zinc-300' : 'text-[#727272]'}`}>{plan.eyebrow}</p>
+                  <p className={`text-xs font-bold mb-2 ${plan.dark ? 'text-zinc-300' : 'text-[#727272]'}`}>{plan.eyebrow}</p>
                   <h3 className="font-display-extended text-3xl font-extrabold">{plan.name}</h3>
                   <p className="text-xl font-extrabold mt-4">{plan.price}</p>
                 </div>
                 <ul className="space-y-3 mb-8 flex-1">
                   {plan.features.map(feature => (
                     <li key={feature} className="flex items-start gap-2.5 text-sm font-medium">
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${index === 2 ? 'bg-white/15 text-[#BEFF53]' : 'bg-black/10'}`}><Check className="w-3 h-3" /></span>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${plan.dark ? 'bg-white/15 text-[#BEFF53]' : 'bg-black/10'}`}><Check className="w-3 h-3" /></span>
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
                 <button
                   onClick={() => index === 0 ? window.location.assign('/dashboard') : openAuth('sign-up')}
-                  className={`w-full rounded-full py-3.5 px-5 text-sm font-extrabold transition ${index === 2 ? 'bg-[#BEFF53] text-[#0C0C0C] hover:bg-[#b0f542]' : 'bg-[#0C0C0C] text-white hover:bg-[#261930]'}`}
+                  className={`w-full rounded-full py-3.5 px-5 text-sm font-extrabold transition ${plan.dark ? 'bg-[#BEFF53] text-[#0C0C0C] hover:bg-[#b0f542]' : 'bg-[#0C0C0C] text-white hover:bg-[#261930]'}`}
                 >
                   {plan.cta}
                 </button>

@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../lib/auth-context';
+import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
 import { encryptCredential } from '../../../lib/credentials';
 import { getTelegramBot, setTelegramWebhook, TelegramApiError } from '../../../lib/telegram';
 
@@ -64,10 +65,18 @@ export async function POST(request: NextRequest) {
     const externalId = String(bot.id);
     const existing = await prisma.channelAccount.findUnique({
       where: { provider_externalId: { provider: 'TELEGRAM', externalId } },
-      select: { id: true, workspaceId: true }
+      select: { id: true, workspaceId: true, status: true }
     });
     if (existing && existing.workspaceId !== account.workspaceId) {
       return NextResponse.json({ error: 'Этот Telegram-бот уже подключён к другому рабочему пространству' }, { status: 409 });
+    }
+    if (!existing || existing.status !== 'ACTIVE') {
+      try {
+        await assertWorkspaceQuota(account.workspaceId, 'CHANNELS');
+      } catch (error) {
+        if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+        throw error;
+      }
     }
 
     const channelId = existing?.id ?? randomUUID();
@@ -118,4 +127,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Не удалось подключить Telegram-бота' }, { status: 500 });
   }
 }
-

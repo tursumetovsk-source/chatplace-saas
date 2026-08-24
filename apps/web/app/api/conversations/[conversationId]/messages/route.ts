@@ -3,6 +3,7 @@ import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../../lib/auth-context';
 import { decryptCredential } from '../../../../../lib/credentials';
 import { sendTelegramMessage, TelegramApiError } from '../../../../../lib/telegram';
+import { assertWorkspaceQuota, QuotaExceededError, recordUsage } from '../../../../../lib/billing';
 
 async function findConversation(workspaceId: string, conversationId: string) {
   return prisma.conversation.findFirst({
@@ -40,6 +41,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const text = typeof body?.text === 'string' ? body.text.trim() : '';
   if (!text || text.length > 5000) {
     return NextResponse.json({ error: 'Сообщение должно содержать от 1 до 5000 символов' }, { status: 400 });
+  }
+  try {
+    await assertWorkspaceQuota(account.workspaceId, 'OUTBOUND_MESSAGES');
+  } catch (error) {
+    if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+    throw error;
   }
 
   const now = new Date();
@@ -79,6 +86,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: reason, message }, { status: 502 });
     }
   }
+
+  await recordUsage({
+    workspaceId: account.workspaceId,
+    metric: 'OUTBOUND_MESSAGES',
+    idempotencyKey: message.id,
+    metadata: { senderType: 'MANAGER', provider: conversation.channelAccount.provider }
+  }).catch(error => console.error('[usage.outbound.manager]', error));
 
   return NextResponse.json({ message }, { status: 201 });
 }

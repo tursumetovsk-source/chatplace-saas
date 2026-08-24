@@ -46,6 +46,18 @@ export async function POST(request: Request) {
       await transaction.workspaceMember.create({
         data: { userId: user.id, workspaceId: workspace.id, role: 'OWNER' }
       });
+      const trialStart = new Date();
+      const trialEnd = new Date(trialStart.getTime() + 14 * 24 * 60 * 60 * 1000);
+      await transaction.workspaceSubscription.create({
+        data: {
+          workspaceId: workspace.id,
+          plan: 'PRO',
+          status: 'TRIALING',
+          trialEndsAt: trialEnd,
+          currentPeriodStart: trialStart,
+          currentPeriodEnd: trialEnd
+        }
+      });
       return { user, workspace, role: 'OWNER' };
     });
 
