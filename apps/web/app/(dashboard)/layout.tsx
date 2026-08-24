@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
@@ -75,18 +75,41 @@ const quickMobileItems: NavItem[] = [
   { label: 'Ещё', href: '#mobile-menu', icon: Menu }
 ];
 
+interface SessionInfo {
+  mode: 'demo' | 'account';
+  authenticated: boolean;
+  user?: { firstName: string; email: string };
+  workspace?: { name: string };
+  role?: string;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [session, setSession] = useState<SessionInfo>({ mode: 'demo', authenticated: false });
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(response => response.ok ? response.json() : null)
+      .then(payload => payload && setSession(payload))
+      .catch(() => undefined);
+  }, []);
 
   const isActive = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
 
-  const exitDemo = () => {
+  const exitApp = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
     window.localStorage.removeItem('virale-onboarding-progress');
     setMobileNavOpen(false);
-    router.push('/');
+    router.replace('/');
+    router.refresh();
   };
+
+  const workspaceName = session.workspace?.name || 'Virale Studio';
+  const profileName = session.user?.firstName || 'Владелец';
+  const profileMeta = session.mode === 'account' ? session.user?.email || session.role || 'Аккаунт' : 'Демо-режим';
+  const exitLabel = session.mode === 'account' ? 'Выйти из аккаунта' : 'Выйти из демо';
 
   const renderNavLink = (item: NavItem, mobile = false) => {
     const Icon = item.icon;
@@ -141,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="md:hidden fixed inset-x-0 top-[65px] bottom-0 z-40 overflow-y-auto border-b border-[#E5E7EC] bg-white p-4 shadow-xl">
           <Link href="/settings" onClick={() => setMobileNavOpen(false)} className="mb-5 flex items-center gap-3 rounded-2xl border border-[#E5E7EC] bg-[#F7F8FB] p-3.5">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#261930] text-xs font-extrabold text-[#BEFF53]">VS</span>
-            <span><strong className="block text-sm">Virale Studio</strong><span className="text-xs text-[#777A83]">Демо-пространство</span></span>
+            <span className="min-w-0"><strong className="block truncate text-sm">{workspaceName}</strong><span className="text-xs text-[#777A83]">{session.mode === 'account' ? 'Рабочее пространство' : 'Демо-пространство'}</span></span>
           </Link>
           <nav className="space-y-5">
             {navSections.map(section => (
@@ -156,8 +179,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/" onClick={() => setMobileNavOpen(false)} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#DDE0E7] text-xs font-extrabold text-[#565961]">
               <ArrowLeft className="h-4 w-4" /> На лендинг
             </Link>
-            <button onClick={exitDemo} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#111217] text-xs font-extrabold text-white">
-              <LogOut className="h-4 w-4" /> Выйти из демо
+            <button onClick={exitApp} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#111217] text-xs font-extrabold text-white">
+              <LogOut className="h-4 w-4" /> Выйти
             </button>
           </div>
         </div>
@@ -173,7 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <Link href="/settings" className="mx-3 mt-4 hidden items-center gap-3 rounded-2xl border border-[#E5E7EC] bg-[#F7F8FB] p-3 hover:border-[#C9CED8] xl:flex">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#261930] text-xs font-extrabold text-[#BEFF53]">VS</span>
-          <span className="min-w-0"><strong className="block truncate text-sm">Virale Studio</strong><span className="block truncate text-[11px] text-[#777A83]">Демо-пространство</span></span>
+          <span className="min-w-0"><strong className="block truncate text-sm">{workspaceName}</strong><span className="block truncate text-[11px] text-[#777A83]">{session.mode === 'account' ? 'Рабочее пространство' : 'Демо-пространство'}</span></span>
         </Link>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
@@ -191,13 +214,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <ArrowLeft className="h-5 w-5 shrink-0" />
             <span className="hidden text-sm font-bold xl:inline">На лендинг</span>
           </Link>
-          <button onClick={exitDemo} title="Выйти из демо" className="flex h-11 w-full items-center justify-center gap-3 rounded-xl text-[#5F626A] transition hover:bg-red-50 hover:text-red-600 xl:justify-start xl:px-3">
+          <button onClick={exitApp} title={exitLabel} className="flex h-11 w-full items-center justify-center gap-3 rounded-xl text-[#5F626A] transition hover:bg-red-50 hover:text-red-600 xl:justify-start xl:px-3">
             <LogOut className="h-5 w-5 shrink-0" />
-            <span className="hidden text-sm font-bold xl:inline">Выйти из демо</span>
+            <span className="hidden text-sm font-bold xl:inline">{exitLabel}</span>
           </button>
           <div className="hidden items-center gap-3 rounded-xl px-2 py-2 xl:flex">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25B7ED] text-xs font-extrabold text-white">V</span>
-            <span className="min-w-0"><strong className="block truncate text-xs">Владелец</strong><span className="block truncate text-[10px] text-[#8B8E96]">Демо-режим</span></span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25B7ED] text-xs font-extrabold uppercase text-white">{profileName.slice(0, 1)}</span>
+            <span className="min-w-0"><strong className="block truncate text-xs">{profileName}</strong><span className="block truncate text-[10px] text-[#8B8E96]">{profileMeta}</span></span>
           </div>
         </div>
       </aside>

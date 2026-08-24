@@ -5,6 +5,7 @@ const nextConfig = {
     '@chatplace/automation-engine',
     '@chatplace/channel-sdk',
     '@chatplace/ai-sdk',
+    '@chatplace/database',
     '@chatplace/ui'
   ],
   reactStrictMode: true

@@ -1,11 +1,13 @@
+import { PrismaClient } from '@prisma/client';
+
 export * from '@prisma/client';
 
-export interface DatabaseServiceConfig {
-  connectionString?: string;
-}
+const globalDatabase = globalThis as unknown as { prisma?: PrismaClient };
 
-export class DatabaseClientMock {
-  async connect() {
-    console.log('[Database] Connected to PostgreSQL instance');
-  }
+export const prisma = globalDatabase.prisma ?? new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error']
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  globalDatabase.prisma = prisma;
 }

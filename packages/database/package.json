@@ -5,7 +5,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "prisma generate --schema prisma/schema.prisma && tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate"
   },
@@ -13,6 +13,7 @@
     "@prisma/client": "^6.3.0"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "prisma": "^6.3.0",
     "typescript": "^5.7.0"
   }
