@@ -24,6 +24,7 @@ export async function GET(request: Request) {
       broadcastCampaigns: { include: { deliveries: { orderBy: { createdAt: 'desc' }, take: 10_000 } } },
       contactSegments: true,
       invitations: { select: { id: true, email: true, role: true, status: true, expiresAt: true, acceptedAt: true, createdAt: true } },
+      integrations: { select: { id: true, name: true, kind: true, baseUrl: true, status: true, createdBy: true, createdAt: true, updatedAt: true } },
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10_000 }
     }
   });

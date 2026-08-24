@@ -4,6 +4,7 @@ import { decryptCredential } from './credentials';
 import { generateAgentReply } from './openai';
 import { sendTelegramMessage, TelegramApiError } from './telegram';
 import { assertWorkspaceQuota, recordUsage } from './billing';
+import { ExternalWebhookError, sendWorkspaceWebhook } from './external-webhooks';
 
 export interface InboundAutomationEvent {
   workspaceId: string;
@@ -45,6 +46,54 @@ function triggerMatches(node: ValidatedAutomationGraph['nodes'][number], event: 
 
 function resolveTemplate(template: string, values: Record<string, string>) {
   return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, key: string) => values[key] ?? '');
+}
+
+function resolveTemplateValue(value: unknown, variables: Record<string, string>): unknown {
+  if (typeof value === 'string') return resolveTemplate(value, variables);
+  if (Array.isArray(value)) return value.map(item => resolveTemplateValue(item, variables));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, resolveTemplateValue(item, variables)]));
+  return value;
+}
+
+async function executeHttpRequestNode(config: Record<string, unknown>, event: InboundAutomationEvent, variables: Record<string, string>, automationStepId: string) {
+  const integrationId = typeof config.integrationId === 'string' ? config.integrationId.trim() : '';
+  if (!integrationId) throw new Error('В HTTP-блоке не выбрана интеграция');
+  const [integration, contact] = await Promise.all([
+    prisma.workspaceIntegration.findFirst({ where: { id: integrationId, workspaceId: event.workspaceId, status: 'ACTIVE' } }),
+    prisma.contact.findFirst({ where: { id: event.contactId, workspaceId: event.workspaceId } })
+  ]);
+  if (!integration) throw new Error('Webhook-интеграция недоступна');
+  if (!contact) throw new Error('Контакт для HTTP-запроса не найден');
+  const templateValues = {
+    ...variables,
+    'contact.id': contact.id, 'contact.firstName': contact.firstName, 'contact.lastName': contact.lastName || '',
+    'contact.email': contact.email || '', 'contact.phone': contact.phone || '', 'contact.username': contact.username || '',
+    'event.text': event.text, 'event.id': event.eventId
+  };
+  let bodyConfig: Record<string, unknown> = {};
+  if (config.body && typeof config.body === 'object' && !Array.isArray(config.body)) bodyConfig = config.body as Record<string, unknown>;
+  else if (typeof config.bodyJson === 'string' && config.bodyJson.trim()) {
+    try {
+      const parsed = JSON.parse(config.bodyJson) as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error();
+      bodyConfig = parsed as Record<string, unknown>;
+    } catch { throw new Error('Body HTTP-блока должен быть корректным JSON-объектом'); }
+  }
+  const customBody = resolveTemplateValue(bodyConfig, templateValues) as Record<string, unknown>;
+  const result = await sendWorkspaceWebhook({
+    baseUrl: integration.baseUrl,
+    path: typeof config.path === 'string' ? config.path.slice(0, 1_000) : undefined,
+    method: typeof config.method === 'string' ? config.method : 'POST',
+    credentialsEncrypted: integration.credentialsEncrypted,
+    idempotencyKey: automationStepId,
+    payload: {
+      event: { id: event.eventId, provider: event.provider, text: event.text, conversationId: event.conversationId },
+      contact: { id: contact.id, firstName: contact.firstName, lastName: contact.lastName, email: contact.email, phone: contact.phone, username: contact.username, city: contact.city, tags: contact.tags, customFields: contact.customFields },
+      variables,
+      data: customBody
+    }
+  });
+  return { integrationId: integration.id, status: result.status, response: result.body };
 }
 
 async function executeMessageNode(config: Record<string, unknown>, event: InboundAutomationEvent, variables: Record<string, string>, automationStepId: string) {
@@ -310,11 +359,15 @@ async function executeNode(
   if (node.type === 'ai.agent') {
     return { status: 'SUCCESS', output: await executeAiAgentNode(node.config, event, automationStepId) };
   }
+  if (node.type === 'http.request') {
+    return { status: 'SUCCESS', output: await executeHttpRequestNode(node.config, event, variables, automationStepId) };
+  }
   return { status: 'FAILED', output: { reason: `Неподдерживаемый блок: ${node.type}` } };
 }
 
 function isRetryableError(error: unknown) {
   if (error instanceof TelegramApiError) return error.status === 408 || error.status === 409 || error.status === 429 || error.status >= 500;
+  if (error instanceof ExternalWebhookError) return error.transient;
   if (error instanceof Prisma.PrismaClientKnownRequestError) return ['P1001', 'P1002', 'P2024'].includes(error.code);
   return false;
 }

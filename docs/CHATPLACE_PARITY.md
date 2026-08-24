@@ -11,11 +11,11 @@ This document tracks product parity against current public ChatPlace materials a
 | Projects / workspaces | Projects with connected social accounts | Real accounts, expiring team invitations, role management, workspace switching, signed sessions and isolated PostgreSQL workspaces | Implemented |
 | Channels | Instagram, TikTok, Telegram bots and Telegram Business | Telegram Bot API is end-to-end; Instagram, WhatsApp and TikTok remain planned | Partial |
 | Unified chats and clients | Chats, client profiles, variables and tags | Persistent Inbox, manager assignment, unassigned human-handoff queue, contacts, tags, custom fields, saved segments, CSV import/export and CRM | Implemented core |
-| Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs, publishing, run/step logs, PostgreSQL outbox, delayed resume and idempotent retry; full block editor remains | Partial |
+| Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs, editable core cards including webhook/CRM, publishing, run/step logs, PostgreSQL outbox, delayed resume and idempotent retry; full condition/tag/delay palette remains | Partial |
 | Variables and tags | Stored client variables, reserved variables, filters and segmentation | Runtime variables, template resolution, editable contact fields/tags, saved multi-filter segments and segment-aware broadcasts | Implemented core |
 | Broadcasts | Targeted broadcasts using tags and account audiences | Persistent Telegram campaigns, consent-only audience estimation, scheduling, cancel, delivery queue, retry, opt-out and usage accounting | Implemented for Telegram |
 | AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Responses API, local conversation memory, file-search knowledge, channel assignment, testing and operator handoff; account scan/corrections analytics remain | Partial |
-| CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM board and `crm.create_deal` type; amoCRM connector missing | Partial |
+| CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM, `crm.create_deal` and secure generic HTTPS webhook/CRM actions; native amoCRM OAuth/mapping remains | Partial |
 | Analytics | Contact, automation and knowledge-topic analytics | Live workspace metrics, funnel, channel counts, queue health, failures and audit log; knowledge-topic analytics remain | Partial |
 | Billing and limits | Free/Pro/Creator/Premium, active-contact and AI-credit limits | Subscription/trial records, KZT plans, monthly usage ledger, server-enforced quotas and upgrade requests; payment provider webhooks remain | Partial |
 | Gamification | Instagram games, points, leaderboards and related conditions | Not implemented | Missing |
@@ -52,7 +52,7 @@ This document tracks product parity against current public ChatPlace materials a
 16. Knowledge-topic analytics and answer correction that feeds learning.
 17. Instagram subscription checks, referral flows, gamification and leaderboards.
 18. AI creator for scripts, carousels, images and video.
-19. External CRM connectors and generic HTTP/webhook actions.
+19. External CRM connectors and generic HTTP/webhook actions. **Secure generic HTTPS action implemented; provider-specific OAuth, field mapping and sync remain.**
 
 ## Official ChatPlace references
 

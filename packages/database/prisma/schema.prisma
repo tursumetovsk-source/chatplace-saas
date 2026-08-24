@@ -59,6 +59,7 @@ model Workspace {
   broadcastCampaigns BroadcastCampaign[]
   contactSegments ContactSegment[]
   invitations     WorkspaceInvitation[]
+  integrations    WorkspaceIntegration[]
 
   @@map("workspaces")
 }
@@ -118,6 +119,23 @@ model WorkspaceInvitation {
   @@index([workspaceId, status])
   @@index([email, status])
   @@map("workspace_invitations")
+}
+
+model WorkspaceIntegration {
+  id                   String    @id @default(uuid())
+  workspaceId          String    @map("workspace_id")
+  name                 String
+  kind                 String    @default("WEBHOOK")
+  baseUrl              String    @map("base_url")
+  credentialsEncrypted String?   @map("credentials_encrypted")
+  status               String    @default("ACTIVE")
+  createdBy            String    @map("created_by")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, kind, status])
+  @@map("workspace_integrations")
 }
 
 model Contact {

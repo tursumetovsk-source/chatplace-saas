@@ -16,6 +16,7 @@
 - реальное подключение Telegram Bot API: зашифрованный токен, подписанный webhook, входящие сообщения и ответы из Inbox;
 - сохранение, версионирование и публикация графов автоматизаций с журналом запусков и шагов;
 - запуск Telegram-сценариев по кодовому слову: автоответ, теги, переменные, условия и создание CRM-сделки;
+- редактируемый блок внешнего webhook/CRM: зашифрованная Bearer/HMAC-авторизация, защита от SSRF и DNS-rebinding, ограниченные ответы, idempotency key и retry временных ошибок;
 - PostgreSQL outbox и защищённый Vercel Cron: быстрый webhook, возобновление задержек, блокировка двойной обработки и retry с идемпотентными сообщениями/сделками;
 - реальные AI-агенты на Responses API: настройки, память диалога, база знаний через file search, тестовый чат, привязка к Telegram и передача оператору;
 - 14-дневный Pro-trial, тарифы в KZT, реальные usage-счётчики, серверные квоты и заявки на подключение платного плана;
@@ -50,7 +51,7 @@ pnpm build
 
 ## Важная граница MVP
 
-Без `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY`, `OPENAI_API_KEY` и `CRON_SECRET` публичная версия остаётся безопасным demo-workspace. После настройки доступны реальные аккаунты, контакты, CRM, Telegram, надёжные автоматизации, AI-агенты с базой знаний и Telegram-рассылки. До полного запуска ещё нужны Instagram/WhatsApp/TikTok credentials, платёжный провайдер и production-наблюдаемость. При росте нагрузки PostgreSQL outbox можно вынести в Redis/BullMQ без изменения продуктового API.
+Без `DATABASE_URL`, `AUTH_SECRET`, `CHANNEL_ENCRYPTION_KEY`, `OPENAI_API_KEY` и `CRON_SECRET` публичная версия остаётся безопасным demo-workspace. После настройки доступны реальные аккаунты, контакты, CRM, Telegram, надёжные автоматизации, AI-агенты с базой знаний, Telegram-рассылки и generic HTTPS webhook/CRM actions. До полного запуска ещё нужны Instagram/WhatsApp/TikTok credentials, provider-specific CRM OAuth, платёжный провайдер и production-наблюдаемость. При росте нагрузки PostgreSQL outbox можно вынести в Redis/BullMQ без изменения продуктового API.
 
 Полный порядок работ и сравнение с ChatPlace: [`docs/CHATPLACE_PARITY.md`](docs/CHATPLACE_PARITY.md).
 Порядок production-развёртывания, резервного копирования и восстановления: [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md).

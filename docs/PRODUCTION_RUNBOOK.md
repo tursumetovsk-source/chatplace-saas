@@ -25,6 +25,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 8. Confirm that the automation run appears in Analytics and that no failed/retrying jobs remain.
 9. Import a two-row CSV in staging, verify duplicate matching, then export the same segment and open it in the target spreadsheet application.
 10. Invite a disposable manager account, accept the link, switch workspaces, self-assign a handoff conversation and remove the test member.
+11. In staging, connect a disposable public HTTPS receiver, run the integration test, publish a scenario with a webhook block and verify the signed payload and `Idempotency-Key`.
 
 ## Backups and restore drills
 
@@ -40,6 +41,8 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 - Verify that Vercel Cron is enabled and `CRON_SECRET` matches.
 - Inspect the failed node and delivery error. A temporary Telegram error is retried up to five times with exponential backoff.
 - Do not manually replay a webhook before checking the event/run idempotency key.
+- External webhook steps send the automation step id in `Idempotency-Key`. The receiving CRM must store and honour that key; otherwise a network failure after acceptance can still create a duplicate.
+- External webhook redirects, private/reserved network addresses and payloads/responses larger than 64 KB are rejected. Do not weaken these checks for an internal CRM; expose a narrow authenticated public ingress instead.
 - A provider request can succeed immediately before the worker loses its database connection. This rare boundary can produce a duplicate on retry because Telegram does not offer an idempotency key for `sendMessage`; keep copy safe for an occasional duplicate and review stale-lock incidents before replaying them.
 
 ## Secret rotation
@@ -47,6 +50,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 - Rotate `AUTH_SECRET` only with a planned session logout.
 - Rotating `CHANNEL_ENCRYPTION_KEY` requires re-encrypting stored channel credentials or reconnecting every channel.
 - Revoke a leaked Telegram token in BotFather immediately, then reconnect the channel.
+- Disconnect a leaked CRM webhook in Settings, rotate its Bearer/HMAC secret at the receiver, then create a new integration. Secrets are never returned by the API or data export.
 - Rotate OpenAI and cron keys in Vercel and redeploy.
 
 ## Team access

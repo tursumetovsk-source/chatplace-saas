@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bot, Building2, Check, Clock3, Copy, CreditCard, Database, Download, LoaderCircle, MessageSquare, Send, ShieldCheck, Trash2, UserPlus, Users, Workflow, X } from 'lucide-react';
+import { Bot, Building2, Check, Clock3, Copy, CreditCard, Database, Download, Globe2, LoaderCircle, MessageSquare, Send, ShieldCheck, Trash2, UserPlus, Users, Webhook, Workflow, X } from 'lucide-react';
 import { useAccountMode } from '../../../lib/use-account-mode';
 
 type Metric = 'CONTACTS' | 'CHANNELS' | 'AUTOMATIONS' | 'AI_AGENTS' | 'OUTBOUND_MESSAGES' | 'AI_REPLIES' | 'KNOWLEDGE_BYTES' | 'MEMBERS';
@@ -27,6 +27,7 @@ interface BillingOverview {
 interface TeamMember { id: string; userId: string; role: string; user: { firstName: string; lastName?: string | null; email: string }; _count: { assignedConversations: number } }
 interface TeamInvitation { id: string; email: string; role: string; expiresAt: string; }
 interface WorkspaceOption { id: string; name: string; slug: string; role: string; }
+interface WorkspaceIntegration { id: string; name: string; kind: string; baseUrl: string; status: string; credentialsConfigured: boolean; }
 
 const demoPlan: Plan = {
   code: 'PRO', name: 'Про', description: 'Для растущего отдела продаж', priceMonthlyKzt: 79_000,
@@ -75,6 +76,8 @@ export default function SettingsPage() {
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState('demo');
   const [inviteForm, setInviteForm] = useState({ email: '', role: 'MANAGER' });
   const [inviteUrl, setInviteUrl] = useState('');
+  const [integrations, setIntegrations] = useState<WorkspaceIntegration[]>([]);
+  const [integrationForm, setIntegrationForm] = useState({ name: '', baseUrl: '', bearerToken: '', signingSecret: '' });
 
   const loadBilling = async () => {
     const response = await fetch('/api/billing', { cache: 'no-store' });
@@ -84,12 +87,14 @@ export default function SettingsPage() {
   };
 
   const loadTeam = async () => {
-    const [teamResponse, workspacesResponse] = await Promise.all([fetch('/api/team', { cache: 'no-store' }), fetch('/api/workspaces', { cache: 'no-store' })]);
-    const [team, workspaceData] = await Promise.all([teamResponse.json(), workspacesResponse.json()]);
+    const [teamResponse, workspacesResponse, integrationsResponse] = await Promise.all([fetch('/api/team', { cache: 'no-store' }), fetch('/api/workspaces', { cache: 'no-store' }), fetch('/api/integrations', { cache: 'no-store' })]);
+    const [team, workspaceData, integrationData] = await Promise.all([teamResponse.json(), workspacesResponse.json(), integrationsResponse.json()]);
     if (!teamResponse.ok) throw new Error(team.error || 'Не удалось загрузить команду');
     if (!workspacesResponse.ok) throw new Error(workspaceData.error || 'Не удалось загрузить рабочие пространства');
+    if (!integrationsResponse.ok) throw new Error(integrationData.error || 'Не удалось загрузить интеграции');
     setMembers(team.members as TeamMember[]); setInvitations(team.invitations as TeamInvitation[]); setCurrentRole(team.currentRole as string);
     setWorkspaces(workspaceData.workspaces as WorkspaceOption[]); setCurrentWorkspaceId(workspaceData.currentWorkspaceId as string);
+    setIntegrations(integrationData.integrations as WorkspaceIntegration[]);
   };
 
   useEffect(() => {
@@ -171,6 +176,40 @@ export default function SettingsPage() {
     window.location.assign('/dashboard');
   };
 
+  const createIntegration = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (mode !== 'account') { setIntegrations(current => [{ id: `demo-${Date.now()}`, name: integrationForm.name, kind: 'WEBHOOK', baseUrl: integrationForm.baseUrl, status: 'ACTIVE', credentialsConfigured: Boolean(integrationForm.bearerToken || integrationForm.signingSecret) }, ...current]); setIntegrationForm({ name: '', baseUrl: '', bearerToken: '', signingSecret: '' }); setNotice('Webhook добавлен в демо'); return; }
+    setLoading(true); setError('');
+    try {
+      const response = await fetch('/api/integrations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(integrationForm) });
+      const data = await response.json() as { integration?: WorkspaceIntegration; error?: string };
+      if (!response.ok || !data.integration) throw new Error(data.error || 'Не удалось добавить webhook');
+      setIntegrations(current => [data.integration!, ...current]); setIntegrationForm({ name: '', baseUrl: '', bearerToken: '', signingSecret: '' }); setNotice('Webhook-интеграция сохранена');
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось добавить webhook'); }
+    finally { setLoading(false); }
+  };
+
+  const testIntegration = async (id: string) => {
+    if (mode !== 'account') { setNotice('В демо внешний запрос не отправляется'); return; }
+    setLoading(true); setError('');
+    try {
+      const response = await fetch(`/api/integrations/${id}/test`, { method: 'POST' });
+      const data = await response.json() as { status?: number; error?: string };
+      if (!response.ok) throw new Error(data.error || 'Webhook не ответил');
+      setNotice(`Webhook ответил HTTP ${data.status}`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Webhook не ответил'); }
+    finally { setLoading(false); }
+  };
+
+  const disconnectIntegration = async (id: string) => {
+    if (!window.confirm('Отключить интеграцию и удалить сохранённые секреты? Активные HTTP-блоки перестанут выполняться.')) return;
+    if (mode !== 'account') { setIntegrations(current => current.filter(integration => integration.id !== id)); return; }
+    const response = await fetch(`/api/integrations/${id}`, { method: 'DELETE' });
+    const data = await response.json() as { error?: string };
+    if (!response.ok) { setError(data.error || 'Не удалось отключить интеграцию'); return; }
+    setIntegrations(current => current.map(integration => integration.id === id ? { ...integration, status: 'DISCONNECTED', credentialsConfigured: false } : integration));
+  };
+
   return (
     <div className="space-y-7 text-[#0C0C0C]">
       <header><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#1E5CFB]">Рабочее пространство</p><h1 className="mt-1 text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Тариф и использование</h1><p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#73767E] sm:text-base">Реальные лимиты текущего периода. Счётчики обновляются после отправки сообщений, AI-ответов и создания ресурсов.</p></header>
@@ -187,6 +226,12 @@ export default function SettingsPage() {
         {inviteUrl && <div className="mt-3 flex items-center gap-2 rounded-xl bg-blue-50 p-3"><input readOnly value={inviteUrl} className="min-w-0 flex-1 bg-transparent text-xs text-blue-900 outline-none" /><button onClick={() => void navigator.clipboard.writeText(inviteUrl).then(() => setNotice('Ссылка скопирована'))} className="rounded-lg bg-white p-2 text-[#1E5CFB]" aria-label="Скопировать ссылку"><Copy className="w-4 h-4" /></button></div>}
         <div className="mt-6 divide-y divide-zinc-100 border-y border-zinc-100">{members.map(member => <div key={member.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center"><span className="w-10 h-10 rounded-full bg-[#261930] text-[#BEFF53] flex items-center justify-center text-xs font-extrabold">{`${member.user.firstName[0] || ''}${member.user.lastName?.[0] || ''}`}</span><div className="min-w-0 flex-1"><strong className="block text-sm">{[member.user.firstName, member.user.lastName].filter(Boolean).join(' ')}</strong><p className="mt-0.5 text-xs text-zinc-500 truncate">{member.user.email} · {member._count.assignedConversations} диалогов</p></div>{currentRole === 'OWNER' && member.role !== 'OWNER' ? <><select value={member.role} onChange={event => void changeMemberRole(member.id, event.target.value)} className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-bold"><option value="MANAGER">Менеджер</option><option value="ADMIN">Администратор</option></select><button aria-label="Удалить из команды" onClick={() => void removeMember(member.id)} className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-4 h-4" /></button></> : <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-600">{member.role === 'OWNER' ? 'Владелец' : member.role === 'ADMIN' ? 'Администратор' : 'Менеджер'}</span>}</div>)}</div>
         {invitations.length > 0 && <div className="mt-5"><h3 className="text-sm font-extrabold">Ожидают принятия</h3><div className="mt-2 space-y-2">{invitations.map(invitation => <div key={invitation.id} className="flex items-center gap-3 rounded-xl bg-amber-50 p-3"><div className="min-w-0 flex-1"><strong className="block text-sm truncate">{invitation.email}</strong><p className="text-xs text-amber-800 mt-0.5">{invitation.role} · до {new Date(invitation.expiresAt).toLocaleDateString('ru-RU')}</p></div><button onClick={() => void revokeInvitation(invitation.id)} aria-label="Отозвать приглашение" className="p-2 text-amber-800"><X className="w-4 h-4" /></button></div>)}</div></div>}
+      </section>
+
+      <section className="rounded-[26px] border border-[#E4E6EB] bg-white p-6 shadow-subtle sm:p-7">
+        <div className="flex items-start gap-4"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-700"><Webhook className="h-5 w-5" /></span><div><span className="text-xs font-extrabold uppercase tracking-[0.14em] text-purple-700">Интеграции</span><h2 className="mt-1 text-2xl font-extrabold">Внешний webhook / CRM</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-[#73767E]">Подключите HTTPS endpoint CRM или собственной системы. Virale AI блокирует локальные сети, redirects и ответы больше 64 КБ; токен и HMAC-secret хранятся зашифрованно.</p></div></div>
+        {['OWNER', 'ADMIN'].includes(currentRole) && <form onSubmit={createIntegration} className="mt-6 grid gap-3 lg:grid-cols-2"><input required minLength={2} value={integrationForm.name} onChange={event => setIntegrationForm(current => ({ ...current, name: event.target.value }))} placeholder="Название: amoCRM webhook" className="rounded-xl border border-zinc-200 bg-[#F8F8FA] px-4 py-3 text-sm" /><input required type="url" value={integrationForm.baseUrl} onChange={event => setIntegrationForm(current => ({ ...current, baseUrl: event.target.value }))} placeholder="https://crm.example.kz/hooks/virale" className="rounded-xl border border-zinc-200 bg-[#F8F8FA] px-4 py-3 text-sm" /><input type="password" value={integrationForm.bearerToken} onChange={event => setIntegrationForm(current => ({ ...current, bearerToken: event.target.value }))} placeholder="Bearer token, если нужен" autoComplete="new-password" className="rounded-xl border border-zinc-200 bg-[#F8F8FA] px-4 py-3 text-sm" /><input type="password" value={integrationForm.signingSecret} onChange={event => setIntegrationForm(current => ({ ...current, signingSecret: event.target.value }))} placeholder="HMAC signing secret, если нужен" autoComplete="new-password" className="rounded-xl border border-zinc-200 bg-[#F8F8FA] px-4 py-3 text-sm" /><button disabled={loading} className="lg:col-span-2 rounded-xl bg-[#261930] py-3.5 text-sm font-bold text-white disabled:opacity-50">Сохранить интеграцию</button></form>}
+        <div className="mt-6 grid gap-3 lg:grid-cols-2">{integrations.map(integration => <article key={integration.id} className="rounded-2xl border border-zinc-200 p-4"><div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700"><Globe2 className="w-4 h-4" /></span><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><strong className="text-sm truncate">{integration.name}</strong><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${integration.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}`}>{integration.status === 'ACTIVE' ? 'АКТИВЕН' : 'ОТКЛЮЧЁН'}</span></div><p className="mt-1 truncate text-xs text-zinc-500">{integration.baseUrl}</p><p className="mt-1 text-xs text-zinc-500">Авторизация: {integration.credentialsConfigured ? 'настроена' : 'без секрета'}</p></div></div>{integration.status === 'ACTIVE' && <div className="mt-4 flex gap-2"><button disabled={loading} onClick={() => void testIntegration(integration.id)} className="flex-1 rounded-lg border border-purple-200 bg-purple-50 py-2 text-xs font-bold text-purple-800">Тестировать</button><button onClick={() => void disconnectIntegration(integration.id)} className="rounded-lg border border-red-200 px-3 text-red-600" aria-label="Отключить"><Trash2 className="w-4 h-4" /></button></div>}</article>)}{!integrations.length && <p className="lg:col-span-2 rounded-2xl bg-[#F8F8FA] p-5 text-sm text-zinc-600">Интеграций пока нет. После добавления webhook появится в конструкторе автоматизаций.</p>}</div>
       </section>
 
       <section className="rounded-[26px] border border-[#E4E6EB] bg-white p-6 shadow-subtle sm:p-7">

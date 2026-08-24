@@ -31,8 +31,11 @@ import {
   RefreshCw,
   Save,
   Send,
+  Settings2,
   Smartphone,
   Sparkles,
+  Trash2,
+  Webhook,
   X,
   Zap
 } from 'lucide-react';
@@ -117,7 +120,24 @@ const KaspiPayNode = ({ data }: { data: { title: string; amount: string; provide
   </div>
 );
 
-const nodeTypes = { channelTrigger: ChannelTriggerNode, instagramTrigger: ChannelTriggerNode, instagramMessage: InstagramMessageNode, aiAgent: AiAgentNode, kaspiPay: KaspiPayNode };
+const WebhookNode = ({ data }: { data: { title?: string; integrationName?: string; method?: string; path?: string } }) => (
+  <div className={`${nodeBase} border-orange-300`}>
+    <Handle type="target" position={Position.Left} className="!h-4 !w-4 !border-[3px] !border-white !bg-orange-500" />
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Webhook className="h-5 w-5" /></span>
+        <div><p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-orange-600">Действие · Webhook</p><p className="mt-0.5 text-xs font-bold text-[#858891]">{data.integrationName || 'Интеграция не выбрана'}</p></div>
+      </div>
+      <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold text-orange-700">{data.method || 'POST'}</span>
+    </div>
+    <h3 className="mt-5 text-lg font-extrabold tracking-[-0.025em]">{data.title || 'Передать данные во внешнюю CRM'}</h3>
+    <p className="mt-1.5 break-all text-sm leading-relaxed text-[#686B73]">{data.path || 'Базовый URL интеграции'}</p>
+    <div className="mt-4 rounded-2xl bg-orange-50 p-3.5 text-xs font-semibold leading-relaxed text-orange-900">Запрос подписывается, защищён от повторов и выполняется только на публичный HTTPS endpoint.</div>
+    <Handle type="source" position={Position.Right} className="!h-4 !w-4 !border-[3px] !border-white !bg-orange-500" />
+  </div>
+);
+
+const nodeTypes = { channelTrigger: ChannelTriggerNode, instagramTrigger: ChannelTriggerNode, instagramMessage: InstagramMessageNode, aiAgent: AiAgentNode, kaspiPay: KaspiPayNode, webhook: WebhookNode };
 
 const initialNodes: Node[] = [
   { id: 'n1', type: 'channelTrigger', position: { x: 70, y: 70 }, data: { title: 'Клиент пишет «ПРАЙС»', keyword: 'ПРАЙС', scope: 'В личном сообщении подключённому Telegram-боту', provider: 'TELEGRAM' } },
@@ -146,8 +166,11 @@ const blockOptions = [
   { type: 'channelTrigger', label: 'Триггер', icon: Zap, color: 'text-sky-600' },
   { type: 'instagramMessage', label: 'Сообщение', icon: MessageSquare, color: 'text-[#1E5CFB]' },
   { type: 'aiAgent', label: 'AI-агент', icon: Bot, color: 'text-purple-600' },
-  { type: 'kaspiPay', label: 'Оплата / CRM', icon: CreditCard, color: 'text-emerald-600' }
+  { type: 'kaspiPay', label: 'Сделка в CRM', icon: CreditCard, color: 'text-emerald-600' },
+  { type: 'webhook', label: 'Webhook / CRM', icon: Webhook, color: 'text-orange-600' }
 ];
+
+interface IntegrationSummary { id: string; name: string; baseUrl: string; status: string }
 
 interface StoredGraph {
   nodes: Array<{ id: string; type: string; uiType?: string; position: { x: number; y: number }; config: Record<string, unknown>; data?: Record<string, unknown> }>;
@@ -171,6 +194,7 @@ const engineType = (node: Node) => {
   if (node.type === 'instagramMessage') return 'message.send';
   if (node.type === 'aiAgent') return 'ai.agent';
   if (node.type === 'kaspiPay') return 'crm.create_deal';
+  if (node.type === 'webhook') return 'http.request';
   return 'message.send';
 };
 
@@ -184,6 +208,7 @@ const uiTypeForEngine = (type: string) => {
   if (type === 'message.send') return 'instagramMessage';
   if (type === 'ai.agent') return 'aiAgent';
   if (type === 'crm.create_deal') return 'kaspiPay';
+  if (type === 'http.request') return 'webhook';
   return 'instagramMessage';
 };
 
@@ -208,6 +233,8 @@ export default function AutomationsPage() {
   const [simInput, setSimInput] = useState('');
   const [runs, setRuns] = useState<RunView[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
+  const [integrations, setIntegrations] = useState<IntegrationSummary[]>([]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const loadRuns = async (id = automationId) => {
     if (!id || mode !== 'account') return;
@@ -225,11 +252,18 @@ export default function AutomationsPage() {
   };
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setIntegrations([{ id: 'demo-webhook', name: 'Demo CRM', baseUrl: 'https://crm.example.kz/hooks/virale', status: 'ACTIVE' }]);
+      return;
+    }
     if (mode !== 'account') return;
-    void fetch('/api/automations', { cache: 'no-store' })
-      .then(async response => {
-        if (!response.ok) throw new Error('Не удалось загрузить сценарии');
-        const data = await response.json() as { automations: Array<{ id: string; status: 'DRAFT' | 'ACTIVE' | 'PAUSED'; graph: StoredGraph }> };
+    void Promise.all([fetch('/api/automations', { cache: 'no-store' }), fetch('/api/integrations', { cache: 'no-store' })])
+      .then(async ([automationResponse, integrationResponse]) => {
+        if (!automationResponse.ok) throw new Error('Не удалось загрузить сценарии');
+        if (!integrationResponse.ok) throw new Error('Не удалось загрузить интеграции');
+        const data = await automationResponse.json() as { automations: Array<{ id: string; status: 'DRAFT' | 'ACTIVE' | 'PAUSED'; graph: StoredGraph }> };
+        const integrationData = await integrationResponse.json() as { integrations: IntegrationSummary[] };
+        setIntegrations(integrationData.integrations.filter(integration => integration.status === 'ACTIVE'));
         const automation = data.automations[0];
         if (!automation) return;
         const canvas = graphForCanvas(automation.graph);
@@ -253,11 +287,25 @@ export default function AutomationsPage() {
       channelTrigger: { title: 'Новое входящее сообщение', keyword: 'СЛОВО', scope: 'Сообщение подключённому Telegram-боту', provider: 'TELEGRAM' },
       instagramMessage: { text: 'Введите текст сообщения для клиента.', buttons: ['Первый вариант'], delay: 'без паузы', provider: 'TELEGRAM' },
       aiAgent: { agentName: 'Новый AI-консультант', model: 'GPT-5.6 Terra', kbChunks: 'База не выбрана' },
-      kaspiPay: { title: 'Новое действие оплаты', amount: '0 ₸', provider: 'Kaspi Pay' }
+      kaspiPay: { title: 'Новая сделка', amount: '0 ₸', provider: 'Virale CRM' },
+      webhook: { title: 'Передать лид во внешнюю CRM', integrationId: integrations[0]?.id || '', integrationName: integrations[0]?.name || 'Интеграция не выбрана', method: 'POST', path: '', bodyJson: '{\n  "source": "Virale AI",\n  "message": "{{event.text}}"\n}' }
     };
     setNodes(current => [...current, { id, type, position: { x: 80 + (blockIndex % 2) * 490, y: 740 + Math.floor((blockIndex - 4) / 2) * 300 }, data: dataByType[type] }]);
+    setSelectedNodeId(id);
     setAddedBlock(label);
     window.setTimeout(() => setAddedBlock(''), 1800);
+  };
+
+  const selectedNode = nodes.find(node => node.id === selectedNodeId) || null;
+  const updateSelectedData = (patch: Record<string, unknown>) => {
+    if (!selectedNodeId) return;
+    setNodes(current => current.map(node => node.id === selectedNodeId ? { ...node, data: { ...node.data, ...patch } } : node));
+  };
+  const deleteSelectedNode = () => {
+    if (!selectedNodeId || !window.confirm('Удалить этот блок и все его связи?')) return;
+    setNodes(current => current.filter(node => node.id !== selectedNodeId));
+    setEdges(current => current.filter(edge => edge.source !== selectedNodeId && edge.target !== selectedNodeId));
+    setSelectedNodeId(null);
   };
 
   const saveScenario = async (): Promise<string | null> => {
@@ -344,6 +392,10 @@ export default function AutomationsPage() {
         ? 'bg-amber-50 text-amber-800'
         : 'bg-blue-50 text-[#1E5CFB]';
 
+  const selectedData = selectedNode?.data as Record<string, unknown> | undefined;
+  const selectedValue = (key: string) => String(selectedData?.[key] ?? '');
+  const editorInput = 'mt-1.5 w-full rounded-xl border border-[#DDE0E7] bg-[#F7F8FB] px-3.5 py-3 text-sm outline-none focus:border-[#1E5CFB] focus:bg-white';
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -391,7 +443,7 @@ export default function AutomationsPage() {
         </div>
 
         <div className="hidden h-[720px] bg-[#F7F8FB] lg:block">
-          <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.12, minZoom: 0.75, maxZoom: 1 }} minZoom={0.45} maxZoom={1.35}>
+          <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeClick={(_event, node) => setSelectedNodeId(node.id)} onPaneClick={() => setSelectedNodeId(null)} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.12, minZoom: 0.75, maxZoom: 1 }} minZoom={0.45} maxZoom={1.35}>
             <Background color="#D9DCE4" gap={28} size={1.2} />
             <Controls position="bottom-left" className="!overflow-hidden !rounded-xl !border-[#DDE0E7] !bg-white !shadow-md" />
           </ReactFlow>
@@ -408,6 +460,47 @@ export default function AutomationsPage() {
           ))}
           <p className="mt-4 rounded-xl bg-blue-50 p-3 text-center text-xs font-bold text-[#184AC9]">Для свободного перемещения блоков откройте конструктор на компьютере.</p>
         </div>
+
+        {selectedNode && (
+          <div className="fixed inset-0 z-[75] flex justify-end bg-black/35 p-3 sm:p-5" onClick={() => setSelectedNodeId(null)}>
+            <aside className="flex h-full w-full max-w-[520px] flex-col overflow-hidden rounded-[26px] bg-white shadow-2xl" onClick={event => event.stopPropagation()}>
+              <div className="flex items-start justify-between gap-4 border-b border-[#E4E6EB] bg-[#F7F8FB] p-5 sm:p-6">
+                <div className="flex min-w-0 items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1E5CFB] shadow-sm"><Settings2 className="h-5 w-5" /></span><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#1E5CFB]">Настройка блока</p><h2 className="mt-1 text-xl font-extrabold">{selectedNode.type === 'webhook' ? 'Webhook / внешняя CRM' : selectedNode.type === 'channelTrigger' ? 'Триггер входящего сообщения' : selectedNode.type === 'instagramMessage' ? 'Сообщение клиенту' : selectedNode.type === 'aiAgent' ? 'AI-консультант' : 'Сделка в CRM'}</h2><p className="mt-1 text-xs leading-relaxed text-[#777A82]">Изменения попадут в сценарий после сохранения и публикации.</p></div></div>
+                <button onClick={() => setSelectedNodeId(null)} aria-label="Закрыть настройки" className="rounded-xl p-2 text-[#72757D] hover:bg-white"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+                {selectedNode.type === 'channelTrigger' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название<input value={selectedValue('title')} onChange={event => updateSelectedData({ title: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Кодовое слово<input value={selectedValue('keyword')} onChange={event => updateSelectedData({ keyword: event.target.value })} className={editorInput} placeholder="ПРАЙС" /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Пояснение<textarea value={selectedValue('scope')} onChange={event => updateSelectedData({ scope: event.target.value })} className={`${editorInput} min-h-24 resize-y`} /></label>
+                </>}
+                {selectedNode.type === 'instagramMessage' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Текст сообщения<textarea value={selectedValue('text')} onChange={event => updateSelectedData({ text: event.target.value })} className={`${editorInput} min-h-32 resize-y`} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Пауза<input value={selectedValue('delay')} onChange={event => updateSelectedData({ delay: event.target.value })} className={editorInput} placeholder="через 2 сек" /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Кнопки — по одной в строке<textarea value={Array.isArray(selectedData?.buttons) ? selectedData.buttons.join('\n') : ''} onChange={event => updateSelectedData({ buttons: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) })} className={`${editorInput} min-h-28 resize-y`} /></label>
+                </>}
+                {selectedNode.type === 'aiAgent' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название агента<input value={selectedValue('agentName')} onChange={event => updateSelectedData({ agentName: event.target.value })} className={editorInput} /></label>
+                  <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4 text-sm leading-relaxed text-purple-950">Промпт, модель и база знаний настраиваются в разделе «AI-агенты». Этот блок запускает выбранного консультанта.</div>
+                </>}
+                {selectedNode.type === 'kaspiPay' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название сделки<input value={selectedValue('title')} onChange={event => updateSelectedData({ title: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Сумма<input value={selectedValue('amount')} onChange={event => updateSelectedData({ amount: event.target.value })} className={editorInput} placeholder="95 000 ₸" /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Источник / провайдер<input value={selectedValue('provider')} onChange={event => updateSelectedData({ provider: event.target.value })} className={editorInput} /></label>
+                </>}
+                {selectedNode.type === 'webhook' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название действия<input value={selectedValue('title')} onChange={event => updateSelectedData({ title: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Интеграция<select value={selectedValue('integrationId')} onChange={event => { const integration = integrations.find(item => item.id === event.target.value); updateSelectedData({ integrationId: event.target.value, integrationName: integration?.name || 'Интеграция не выбрана' }); }} className={editorInput}><option value="">Выберите webhook</option>{integrations.map(integration => <option key={integration.id} value={integration.id}>{integration.name} · {integration.baseUrl}</option>)}</select></label>
+                  {!integrations.length && <a href="/settings" className="block rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-relaxed text-amber-900">Сначала добавьте HTTPS webhook в Настройках → Интеграции.</a>}
+                  <div className="grid grid-cols-[120px_1fr] gap-3"><label className="block text-xs font-extrabold text-[#565961]">Метод<select value={selectedValue('method') || 'POST'} onChange={event => updateSelectedData({ method: event.target.value })} className={editorInput}><option>POST</option><option>PUT</option><option>PATCH</option></select></label><label className="block text-xs font-extrabold text-[#565961]">Путь<input value={selectedValue('path')} onChange={event => updateSelectedData({ path: event.target.value })} className={editorInput} placeholder="deals/create" /></label></div>
+                  <label className="block text-xs font-extrabold text-[#565961]">Дополнительные данные — JSON<textarea value={selectedValue('bodyJson')} onChange={event => updateSelectedData({ bodyJson: event.target.value })} spellCheck={false} className={`${editorInput} min-h-52 resize-y font-mono text-xs leading-relaxed`} /></label>
+                  <div className="rounded-2xl bg-orange-50 p-4 text-xs leading-relaxed text-orange-950"><strong className="block text-sm">Доступные переменные</strong><code className="mt-2 block break-all">{'{{event.text}}, {{contact.firstName}}, {{contact.phone}}, {{contact.email}}'}</code><p className="mt-2">Virale всегда добавляет event, contact и variables в защищённый payload.</p></div>
+                </>}
+              </div>
+              <div className="flex gap-3 border-t border-[#E4E6EB] p-4 sm:p-5"><button onClick={deleteSelectedNode} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-4 text-sm font-extrabold text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" /> Удалить</button><button onClick={() => setSelectedNodeId(null)} className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#261930] px-4 text-sm font-extrabold text-white">Готово</button></div>
+            </aside>
+          </div>
+        )}
 
         {simulating && (
           <div className="fixed inset-0 z-[70] flex justify-end bg-black/35 p-3 sm:p-5" onClick={() => setSimulating(false)}>
