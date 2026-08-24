@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../../lib/auth-context';
+import { decryptCredential } from '../../../../../lib/credentials';
+import { sendTelegramMessage, TelegramApiError } from '../../../../../lib/telegram';
 
 async function findConversation(workspaceId: string, conversationId: string) {
-  return prisma.conversation.findFirst({ where: { id: conversationId, workspaceId } });
+  return prisma.conversation.findFirst({
+    where: { id: conversationId, workspaceId },
+    include: { channelAccount: true }
+  });
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ conversationId: string }> }) {
@@ -38,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const now = new Date();
-  const message = await prisma.$transaction(async transaction => {
+  let message = await prisma.$transaction(async transaction => {
     const created = await transaction.message.create({
       data: {
         workspaceId: account.workspaceId,
@@ -47,7 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         senderType: 'MANAGER',
         type: 'TEXT',
         text,
-        status: 'QUEUED'
+        status: conversation.channelAccount.provider === 'TELEGRAM' ? 'PENDING' : 'QUEUED'
       }
     });
     await transaction.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now, mode: 'HUMAN' } });
@@ -55,6 +60,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return created;
   });
 
+  if (
+    conversation.channelAccount.provider === 'TELEGRAM' &&
+    conversation.channelAccount.status === 'ACTIVE' &&
+    conversation.channelAccount.accessTokenEncrypted &&
+    conversation.externalThreadId
+  ) {
+    try {
+      const chatId = conversation.externalThreadId.split(':')[0];
+      const sent = await sendTelegramMessage(decryptCredential(conversation.channelAccount.accessTokenEncrypted), chatId, text);
+      message = await prisma.message.update({
+        where: { id: message.id },
+        data: { providerMessageId: String(sent.message_id), status: 'SENT', deliveredAt: new Date(sent.date * 1000) }
+      });
+    } catch (error) {
+      const reason = error instanceof TelegramApiError ? error.message : 'Ошибка отправки в Telegram';
+      message = await prisma.message.update({ where: { id: message.id }, data: { status: 'FAILED', payload: { deliveryError: reason } } });
+      return NextResponse.json({ error: reason, message }, { status: 502 });
+    }
+  }
+
   return NextResponse.json({ message }, { status: 201 });
 }
-

@@ -231,7 +231,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
 
         {/* Footer Disclaimer (Exact Match to Screenshot 4) */}
         <p className="mt-6 text-[10px] text-zinc-400 text-center leading-relaxed">
-          Демо-режим не создаёт аккаунт и не отправляет данные во внешние сервисы. Подключение полноценной авторизации выполняется перед боевым запуском.
+          Демо-режим не создаёт аккаунт и не отправляет данные во внешние сервисы. Для собственного workspace, контактов и каналов зарегистрируйтесь через почту.
         </p>
       </div>
     </div>

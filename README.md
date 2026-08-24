@@ -5,11 +5,13 @@
 ## Что уже работает
 
 - русскоязычный адаптивный лендинг с тарифами, FAQ и демо-входом;
-- единый Inbox с AI/оператор режимами и отправкой сообщений;
+- единый Inbox с AI/оператор режимами, сохранённой историей и отправкой сообщений;
 - визуальный конструктор автоворонок с интерактивным симулятором;
 - CRM-канбан, контакты, рассылки, AI-агенты и база знаний;
 - библиотека шаблонов, мини-курс и настройки биллинга;
 - реальная email-регистрация, защищённые сессии и создание отдельного workspace в PostgreSQL;
+- persistent контакты и CRM-сделки с изоляцией данных по workspace;
+- реальное подключение Telegram Bot API: зашифрованный токен, подписанный webhook, входящие сообщения и ответы из Inbox;
 - monorepo для web, API gateway, webhook gateway, workers и общих пакетов;
 - автоматическая production-сборка на Vercel из ветки `main`.
 
@@ -24,7 +26,7 @@ pnpm --filter @chatplace/database exec prisma migrate deploy --schema prisma/sch
 pnpm --filter web dev
 ```
 
-Укажите локальный `DATABASE_URL` и отдельный `AUTH_SECRET` в обоих env-файлах перед запуском.
+Укажите локальный `DATABASE_URL`, `AUTH_SECRET` и `CHANNEL_ENCRYPTION_KEY` перед запуском. Telegram webhook подключается только на публичном HTTPS-домене.
 
 Откройте `http://localhost:3000`.
 
@@ -37,6 +39,6 @@ pnpm build
 
 ## Важная граница MVP
 
-Без `DATABASE_URL` и `AUTH_SECRET` публичная версия остаётся безопасным demo-workspace. При настроенных переменных регистрация и workspace сохраняются в PostgreSQL, но сообщения и подключения социальных сетей пока остаются демонстрационными. Перед боевым запуском ещё нужны Redis, ключи каналов, платёжный провайдер и остальные production secrets.
+Без `DATABASE_URL`, `AUTH_SECRET` и `CHANNEL_ENCRYPTION_KEY` публичная версия остаётся безопасным demo-workspace. После настройки этих переменных доступны реальные аккаунты, контакты, CRM и Telegram. До полного запуска ещё нужны Redis/очереди, Instagram/WhatsApp/TikTok credentials, AI provider, платёжный провайдер и production-наблюдаемость.
 
 Полный порядок работ и сравнение с ChatPlace: [`docs/CHATPLACE_PARITY.md`](docs/CHATPLACE_PARITY.md).

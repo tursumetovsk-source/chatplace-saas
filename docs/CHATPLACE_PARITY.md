@@ -8,14 +8,14 @@ This document tracks product parity against current public ChatPlace materials a
 
 | Capability | ChatPlace | Virale AI today | Status |
 | --- | --- | --- | --- |
-| Projects / workspaces | Projects with connected social accounts | Demo workspace and multi-tenant Prisma models | Partial |
-| Channels | Instagram, TikTok, Telegram bots and Telegram Business | Instagram, Telegram, TikTok and WhatsApp UI plus adapter interfaces | Demo only |
-| Unified chats and clients | Chats, client profiles, variables and tags | Inbox, contacts and CRM screens | Demo only |
+| Projects / workspaces | Projects with connected social accounts | Real accounts, roles, signed sessions and isolated PostgreSQL workspaces | Implemented |
+| Channels | Instagram, TikTok, Telegram bots and Telegram Business | Telegram Bot API is end-to-end; Instagram, WhatsApp and TikTok remain planned | Partial |
+| Unified chats and clients | Chats, client profiles, variables and tags | Persistent Inbox, contacts, tags and CRM; assignment and custom variables remain | Partial |
 | Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Visual React Flow builder, connections, simulator and basic engine types | Partial |
 | Variables and tags | Stored client variables, reserved variables, filters and segmentation | Template resolver and basic condition evaluator; no persisted values/tags | Partial |
 | Broadcasts | Targeted broadcasts using tags and account audiences | Interactive campaign composer | Demo only |
 | AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Agent settings screen and deterministic reply simulator | Demo only |
-| CRM integration | Client data transfer to amoCRM and automation actions | Internal CRM board and `crm.create_deal` type | Demo only |
+| CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM board and `crm.create_deal` type; amoCRM connector missing | Partial |
 | Analytics | Contact, automation and knowledge-topic analytics | Dashboard and analytics screens | Demo only |
 | Billing and limits | Free/Pro/Creator/Premium, active-contact and AI-credit limits | Billing/settings screen | Demo only |
 | Gamification | Instagram games, points, leaderboards and related conditions | Not implemented | Missing |
@@ -63,4 +63,3 @@ This document tracks product parity against current public ChatPlace materials a
 - AI agent and knowledge base: https://help.chatplace.io/en/articles/11860823
 - amoCRM connection: https://help.chatplace.io/en/articles/10118147
 - Instagram subscription checks: https://help.chatplace.io/en/articles/8895793
-
