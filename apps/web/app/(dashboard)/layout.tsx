@@ -2,14 +2,16 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import {
+  ArrowLeft,
   BarChart3,
   Cable,
   GraduationCap,
   Grid,
   Home,
+  LogOut,
   Menu,
   MessageCircle,
   MessageSquare,
@@ -75,9 +77,16 @@ const quickMobileItems: NavItem[] = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const isActive = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+
+  const exitDemo = () => {
+    window.localStorage.removeItem('virale-onboarding-progress');
+    setMobileNavOpen(false);
+    router.push('/');
+  };
 
   const renderNavLink = (item: NavItem, mobile = false) => {
     const Icon = item.icon;
@@ -112,15 +121,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1E5CFB] to-[#25B7ED] text-xs font-extrabold text-white shadow-sm">VA</span>
           <span className="text-lg font-extrabold tracking-[-0.04em]">VIRALE AI</span>
         </Link>
-        <button
-          id="mobile-menu"
-          onClick={() => setMobileNavOpen(!mobileNavOpen)}
-          aria-label={mobileNavOpen ? 'Закрыть навигацию' : 'Открыть навигацию'}
-          aria-expanded={mobileNavOpen}
-          className="rounded-xl p-2 text-[#111217] hover:bg-[#F1F3F8]"
-        >
-          {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-1">
+          <Link href="/" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 text-xs font-extrabold text-[#565961] hover:bg-[#F1F3F8]" aria-label="Вернуться на лендинг">
+            <ArrowLeft className="h-4 w-4" /> На сайт
+          </Link>
+          <button
+            id="mobile-menu"
+            onClick={() => setMobileNavOpen(!mobileNavOpen)}
+            aria-label={mobileNavOpen ? 'Закрыть навигацию' : 'Открыть навигацию'}
+            aria-expanded={mobileNavOpen}
+            className="rounded-xl p-2 text-[#111217] hover:bg-[#F1F3F8]"
+          >
+            {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </header>
 
       {mobileNavOpen && (
@@ -138,6 +152,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ))}
             <div className="border-t border-[#E5E7EC] pt-4">{bottomItems.map(item => renderNavLink(item, true))}</div>
           </nav>
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-[#E5E7EC] pt-4">
+            <Link href="/" onClick={() => setMobileNavOpen(false)} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#DDE0E7] text-xs font-extrabold text-[#565961]">
+              <ArrowLeft className="h-4 w-4" /> На лендинг
+            </Link>
+            <button onClick={exitDemo} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#111217] text-xs font-extrabold text-white">
+              <LogOut className="h-4 w-4" /> Выйти из демо
+            </button>
+          </div>
         </div>
       )}
 
@@ -165,6 +187,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="border-t border-[#E5E7EC] p-3 space-y-2">
           {bottomItems.map(item => renderNavLink(item))}
+          <Link href="/" title="На лендинг" className="flex h-11 items-center justify-center gap-3 rounded-xl text-[#5F626A] transition hover:bg-[#F1F3F8] hover:text-[#111217] xl:justify-start xl:px-3">
+            <ArrowLeft className="h-5 w-5 shrink-0" />
+            <span className="hidden text-sm font-bold xl:inline">На лендинг</span>
+          </Link>
+          <button onClick={exitDemo} title="Выйти из демо" className="flex h-11 w-full items-center justify-center gap-3 rounded-xl text-[#5F626A] transition hover:bg-red-50 hover:text-red-600 xl:justify-start xl:px-3">
+            <LogOut className="h-5 w-5 shrink-0" />
+            <span className="hidden text-sm font-bold xl:inline">Выйти из демо</span>
+          </button>
           <div className="hidden items-center gap-3 rounded-xl px-2 py-2 xl:flex">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25B7ED] text-xs font-extrabold text-white">V</span>
             <span className="min-w-0"><strong className="block truncate text-xs">Владелец</strong><span className="block truncate text-[10px] text-[#8B8E96]">Демо-режим</span></span>
