@@ -1,7 +1,7 @@
 'use client';
 
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { BookmarkPlus, Download, Instagram, MessageCircle, Pencil, Search, Send, Trash2, Upload, UserPlus, Video, X } from 'lucide-react';
+import { BookmarkPlus, Download, GitMerge, Instagram, MessageCircle, Pencil, ScanSearch, Search, Send, Trash2, Upload, UserPlus, Video, X } from 'lucide-react';
 import { useAccountMode } from '../../../lib/use-account-mode';
 
 type Channel = 'Все' | 'Instagram' | 'Telegram' | 'WhatsApp' | 'TikTok';
@@ -43,6 +43,12 @@ interface ContactSegment {
   contactCount: number;
   filters: { tags?: string[]; tagMatch?: 'ANY' | 'ALL'; statuses?: string[]; cities?: string[]; channels?: string[]; marketingConsent?: boolean | null };
 }
+
+interface DuplicateContact {
+  id: string; firstName: string; lastName?: string | null; email?: string | null; phone?: string | null; username?: string | null;
+  city?: string | null; status: string; tags: string[]; lastActivityAt: string; _count: { conversations: number; deals: number };
+}
+interface DuplicateGroup { key: string; reason: 'EMAIL' | 'PHONE' | 'USERNAME'; value: string; total: number; contacts: DuplicateContact[] }
 
 const demoContacts: ContactView[] = [
   { id: '1', name: 'Айдос Нурланов', handle: '@aidos_nurlan', channel: 'Instagram', status: 'Горячий лид', city: 'Алматы', lastSeen: '2 мин назад', conversations: 12, initials: 'АН', marketingConsent: true, tags: ['Тёплый лид'], customFields: { Бюджет: '150 000 ₸', Продукт: 'Pro' } },
@@ -98,7 +104,7 @@ const channelIcon = (channel: string) => {
 };
 
 export default function ContactsPage() {
-  const { mode } = useAccountMode();
+  const { mode, session } = useAccountMode();
   const [contacts, setContacts] = useState<ContactView[]>(demoContacts);
   const [query, setQuery] = useState('');
   const [channel, setChannel] = useState<Channel>('Все');
@@ -108,6 +114,9 @@ export default function ContactsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showSegment, setShowSegment] = useState(false);
   const [showFields, setShowFields] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
+  const [duplicatePrimary, setDuplicatePrimary] = useState<Record<string, string>>({});
   const [segments, setSegments] = useState<ContactSegment[]>([]);
   const [selectedSegment, setSelectedSegment] = useState('');
   const [fieldRows, setFieldRows] = useState<Array<{ key: string; value: string }>>([]);
@@ -115,19 +124,21 @@ export default function ContactsPage() {
   const [segmentForm, setSegmentForm] = useState({ name: '', tags: '', tagMatch: 'ANY' as 'ANY' | 'ALL', status: '', city: '', channel: '', marketingConsent: 'ANY', customKey: '', customValue: '' });
   const [form, setForm] = useState({ firstName: '', lastName: '', username: '', phone: '', city: '', tags: '', marketingConsent: false });
 
+  const loadContacts = async () => {
+    const params = new URLSearchParams();
+    if (selectedSegment) params.set('segment', selectedSegment);
+    const response = await fetch(`/api/contacts${params.size ? `?${params}` : ''}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error('Не удалось загрузить контакты');
+    const data = await response.json() as { contacts: ApiContact[] };
+    const mapped = data.contacts.map(mapContact);
+    setContacts(mapped);
+    setActiveId(current => mapped.some(contact => contact.id === current) ? current : mapped[0]?.id ?? null);
+  };
+
   useEffect(() => {
     if (mode !== 'account') return;
     setLoading(true);
-    const params = new URLSearchParams();
-    if (selectedSegment) params.set('segment', selectedSegment);
-    void fetch(`/api/contacts${params.size ? `?${params}` : ''}`, { cache: 'no-store' })
-      .then(async response => {
-        if (!response.ok) throw new Error('Не удалось загрузить контакты');
-        const data = await response.json() as { contacts: ApiContact[] };
-        const mapped = data.contacts.map(mapContact);
-        setContacts(mapped);
-        setActiveId(mapped[0]?.id ?? null);
-      })
+    void loadContacts()
       .catch(error => setNotice(error instanceof Error ? error.message : 'Не удалось загрузить контакты'))
       .finally(() => setLoading(false));
   }, [mode, selectedSegment]);
@@ -148,6 +159,7 @@ export default function ContactsPage() {
   }), [channel, contacts, query]);
 
   const active = contacts.find(contact => contact.id === activeId) ?? contacts[0];
+  const canMergeContacts = mode === 'account' && ['OWNER', 'ADMIN'].includes(session?.role || '');
 
   const createContact = async (event: FormEvent) => {
     event.preventDefault();
@@ -272,6 +284,41 @@ export default function ContactsPage() {
     finally { setLoading(false); }
   };
 
+  const loadDuplicates = async () => {
+    setShowDuplicates(true);
+    if (mode !== 'account') { setDuplicates([]); return; }
+    setLoading(true);
+    try {
+      const response = await fetch('/api/contacts/duplicates', { cache: 'no-store' });
+      const data = await response.json() as { groups?: DuplicateGroup[]; error?: string };
+      if (!response.ok) throw new Error(data.error || 'Не удалось проверить дубли');
+      const groups = data.groups || [];
+      setDuplicates(groups);
+      setDuplicatePrimary(Object.fromEntries(groups.map(group => [group.key, group.contacts[0]?.id || ''])));
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось проверить дубли'); setShowDuplicates(false); }
+    finally { setLoading(false); }
+  };
+
+  const mergeDuplicateGroup = async (group: DuplicateGroup) => {
+    const targetContactId = duplicatePrimary[group.key] || group.contacts[0]?.id;
+    const sourceContactIds = group.contacts.filter(contact => contact.id !== targetContactId).map(contact => contact.id);
+    if (!targetContactId || !sourceContactIds.length || !window.confirm(`Объединить ${sourceContactIds.length} дублей с выбранным основным контактом? История, сделки и каналы будут перенесены. Отменить операцию нельзя.`)) return;
+    if (!canMergeContacts) { setNotice('Объединять контакты может только владелец или администратор'); return; }
+    setLoading(true);
+    try {
+      const response = await fetch('/api/contacts/merge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetContactId, sourceContactIds }) });
+      const data = await response.json() as { mergedContactIds?: string[]; error?: string };
+      if (!response.ok) throw new Error(data.error || 'Не удалось объединить контакты');
+      await Promise.all([loadContacts(), fetch('/api/contacts/duplicates', { cache: 'no-store' }).then(async result => {
+        const next = await result.json() as { groups?: DuplicateGroup[] };
+        setDuplicates(next.groups || []);
+        setDuplicatePrimary(Object.fromEntries((next.groups || []).map(item => [item.key, item.contacts[0]?.id || ''])));
+      })]);
+      setNotice(`Контакты объединены: удалено дублей — ${data.mergedContactIds?.length || sourceContactIds.length}`);
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось объединить контакты'); }
+    finally { setLoading(false); }
+  };
+
   return (
     <div className="space-y-6 text-[#0C0C0C]">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -281,6 +328,7 @@ export default function ContactsPage() {
           <p className="text-base text-[#737378] mt-2">Единый профиль клиента, его теги, поля и разрешения на коммуникацию</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button disabled={loading} onClick={() => void loadDuplicates()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-50"><ScanSearch className="w-4 h-4" /> Найти дубли</button>
           {mode === 'account' && <><label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#DCDCE2] bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50"><Upload className="w-4 h-4" /> Импорт CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={event => { void importCsv(event.target.files?.[0]); event.currentTarget.value = ''; }} /></label><a href={`/api/contacts/export${selectedSegment ? `?segment=${encodeURIComponent(selectedSegment)}` : ''}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DCDCE2] bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50"><Download className="w-4 h-4" /> Экспорт</a></>}
           <button onClick={() => setShowCreate(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E5CFB] text-white px-4 py-3 text-sm font-bold hover:bg-[#184AC9] transition"><UserPlus className="w-4 h-4" /> Добавить контакт</button>
         </div>
@@ -341,6 +389,24 @@ export default function ContactsPage() {
           </> : <div className="py-10 text-center text-sm text-[#737378]">Выберите контакт</div>}
         </aside>
       </div>
+
+      {showDuplicates && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onMouseDown={() => setShowDuplicates(false)}>
+          <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-white p-5 shadow-2xl sm:p-7" onMouseDown={event => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-800"><ScanSearch className="h-5 w-5" /></span><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-amber-700">Качество базы</p><h2 className="mt-1 text-2xl font-extrabold">Возможные дубли</h2><p className="mt-1 text-sm leading-relaxed text-[#737378]">Совпадения по нормализованному email, телефону или username. Выберите карточку, которая останется основной.</p></div></div><button onClick={() => setShowDuplicates(false)} className="rounded-xl p-2 text-zinc-500 hover:bg-zinc-100" aria-label="Закрыть"><X className="h-5 w-5" /></button></div>
+            {loading && <div className="mt-6 rounded-2xl bg-[#F7F7F9] p-6 text-center text-sm text-zinc-600">Проверяем клиентскую базу…</div>}
+            {!loading && duplicates.length === 0 && <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center"><strong className="text-emerald-900">Явных дублей не найдено</strong><p className="mt-1 text-sm text-emerald-800/75">Проверка использует точные совпадения идентификаторов и не объединяет людей только по похожим именам.</p></div>}
+            <div className="mt-6 space-y-4">{duplicates.map(group => {
+              const primaryId = duplicatePrimary[group.key] || group.contacts[0]?.id;
+              return <article key={group.key} className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 sm:p-5"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-amber-800">{group.reason === 'EMAIL' ? 'EMAIL' : group.reason === 'PHONE' ? 'ТЕЛЕФОН' : 'USERNAME'}</span><strong className="ml-2 text-sm break-all">{group.value}</strong></div><span className="text-xs font-semibold text-zinc-500">Найдено: {group.total}</span></div><div className="mt-4 grid gap-2">{group.contacts.map(contact => {
+                const selected = primaryId === contact.id;
+                return <label key={contact.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${selected ? 'border-[#1E5CFB] bg-blue-50' : 'border-zinc-200 bg-white hover:border-zinc-300'}`}><input type="radio" name={`primary-${group.key}`} checked={selected} onChange={() => setDuplicatePrimary(current => ({ ...current, [group.key]: contact.id }))} className="mt-1" /><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><strong className="text-sm">{[contact.firstName, contact.lastName].filter(Boolean).join(' ')}</strong>{selected && <span className="rounded-full bg-[#1E5CFB] px-2 py-0.5 text-[9px] font-extrabold text-white">ОСТАНЕТСЯ</span>}</span><span className="mt-1 block break-all text-xs text-zinc-500">{contact.email || contact.phone || contact.username || 'Без идентификатора'} · {contact.city || 'город не указан'}</span><span className="mt-2 block text-[11px] font-semibold text-zinc-500">{contact._count.conversations} диалогов · {contact._count.deals} сделок · активность {new Date(contact.lastActivityAt).toLocaleDateString('ru-RU')}</span></span></label>;
+              })}</div>{group.total > group.contacts.length && <p className="mt-3 text-xs text-amber-900">Показаны первые {group.contacts.length}. После объединения запустите проверку ещё раз.</p>}<button disabled={loading || !canMergeContacts} onClick={() => void mergeDuplicateGroup(group)} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#261930] px-4 text-sm font-extrabold text-white disabled:opacity-40"><GitMerge className="h-4 w-4 text-[#BEFF53]" /> Объединить остальные с основным</button></article>;
+            })}</div>
+            <p className="mt-5 rounded-2xl bg-[#F7F7F9] p-4 text-xs leading-relaxed text-zinc-600">При объединении переносятся каналы, диалоги, сделки, запуски автоматизаций и история рассылок. Теги и поля объединяются; при конфликте согласий на рассылку действует самое позднее подтверждённое действие клиента.</p>
+          </div>
+        </div>
+      )}
 
       {showCreate && (
         <div className="fixed inset-0 z-50 bg-black/35 p-4 flex items-center justify-center" onMouseDown={() => setShowCreate(false)}>

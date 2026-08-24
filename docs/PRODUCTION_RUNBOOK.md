@@ -26,6 +26,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 9. Import a two-row CSV in staging, verify duplicate matching, then export the same segment and open it in the target spreadsheet application.
 10. Invite a disposable manager account, accept the link, switch workspaces, self-assign a handoff conversation and remove the test member.
 11. In staging, connect a disposable public HTTPS receiver, run the integration test, publish a scenario with a webhook block and verify the signed payload and `Idempotency-Key`.
+12. Create two staging contacts with the same normalized phone, choose the richer card as primary, merge them and verify that conversations, deals and consent state remain correct.
 
 ## Backups and restore drills
 

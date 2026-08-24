@@ -47,7 +47,8 @@ const auditLabels: Record<string, string> = {
   'team.invited': 'Приглашён участник', 'team.invitation_revoked': 'Отозвано приглашение', 'team.invitation_accepted': 'Принято приглашение',
   'team.role_changed': 'Изменена роль', 'team.member_removed': 'Удалён участник', 'workspace.switched': 'Сменено рабочее пространство',
   'conversation.assigned': 'Назначен менеджер', 'conversation.updated': 'Обновлён диалог',
-  'integration.created': 'Подключён внешний webhook', 'integration.test_succeeded': 'Проверен внешний webhook', 'integration.disconnected': 'Отключён внешний webhook'
+  'integration.created': 'Подключён внешний webhook', 'integration.test_succeeded': 'Проверен внешний webhook', 'integration.disconnected': 'Отключён внешний webhook',
+  'contacts.merged': 'Объединены дубли контактов'
 };
 
 export default function AnalyticsPage() {
