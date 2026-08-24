@@ -3,8 +3,9 @@ import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../lib/auth-context';
 import { decryptCredential } from '../../../../lib/credentials';
 import { deleteTelegramWebhook, TelegramApiError } from '../../../../lib/telegram';
+import { writeAuditLog } from '../../../../lib/audit';
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ channelId: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ channelId: string }> }) {
   const account = await getAccountContext();
   if (!account) return NextResponse.json({ error: 'Требуется вход в аккаунт' }, { status: 401 });
   if (account.role !== 'OWNER' && account.role !== 'ADMIN') {
@@ -34,6 +35,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     where: { id: channel.id },
     data: { status: 'DISCONNECTED', accessTokenEncrypted: null, refreshTokenEncrypted: null, webhookSecretEncrypted: null }
   });
+  await writeAuditLog({ workspaceId: account.workspaceId, actorUserId: account.userId, action: 'CHANNEL_DISCONNECTED', entityType: 'CHANNEL', entityId: channel.id, request, metadata: { provider: channel.provider } });
   return NextResponse.json({ disconnected: true });
 }
-

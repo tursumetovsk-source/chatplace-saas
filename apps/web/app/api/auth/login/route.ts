@@ -2,12 +2,16 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { verifyPassword } from '../../../../lib/password';
 import { createSessionToken, DEMO_COOKIE, secureCookie, SESSION_COOKIE, SESSION_TTL_SECONDS } from '../../../../lib/session';
+import { checkRateLimit } from '../../../../lib/rate-limit';
+import { writeAuditLog } from '../../../../lib/audit';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body.password === 'string' ? body.password : '';
+    const rate = await checkRateLimit({ request, scope: 'auth.login', identifier: email, limit: 10, windowSeconds: 15 * 60 });
+    if (!rate.allowed) return NextResponse.json({ error: 'Слишком много попыток входа. Попробуйте позже.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } });
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
@@ -39,6 +43,7 @@ export async function POST(request: Request) {
     });
     response.cookies.set(SESSION_COOKIE, token, { httpOnly: true, secure: secureCookie, sameSite: 'lax', path: '/', maxAge: SESSION_TTL_SECONDS });
     response.cookies.delete(DEMO_COOKIE);
+    await writeAuditLog({ workspaceId: membership.workspaceId, actorUserId: user.id, action: 'AUTH_LOGIN', entityType: 'USER', entityId: user.id, request });
     return response;
   } catch (error) {
     console.error('[auth.login]', error);

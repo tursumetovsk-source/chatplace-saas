@@ -16,7 +16,7 @@ This document tracks product parity against current public ChatPlace materials a
 | Broadcasts | Targeted broadcasts using tags and account audiences | Interactive campaign composer | Demo only |
 | AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Responses API, local conversation memory, file-search knowledge, channel assignment, testing and operator handoff; account scan/corrections analytics remain | Partial |
 | CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM board and `crm.create_deal` type; amoCRM connector missing | Partial |
-| Analytics | Contact, automation and knowledge-topic analytics | Dashboard and analytics screens | Demo only |
+| Analytics | Contact, automation and knowledge-topic analytics | Live workspace metrics, funnel, channel counts, queue health, failures and audit log; knowledge-topic analytics remain | Partial |
 | Billing and limits | Free/Pro/Creator/Premium, active-contact and AI-credit limits | Subscription/trial records, KZT plans, monthly usage ledger, server-enforced quotas and upgrade requests; payment provider webhooks remain | Partial |
 | Gamification | Instagram games, points, leaderboards and related conditions | Not implemented | Missing |
 | AI creator | Reels analysis plus carousel/image/video/script generation | Not implemented | Missing |
@@ -42,9 +42,9 @@ This document tracks product parity against current public ChatPlace materials a
 
 10. Subscriptions, trials, quotas, AI credits, invoices and plan enforcement. **Trials, quotas and usage ledger implemented; provider checkout/webhooks and invoices remain.**
 11. Broadcast scheduling, consent/opt-out rules and audience estimation.
-12. Monitoring, audit logs, backups, rate limits, abuse prevention and support tooling.
-13. Unit, integration, webhook-contract and browser end-to-end tests.
-14. Privacy policy, terms, data export/deletion and operational runbooks.
+12. Monitoring, audit logs, backups, rate limits, abuse prevention and support tooling. **Core monitoring/audit/rate limits and backup runbook implemented; external alert destination and managed PITR remain.**
+13. Unit, integration, webhook-contract and browser end-to-end tests. **Initial contract/security tests implemented; DB integration and browser E2E remain.**
+14. Privacy policy, terms, data export/deletion and operational runbooks. **Draft pages, consent record, export and verified-request workflow implemented; operator requisites and counsel approval remain.**
 
 ### P2 — ChatPlace differentiation/parity
 
@@ -63,3 +63,4 @@ This document tracks product parity against current public ChatPlace materials a
 - AI agent and knowledge base: https://help.chatplace.io/en/articles/11860823
 - amoCRM connection: https://help.chatplace.io/en/articles/10118147
 - Instagram subscription checks: https://help.chatplace.io/en/articles/8895793
+- Kazakhstan personal data law: https://adilet.zan.kz/rus/docs/Z1300000094

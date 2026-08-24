@@ -5,6 +5,7 @@ import { getAccountContext } from '../../../lib/auth-context';
 import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
 import { encryptCredential } from '../../../lib/credentials';
 import { getTelegramBot, setTelegramWebhook, TelegramApiError } from '../../../lib/telegram';
+import { writeAuditLog } from '../../../lib/audit';
 
 const channelSelect = {
   id: true,
@@ -117,6 +118,7 @@ export async function POST(request: NextRequest) {
           select: channelSelect
         });
 
+    await writeAuditLog({ workspaceId: account.workspaceId, actorUserId: account.userId, action: existing ? 'CHANNEL_RECONNECTED' : 'CHANNEL_CONNECTED', entityType: 'CHANNEL', entityId: channel.id, request, metadata: { provider: 'TELEGRAM', externalId } });
     return NextResponse.json({ channel }, { status: existing ? 200 : 201 });
   } catch (error) {
     if (error instanceof TelegramApiError) {

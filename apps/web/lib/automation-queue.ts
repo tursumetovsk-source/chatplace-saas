@@ -130,5 +130,15 @@ export async function processAutomationQueue(options: { eventLimit?: number; run
     processEvents(options.eventLimit ?? 5),
     processDueRuns(options.runLimit ?? 10)
   ]);
-  return { startedAt: startedAt.toISOString(), completedAt: new Date().toISOString(), events, runs };
+  const housekeeping = await Promise.all([
+    prisma.rateLimitBucket.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
+    prisma.automationEvent.deleteMany({ where: { status: 'PROCESSED', processedAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } })
+  ]);
+  return {
+    startedAt: startedAt.toISOString(),
+    completedAt: new Date().toISOString(),
+    events,
+    runs,
+    housekeeping: { rateLimitBucketsDeleted: housekeeping[0].count, processedEventsDeleted: housekeeping[1].count }
+  };
 }

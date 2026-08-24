@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../lib/auth-context';
 import { getBillingOverview, PLANS, type PlanCode } from '../../../lib/billing';
+import { writeAuditLog } from '../../../lib/audit';
 
 export async function GET() {
   const account = await getAccountContext();
@@ -29,5 +30,6 @@ export async function POST(request: NextRequest) {
   const billingRequest = existing
     ? await prisma.billingRequest.update({ where: { id: existing.id }, data: { plan, requestedBy: account.userId, note } })
     : await prisma.billingRequest.create({ data: { workspaceId: account.workspaceId, requestedBy: account.userId, plan, note } });
+  await writeAuditLog({ workspaceId: account.workspaceId, actorUserId: account.userId, action: 'PLAN_CHANGE_REQUESTED', entityType: 'BILLING_REQUEST', entityId: billingRequest.id, request, metadata: { plan } });
   return NextResponse.json({ billingRequest }, { status: existing ? 200 : 201 });
 }

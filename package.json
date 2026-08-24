@@ -9,6 +9,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --experimental-strip-types tests/*.test.ts",
     "deploy:vercel": "vercel --prod --confirm",
     "agents:start": "node scripts/orchestrate-agents.js"
   },

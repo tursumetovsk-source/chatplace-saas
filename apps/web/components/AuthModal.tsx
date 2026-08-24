@@ -23,12 +23,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setMode(initialMode);
     setEmailForm(false);
     setError('');
+    setAcceptedLegal(false);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -53,7 +55,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
       const response = await fetch(`/api/auth/${mode === 'sign-up' ? 'register' : 'login'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, acceptedLegal: mode === 'sign-up' ? acceptedLegal : undefined })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Не удалось продолжить.');
@@ -127,6 +129,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
               <div className="text-xs font-bold text-purple-950">Зарегистрируйтесь сегодня</div>
               <div className="text-[11px] text-purple-700 mt-0.5">Откройте интерактивный кабинет без оплаты</div>
             </div>
+
             <div className="w-10 h-10 rounded-2xl bg-purple-200/80 flex items-center justify-center text-purple-700 shrink-0">
               <Gift className="w-5 h-5" />
             </div>
@@ -178,11 +181,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
               />
             </div>
 
+            {mode === 'sign-up' && (
+              <label className="flex items-start gap-3 rounded-xl bg-[#F6F5F8] p-3 text-[11px] leading-relaxed text-zinc-600">
+                <input type="checkbox" required checked={acceptedLegal} onChange={event => setAcceptedLegal(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#261930]" />
+                <span>Я принимаю <a href="/legal/terms" target="_blank" className="font-bold text-indigo-600 hover:underline">условия использования</a> и <a href="/legal/privacy" target="_blank" className="font-bold text-indigo-600 hover:underline">политику конфиденциальности</a>.</span>
+              </label>
+            )}
+
             {error && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2.5 text-xs font-semibold text-red-700">{error}</p>}
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (mode === 'sign-up' && !acceptedLegal)}
               className="w-full py-3.5 rounded-full bg-[#261930] text-[#BEFF53] font-bold text-sm hover:bg-[#392648] transition shadow-md flex items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-65"
             >
               <span>{submitting ? 'Подождите…' : mode === 'sign-up' ? 'Создать аккаунт' : 'Войти'}</span>
@@ -231,7 +241,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
 
         {/* Footer Disclaimer (Exact Match to Screenshot 4) */}
         <p className="mt-6 text-[10px] text-zinc-400 text-center leading-relaxed">
-          Демо-режим не создаёт аккаунт и не отправляет данные во внешние сервисы. Для собственного workspace, контактов и каналов зарегистрируйтесь через почту.
+          Демо-режим не создаёт аккаунт и не отправляет данные во внешние сервисы. Для собственного workspace зарегистрируйтесь через почту. <a href="/legal/privacy" target="_blank" className="underline">Конфиденциальность</a> · <a href="/legal/terms" target="_blank" className="underline">Условия</a>
         </p>
       </div>
     </div>

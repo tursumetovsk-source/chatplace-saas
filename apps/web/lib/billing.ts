@@ -32,9 +32,15 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
 
 export class QuotaExceededError extends Error {
   readonly status = 402;
-  constructor(public readonly metric: UsageMetric, public readonly used: number, public readonly limit: number) {
+  readonly metric: UsageMetric;
+  readonly used: number;
+  readonly limit: number;
+  constructor(metric: UsageMetric, used: number, limit: number) {
     super(`Лимит тарифа исчерпан: ${used} из ${limit}`);
     this.name = 'QuotaExceededError';
+    this.metric = metric;
+    this.used = used;
+    this.limit = limit;
   }
 }
 

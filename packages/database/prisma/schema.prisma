@@ -19,6 +19,10 @@ model User {
   status       String            @default("ACTIVE")
   createdAt    DateTime          @default(now()) @map("created_at")
   updatedAt    DateTime          @updatedAt @map("updated_at")
+  termsAcceptedAt DateTime?      @map("terms_accepted_at")
+  termsVersion String?           @map("terms_version")
+  privacyAcceptedAt DateTime?    @map("privacy_accepted_at")
+  privacyVersion String?         @map("privacy_version")
   memberships  WorkspaceMember[]
 
   @@map("users")
@@ -50,6 +54,8 @@ model Workspace {
   usageCounters   UsageCounter[]
   usageEvents     UsageEvent[]
   billingRequests BillingRequest[]
+  auditLogs       AuditLog[]
+  privacyRequests PrivacyRequest[]
 
   @@map("workspaces")
 }
@@ -396,6 +402,52 @@ model BillingRequest {
 
   @@index([workspaceId, status])
   @@map("billing_requests")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  actorUserId String?   @map("actor_user_id")
+  action      String
+  entityType  String    @map("entity_type")
+  entityId    String?   @map("entity_id")
+  ipHash      String?   @map("ip_hash")
+  metadata    Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model RateLimitBucket {
+  key         String   @id
+  scope       String
+  count       Int      @default(1)
+  windowStart DateTime @map("window_start")
+  expiresAt   DateTime @map("expires_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([expiresAt])
+  @@map("rate_limit_buckets")
+}
+
+model PrivacyRequest {
+  id          String     @id @default(uuid())
+  workspaceId String?    @map("workspace_id")
+  email       String
+  name        String?
+  type        String
+  details     String?
+  status      String     @default("RECEIVED")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([email, status])
+  @@index([workspaceId, createdAt])
+  @@map("privacy_requests")
 }
 
 model Deal {

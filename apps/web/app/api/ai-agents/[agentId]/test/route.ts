@@ -4,6 +4,7 @@ import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../../lib/auth-context';
 import { generateAgentReply, OpenAIRequestError, type AgentHistoryMessage } from '../../../../../lib/openai';
 import { assertWorkspaceQuota, QuotaExceededError, recordUsage } from '../../../../../lib/billing';
+import { checkRateLimit } from '../../../../../lib/rate-limit';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ agentId: string }> }) {
   const account = await getAccountContext();
@@ -14,6 +15,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json().catch(() => null) as { question?: unknown; history?: unknown } | null;
   const question = typeof body?.question === 'string' ? body.question.trim() : '';
   if (!question || question.length > 8_000) return NextResponse.json({ error: 'Введите вопрос до 8000 символов' }, { status: 400 });
+  const rate = await checkRateLimit({ request, scope: 'ai.test', identifier: account.userId, limit: 30, windowSeconds: 60 });
+  if (!rate.allowed) return NextResponse.json({ error: 'Слишком много тестовых запросов. Подождите минуту.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } });
   const directHandoff = agent.handoffKeywords.some(keyword => question.toLocaleLowerCase('ru').includes(keyword.toLocaleLowerCase('ru')));
   if (directHandoff) return NextResponse.json({ reply: { answer: agent.handoffMessage, handoff: true, reason: 'Запрос пользователя на оператора' } });
   const history: AgentHistoryMessage[] = Array.isArray(body?.history)

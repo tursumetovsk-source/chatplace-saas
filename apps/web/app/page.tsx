@@ -620,6 +620,8 @@ export default function LandingPage() {
               <a href="#product" className="hover:text-black">Продукт</a>
               <a href="#pricing" className="hover:text-black">Тарифы</a>
               <a href="#faq" className="hover:text-black">FAQ</a>
+              <Link href="/legal/privacy" className="hover:text-black">Конфиденциальность</Link>
+              <Link href="/legal/terms" className="hover:text-black">Условия</Link>
               <span>© 2026 Virale AI. Казахстан & СНГ.</span>
             </div>
         </div>
