@@ -47,8 +47,17 @@ export async function POST(request: NextRequest) {
           await transaction.broadcastDelivery.delete({ where: { id: sourceDelivery.id } });
         }
 
+        const sourceIdentities = await transaction.contactIdentity.findMany({ where: { contactId: source.id } });
+        for (const identity of sourceIdentities) {
+          const existingIdentity = await transaction.contactIdentity.findUnique({ where: { workspaceId_provider_externalId: { workspaceId: account.workspaceId, provider: identity.provider, externalId: identity.externalId } } });
+          if (existingIdentity && existingIdentity.contactId === target.id) {
+            if (!existingIdentity.username && identity.username) await transaction.contactIdentity.update({ where: { id: existingIdentity.id }, data: { username: identity.username } });
+            await transaction.contactIdentity.delete({ where: { id: identity.id } });
+          } else {
+            await transaction.contactIdentity.update({ where: { id: identity.id }, data: { contactId: target.id } });
+          }
+        }
         await Promise.all([
-          transaction.contactIdentity.updateMany({ where: { contactId: source.id }, data: { contactId: target.id } }),
           transaction.conversation.updateMany({ where: { contactId: source.id }, data: { contactId: target.id } }),
           transaction.deal.updateMany({ where: { contactId: source.id }, data: { contactId: target.id } }),
           transaction.automationRun.updateMany({ where: { contactId: source.id }, data: { contactId: target.id } }),
