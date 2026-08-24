@@ -14,12 +14,10 @@ function graphUrl(path: string) {
 }
 
 async function graphRequest<T>(path: string, token: string, init: RequestInit = {}) {
-  const url = new URL(graphUrl(path));
-  url.searchParams.set('access_token', token);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal, headers: { Accept: 'application/json', ...(init.headers || {}) } });
+    const response = await fetch(graphUrl(path), { ...init, signal: controller.signal, headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, ...(init.headers || {}) } });
     const payload = await response.json().catch(() => null) as { error?: { message?: string }; id?: string; username?: string; name?: string; message_id?: string } | null;
     if (!response.ok) throw new InstagramApiError(payload?.error?.message || 'Instagram Graph API отклонил запрос', response.status);
     return payload as T;
