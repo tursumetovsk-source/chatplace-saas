@@ -11,8 +11,8 @@ This document tracks product parity against current public ChatPlace materials a
 | Projects / workspaces | Projects with connected social accounts | Real accounts, roles, signed sessions and isolated PostgreSQL workspaces | Implemented |
 | Channels | Instagram, TikTok, Telegram bots and Telegram Business | Telegram Bot API is end-to-end; Instagram, WhatsApp and TikTok remain planned | Partial |
 | Unified chats and clients | Chats, client profiles, variables and tags | Persistent Inbox, contacts, tags and CRM; assignment and custom variables remain | Partial |
-| Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Visual React Flow builder, connections, simulator and basic engine types | Partial |
-| Variables and tags | Stored client variables, reserved variables, filters and segmentation | Template resolver and basic condition evaluator; no persisted values/tags | Partial |
+| Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs, publishing, run/step logs and Telegram execution; delayed queue resume and full editor remain | Partial |
+| Variables and tags | Stored client variables, reserved variables, filters and segmentation | Runtime variables, template resolution and persistent contact tags; custom field UI and segmentation remain | Partial |
 | Broadcasts | Targeted broadcasts using tags and account audiences | Interactive campaign composer | Demo only |
 | AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Agent settings screen and deterministic reply simulator | Demo only |
 | CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM board and `crm.create_deal` type; amoCRM connector missing | Partial |

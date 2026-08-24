@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma, prisma } from '@chatplace/database';
 import { decryptCredential } from '../../../../../lib/credentials';
+import { runInboundAutomations } from '../../../../../lib/automation-runtime';
 
 interface TelegramUser {
   id: number;
@@ -138,7 +139,7 @@ async function ingestUpdate(channel: { id: string; workspaceId: string }, update
       if (isEdited) {
         await transaction.message.update({ where: { id: existing.id }, data: { text: content.text, type: content.type, payload } });
       }
-      return { duplicate: true, conversationId: conversation.id };
+      return { duplicate: true, conversationId: conversation.id, contactId: identity.contactId, text: content.text };
     }
 
     await transaction.message.create({
@@ -159,7 +160,7 @@ async function ingestUpdate(channel: { id: string; workspaceId: string }, update
       where: { id: conversation.id },
       data: { unreadCount: { increment: 1 }, lastMessageAt: new Date(message.date * 1000) }
     });
-    return { accepted: true, conversationId: conversation.id };
+    return { accepted: true, conversationId: conversation.id, contactId: identity.contactId, text: content.text };
   });
 }
 
@@ -190,6 +191,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const result = await ingestUpdate(channel, update);
+    if ('accepted' in result && result.accepted) {
+      await runInboundAutomations({
+        workspaceId: channel.workspaceId,
+        channelAccountId: channel.id,
+        provider: 'TELEGRAM',
+        eventId: String(update.update_id),
+        contactId: result.contactId,
+        conversationId: result.conversationId,
+        text: result.text,
+        payload: { updateId: update.update_id }
+      });
+    }
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     if (isUniqueViolation(error)) return NextResponse.json({ ok: true, duplicate: true });

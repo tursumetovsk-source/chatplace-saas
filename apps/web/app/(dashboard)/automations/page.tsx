@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -35,15 +35,18 @@ import {
   X,
   Zap
 } from 'lucide-react';
+import { useAccountMode } from '../../../lib/use-account-mode';
 
 const nodeBase = 'w-[360px] rounded-[26px] border-2 bg-white p-5 text-[#111217] shadow-[0_16px_40px_rgba(24,25,31,0.10)]';
 
-const InstagramTriggerNode = ({ data }: { data: { title: string; keyword: string; scope: string } }) => (
-  <div className={`${nodeBase} border-pink-300`}>
+const ChannelTriggerNode = ({ data }: { data: { title: string; keyword: string; scope: string; provider?: string } }) => {
+  const telegram = data.provider === 'TELEGRAM';
+  const TriggerIcon = telegram ? Send : Instagram;
+  return <div className={`${nodeBase} ${telegram ? 'border-sky-300' : 'border-pink-300'}`}>
     <div className="flex items-start justify-between gap-4">
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-pink-50 text-pink-600"><Instagram className="h-5 w-5" /></span>
-        <div><p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-pink-600">Шаг 1 · Триггер</p><p className="mt-0.5 text-xs font-bold text-[#858891]">Instagram · Meta API</p></div>
+        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${telegram ? 'bg-sky-50 text-sky-600' : 'bg-pink-50 text-pink-600'}`}><TriggerIcon className="h-5 w-5" /></span>
+        <div><p className={`text-[11px] font-extrabold uppercase tracking-[0.13em] ${telegram ? 'text-sky-600' : 'text-pink-600'}`}>Шаг 1 · Триггер</p><p className="mt-0.5 text-xs font-bold text-[#858891]">{telegram ? 'Telegram · Bot API' : 'Instagram · Meta API'}</p></div>
       </div>
       <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold text-emerald-700">ПОДКЛЮЧЕНО</span>
     </div>
@@ -51,19 +54,19 @@ const InstagramTriggerNode = ({ data }: { data: { title: string; keyword: string
     <p className="mt-1.5 text-sm leading-relaxed text-[#686B73]">{data.scope}</p>
     <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#F7F8FB] p-3.5">
       <span className="text-xs font-bold text-[#777A82]">Кодовое слово</span>
-      <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-extrabold text-pink-700">{data.keyword}</span>
+      <span className={`rounded-full px-3 py-1 text-xs font-extrabold ${telegram ? 'bg-sky-100 text-sky-700' : 'bg-pink-100 text-pink-700'}`}>{data.keyword}</span>
     </div>
-    <Handle type="source" position={Position.Right} className="!h-4 !w-4 !border-[3px] !border-white !bg-pink-500" />
+    <Handle type="source" position={Position.Right} className={`!h-4 !w-4 !border-[3px] !border-white ${telegram ? '!bg-sky-500' : '!bg-pink-500'}`} />
   </div>
-);
+};
 
-const InstagramMessageNode = ({ data }: { data: { text: string; buttons: string[]; delay?: string } }) => (
+const InstagramMessageNode = ({ data }: { data: { text: string; buttons: string[]; delay?: string; provider?: string } }) => (
   <div className={`${nodeBase} border-blue-300`}>
     <Handle type="target" position={Position.Left} className="!h-4 !w-4 !border-[3px] !border-white !bg-blue-500" />
     <div className="flex items-start justify-between gap-4">
       <div className="flex items-center gap-3">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-[#1E5CFB]"><MessageSquare className="h-5 w-5" /></span>
-        <div><p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-[#1E5CFB]">Шаг 2 · Сообщение</p><p className="mt-0.5 text-xs font-bold text-[#858891]">Instagram Direct</p></div>
+        <div><p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-[#1E5CFB]">Шаг 2 · Сообщение</p><p className="mt-0.5 text-xs font-bold text-[#858891]">{data.provider === 'TELEGRAM' ? 'Telegram Bot' : 'Instagram Direct'}</p></div>
       </div>
       {data.delay && <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-700"><Clock className="h-3 w-3" /> {data.delay}</span>}
     </div>
@@ -113,11 +116,11 @@ const KaspiPayNode = ({ data }: { data: { title: string; amount: string; provide
   </div>
 );
 
-const nodeTypes = { instagramTrigger: InstagramTriggerNode, instagramMessage: InstagramMessageNode, aiAgent: AiAgentNode, kaspiPay: KaspiPayNode };
+const nodeTypes = { channelTrigger: ChannelTriggerNode, instagramTrigger: ChannelTriggerNode, instagramMessage: InstagramMessageNode, aiAgent: AiAgentNode, kaspiPay: KaspiPayNode };
 
 const initialNodes: Node[] = [
-  { id: 'n1', type: 'instagramTrigger', position: { x: 70, y: 70 }, data: { title: 'Клиент пишет «ПРАЙС»', keyword: 'ПРАЙС', scope: 'В комментарии под Reels, постом или в Direct' } },
-  { id: 'n2', type: 'instagramMessage', position: { x: 560, y: 40 }, data: { text: 'Отправляем прайс и помогаем выбрать подходящий тариф.', buttons: ['Старт · 45 000 ₸', 'Про · 95 000 ₸'], delay: 'через 2 сек' } },
+  { id: 'n1', type: 'channelTrigger', position: { x: 70, y: 70 }, data: { title: 'Клиент пишет «ПРАЙС»', keyword: 'ПРАЙС', scope: 'В личном сообщении подключённому Telegram-боту', provider: 'TELEGRAM' } },
+  { id: 'n2', type: 'instagramMessage', position: { x: 560, y: 40 }, data: { text: 'Отправляем прайс и помогаем выбрать подходящий тариф.', buttons: ['Старт · 45 000 ₸', 'Про · 95 000 ₸'], delay: 'через 2 сек', provider: 'TELEGRAM' } },
   { id: 'n3', type: 'aiAgent', position: { x: 560, y: 390 }, data: { agentName: 'AI-консультант продаж', model: 'GPT-4o', kbChunks: '142 материала' } },
   { id: 'n4', type: 'kaspiPay', position: { x: 70, y: 410 }, data: { title: 'Ссылка на оплату Kaspi Pay', amount: '95 000 ₸', provider: 'Kaspi Pay' } }
 ];
@@ -132,27 +135,83 @@ const initialEdges: Edge[] = [
 ];
 
 const journeySteps = [
-  { number: '01', title: 'Клиент пишет', text: 'Комментарий «ПРАЙС»', icon: Instagram, color: 'bg-pink-50 text-pink-600' },
+  { number: '01', title: 'Клиент пишет', text: 'Сообщение боту «ПРАЙС»', icon: Send, color: 'bg-sky-50 text-sky-600' },
   { number: '02', title: 'Получает предложение', text: 'Прайс и выбор тарифа', icon: MessageSquare, color: 'bg-blue-50 text-[#1E5CFB]' },
   { number: '03', title: 'Общается с AI', text: 'Ответы и квалификация', icon: Bot, color: 'bg-purple-50 text-purple-600' },
   { number: '04', title: 'Оплачивает', text: 'Kaspi Pay и сделка в CRM', icon: CreditCard, color: 'bg-emerald-50 text-emerald-600' }
 ];
 
 const blockOptions = [
-  { type: 'instagramTrigger', label: 'Триггер', icon: Instagram, color: 'text-pink-600' },
+  { type: 'channelTrigger', label: 'Триггер', icon: Zap, color: 'text-sky-600' },
   { type: 'instagramMessage', label: 'Сообщение', icon: MessageSquare, color: 'text-[#1E5CFB]' },
   { type: 'aiAgent', label: 'AI-агент', icon: Bot, color: 'text-purple-600' },
   { type: 'kaspiPay', label: 'Оплата / CRM', icon: CreditCard, color: 'text-emerald-600' }
 ];
 
+interface StoredGraph {
+  nodes: Array<{ id: string; type: string; uiType?: string; position: { x: number; y: number }; config: Record<string, unknown>; data?: Record<string, unknown> }>;
+  edges: Array<{ id: string; source: string; target: string; sourceHandle?: string }>;
+}
+
+const engineType = (node: Node) => {
+  if (node.type === 'channelTrigger' || node.type === 'instagramTrigger') {
+    return node.data.provider === 'TELEGRAM' ? 'trigger.telegram.message' : 'trigger.instagram.comment';
+  }
+  if (node.type === 'instagramMessage') return 'message.send';
+  if (node.type === 'aiAgent') return 'ai.agent';
+  if (node.type === 'kaspiPay') return 'crm.create_deal';
+  return 'message.send';
+};
+
+const graphForApi = (nodes: Node[], edges: Edge[]): StoredGraph => ({
+  nodes: nodes.map(node => ({ id: node.id, type: engineType(node), uiType: node.type, position: node.position, config: node.data as Record<string, unknown>, data: node.data as Record<string, unknown> })),
+  edges: edges.map(edge => ({ id: edge.id, source: edge.source, target: edge.target, ...(edge.sourceHandle ? { sourceHandle: edge.sourceHandle } : {}) }))
+});
+
+const uiTypeForEngine = (type: string) => {
+  if (type.startsWith('trigger.')) return 'channelTrigger';
+  if (type === 'message.send') return 'instagramMessage';
+  if (type === 'ai.agent') return 'aiAgent';
+  if (type === 'crm.create_deal') return 'kaspiPay';
+  return 'instagramMessage';
+};
+
+const graphForCanvas = (graph: StoredGraph) => ({
+  nodes: graph.nodes.map(node => ({ id: node.id, type: node.uiType || uiTypeForEngine(node.type), position: node.position, data: node.data || node.config } as Node)),
+  edges: graph.edges.map(edge => ({ ...edge, type: 'smoothstep', animated: true, markerEnd: { type: MarkerType.ArrowClosed, color: '#1E5CFB' }, style: { stroke: '#1E5CFB', strokeWidth: 2.5 } } as Edge))
+});
+
 export default function AutomationsPage() {
+  const { mode } = useAccountMode();
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [simulating, setSimulating] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [automationId, setAutomationId] = useState<string | null>(null);
+  const [automationStatus, setAutomationStatus] = useState<'DRAFT' | 'ACTIVE' | 'PAUSED'>('DRAFT');
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
   const [addedBlock, setAddedBlock] = useState('');
   const [simLogs, setSimLogs] = useState<Array<{ sender: string; text: string }>>([]);
   const [simInput, setSimInput] = useState('');
+
+  useEffect(() => {
+    if (mode !== 'account') return;
+    void fetch('/api/automations', { cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) throw new Error('Не удалось загрузить сценарии');
+        const data = await response.json() as { automations: Array<{ id: string; status: 'DRAFT' | 'ACTIVE' | 'PAUSED'; graph: StoredGraph }> };
+        const automation = data.automations[0];
+        if (!automation) return;
+        const canvas = graphForCanvas(automation.graph);
+        setAutomationId(automation.id);
+        setAutomationStatus(automation.status);
+        setNodes(canvas.nodes);
+        setEdges(canvas.edges);
+      })
+      .catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить сценарии'));
+  }, [mode]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => setNodes(current => applyNodeChanges(changes, current)), []);
   const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges(current => applyEdgeChanges(changes, current)), []);
@@ -162,14 +221,67 @@ export default function AutomationsPage() {
     const blockIndex = nodes.length;
     const id = `n-${Date.now()}`;
     const dataByType: Record<string, Record<string, unknown>> = {
-      instagramTrigger: { title: 'Новый Instagram-триггер', keyword: 'СЛОВО', scope: 'Выберите публикации и условие запуска' },
-      instagramMessage: { text: 'Введите текст сообщения для клиента.', buttons: ['Первый вариант'], delay: 'без паузы' },
+      channelTrigger: { title: 'Новое входящее сообщение', keyword: 'СЛОВО', scope: 'Сообщение подключённому Telegram-боту', provider: 'TELEGRAM' },
+      instagramMessage: { text: 'Введите текст сообщения для клиента.', buttons: ['Первый вариант'], delay: 'без паузы', provider: 'TELEGRAM' },
       aiAgent: { agentName: 'Новый AI-консультант', model: 'GPT-4o', kbChunks: 'База не выбрана' },
       kaspiPay: { title: 'Новое действие оплаты', amount: '0 ₸', provider: 'Kaspi Pay' }
     };
     setNodes(current => [...current, { id, type, position: { x: 80 + (blockIndex % 2) * 490, y: 740 + Math.floor((blockIndex - 4) / 2) * 300 }, data: dataByType[type] }]);
     setAddedBlock(label);
     window.setTimeout(() => setAddedBlock(''), 1800);
+  };
+
+  const saveScenario = async (): Promise<string | null> => {
+    if (mode !== 'account') {
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1800);
+      return null;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const response = await fetch(automationId ? `/api/automations/${automationId}` : '/api/automations', {
+        method: automationId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Автоворонка продаж', graph: graphForApi(nodes, edges) })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Не удалось сохранить сценарий');
+      const id = data.automation.id as string;
+      setAutomationId(id);
+      setAutomationStatus(data.automation.status);
+      setSaved(true);
+      setNotice('Изменения сохранены как новая версия сценария');
+      window.setTimeout(() => setSaved(false), 1800);
+      return id;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось сохранить сценарий');
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const publishScenario = async () => {
+    const id = automationId || await saveScenario();
+    if (!id || mode !== 'account') {
+      if (mode !== 'account') setNotice('В демо публикация показана без запуска внешних сообщений.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      if (automationId) await saveScenario();
+      const response = await fetch(`/api/automations/${id}/publish`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Не удалось опубликовать сценарий');
+      setAutomationStatus('ACTIVE');
+      setNotice('Сценарий опубликован и готов принимать события подключённых каналов');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось опубликовать сценарий');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const startSimulator = () => {
@@ -196,16 +308,20 @@ export default function AutomationsPage() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-extrabold uppercase tracking-[0.15em] text-[#1E5CFB]">Конструктор сценария</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold text-emerald-700"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> АКТИВЕН</span>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${automationStatus === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}><span className={`h-1.5 w-1.5 rounded-full ${automationStatus === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'}`} /> {automationStatus === 'ACTIVE' ? 'ОПУБЛИКОВАН' : 'ЧЕРНОВИК'}</span>
           </div>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Продажи из Instagram</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#686B73] sm:text-base">Клиент пишет кодовое слово, получает предложение, консультируется с AI и оплачивает через Kaspi — все четыре шага видны ниже.</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Автоворонка продаж</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#686B73] sm:text-base">Клиент пишет боту кодовое слово, получает предложение, консультируется с AI и переходит к оплате — все шаги видны ниже.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button onClick={startSimulator} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#BEFF53] px-5 text-sm font-extrabold text-[#111217] transition hover:bg-[#B2F244]"><Smartphone className="h-4 w-4" /> Тестировать с клиентом</button>
-          <button onClick={() => { setSaved(true); window.setTimeout(() => setSaved(false), 1800); }} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#261930] px-5 text-sm font-extrabold text-white transition hover:bg-[#392648]"><Save className="h-4 w-4" /> {saved ? 'Сценарий сохранён' : 'Сохранить'}</button>
+          <button disabled={saving} onClick={() => void saveScenario()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#DDE0E7] bg-white px-5 text-sm font-extrabold text-[#261930] transition hover:bg-[#F7F8FB] disabled:opacity-50"><Save className="h-4 w-4" /> {saved ? 'Сохранено' : 'Сохранить'}</button>
+          <button disabled={saving} onClick={() => void publishScenario()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#261930] px-5 text-sm font-extrabold text-white transition hover:bg-[#392648] disabled:opacity-50"><Zap className="h-4 w-4 text-[#BEFF53]" /> {automationStatus === 'ACTIVE' ? 'Обновить публикацию' : 'Опубликовать'}</button>
         </div>
       </header>
+
+      {notice && <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-[#1E5CFB]" role="status">{notice}</div>}
+      {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">{error}</div>}
 
       <section aria-label="Путь клиента" className="rounded-[26px] border border-[#E4E6EB] bg-white p-5 shadow-subtle sm:p-6">
         <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#E60067]">Как работает сценарий</p><h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em] sm:text-2xl">Путь клиента до оплаты</h2></div><p className="text-sm font-semibold text-[#777A82]">4 шага · около 3 минут</p></div>
@@ -255,7 +371,7 @@ export default function AutomationsPage() {
           <div className="fixed inset-0 z-[70] flex justify-end bg-black/35 p-3 sm:p-5" onClick={() => setSimulating(false)}>
             <aside className="flex h-full w-full max-w-[420px] flex-col overflow-hidden rounded-[26px] bg-white shadow-2xl" onClick={event => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-[#E4E6EB] bg-[#F7F8FB] p-5">
-                <div><div className="flex items-center gap-2 text-base font-extrabold"><Smartphone className="h-5 w-5 text-pink-600" /> Тест сценария</div><p className="mt-1 text-xs text-[#777A82]">Instagram Direct · @my_shop_kz</p></div>
+                <div><div className="flex items-center gap-2 text-base font-extrabold"><Smartphone className="h-5 w-5 text-sky-600" /> Тест сценария</div><p className="mt-1 text-xs text-[#777A82]">Telegram Bot · @my_shop_bot</p></div>
                 <button onClick={() => setSimulating(false)} aria-label="Закрыть симулятор" className="rounded-xl p-2 text-[#72757D] hover:bg-white"><X className="h-5 w-5" /></button>
               </div>
               <div className="flex-1 space-y-3 overflow-y-auto p-5 text-sm">
