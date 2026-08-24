@@ -17,6 +17,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ aut
   if (!validated.graph.nodes.some(node => node.type.startsWith('trigger.'))) {
     return NextResponse.json({ error: 'Перед публикацией добавьте триггер запуска' }, { status: 400 });
   }
+  for (const node of validated.graph.nodes) {
+    if (node.type === 'message.send' && (typeof node.config.text !== 'string' || !node.config.text.trim())) return NextResponse.json({ error: 'Заполните текст во всех блоках сообщений' }, { status: 400 });
+    if (node.type === 'condition') {
+      const branches = new Set(validated.graph.edges.filter(edge => edge.source === node.id).map(edge => edge.sourceHandle));
+      if (!branches.has('true') || !branches.has('false')) return NextResponse.json({ error: 'Соедините обе ветки «ДА» и «НЕТ» во всех условиях' }, { status: 400 });
+    }
+    if (node.type === 'delay' && (!Number.isFinite(Number(node.config.seconds)) || Number(node.config.seconds) < 1 || Number(node.config.seconds) > 2_592_000)) return NextResponse.json({ error: 'Пауза должна быть от 1 секунды до 30 дней' }, { status: 400 });
+    if ((node.type === 'tag.add' || node.type === 'tag.remove') && !(Array.isArray(node.config.tags) ? node.config.tags.some(tag => typeof tag === 'string' && tag.trim()) : typeof node.config.tag === 'string' && node.config.tag.trim())) return NextResponse.json({ error: 'Укажите хотя бы один тег в блоке тегов' }, { status: 400 });
+    if (node.type === 'variable.set' && (typeof node.config.key !== 'string' || !/^[a-zA-Z0-9_.-]{1,80}$/.test(node.config.key.trim()))) return NextResponse.json({ error: 'Проверьте ключ в блоке переменной' }, { status: 400 });
+  }
   const httpNodes = validated.graph.nodes.filter(node => node.type === 'http.request');
   if (httpNodes.some(node => typeof node.config.integrationId !== 'string' || !node.config.integrationId)) return NextResponse.json({ error: 'Выберите интеграцию во всех HTTP-блоках' }, { status: 400 });
   for (const node of httpNodes) {
@@ -35,6 +45,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ aut
     const activeIntegrations = await prisma.workspaceIntegration.count({ where: { id: { in: integrationIds }, workspaceId: account.workspaceId, status: 'ACTIVE' } });
     if (activeIntegrations !== integrationIds.length) return NextResponse.json({ error: 'Один из HTTP-блоков ссылается на недоступную интеграцию' }, { status: 400 });
   }
+  const aiNodes = validated.graph.nodes.filter(node => node.type === 'ai.agent');
+  const agentIds = [...new Set(aiNodes.flatMap(node => typeof node.config.agentId === 'string' && node.config.agentId.trim() ? [node.config.agentId.trim()] : []))];
+  if (agentIds.length) {
+    const activeAgents = await prisma.aiAgent.count({ where: { id: { in: agentIds }, workspaceId: account.workspaceId, status: 'ACTIVE' } });
+    if (activeAgents !== agentIds.length) return NextResponse.json({ error: 'Один из AI-блоков ссылается на недоступного агента' }, { status: 400 });
+  }
+  if (aiNodes.length > agentIds.length && !await prisma.aiAgent.count({ where: { workspaceId: account.workspaceId, status: 'ACTIVE' } })) return NextResponse.json({ error: 'Создайте активного AI-агента перед публикацией' }, { status: 400 });
 
   const automation = await prisma.automation.update({
     where: { id: automationId },

@@ -22,9 +22,12 @@ import {
   ArrowDown,
   ArrowRight,
   Bot,
+  Braces,
   Check,
   Clock,
+  Copy,
   CreditCard,
+  GitBranch,
   Instagram,
   MessageSquare,
   Plus,
@@ -34,6 +37,8 @@ import {
   Settings2,
   Smartphone,
   Sparkles,
+  Tags,
+  Timer,
   Trash2,
   Webhook,
   X,
@@ -137,7 +142,51 @@ const WebhookNode = ({ data }: { data: { title?: string; integrationName?: strin
   </div>
 );
 
-const nodeTypes = { channelTrigger: ChannelTriggerNode, instagramTrigger: ChannelTriggerNode, instagramMessage: InstagramMessageNode, aiAgent: AiAgentNode, kaspiPay: KaspiPayNode, webhook: WebhookNode };
+const ConditionNode = ({ data }: { data: { title?: string; source?: string; operator?: string; value?: string } }) => (
+  <div className={`${nodeBase} border-cyan-300`}>
+    <Handle type="target" position={Position.Left} className="!h-4 !w-4 !border-[3px] !border-white !bg-cyan-500" />
+    <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700"><GitBranch className="h-5 w-5" /></span><div><p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-cyan-700">Условие</p><p className="mt-0.5 text-xs font-bold text-[#858891]">Две ветки продолжения</p></div></div>
+    <h3 className="mt-5 text-lg font-extrabold">{data.title || 'Проверить условие'}</h3>
+    <div className="mt-4 rounded-2xl bg-[#F7F8FB] p-3.5 text-sm leading-relaxed text-[#565961]"><strong>{data.source || 'event.text'}</strong> {data.operator === 'equals' ? 'равно' : 'содержит'} <strong>«{data.value || 'значение'}»</strong></div>
+    <div className="mt-3 grid grid-cols-2 gap-2"><span className="rounded-xl bg-emerald-50 px-3 py-2.5 text-center text-xs font-extrabold text-emerald-700">ДА</span><span className="rounded-xl bg-red-50 px-3 py-2.5 text-center text-xs font-extrabold text-red-700">НЕТ</span></div>
+    <Handle id="true" type="source" position={Position.Bottom} style={{ left: '27%' }} className="!h-4 !w-4 !border-[3px] !border-white !bg-emerald-500" />
+    <Handle id="false" type="source" position={Position.Bottom} style={{ left: '73%' }} className="!h-4 !w-4 !border-[3px] !border-white !bg-red-500" />
+  </div>
+);
+
+const DelayNode = ({ data }: { data: { title?: string; seconds?: number | string } }) => (
+  <div className={`${nodeBase} border-amber-300`}>
+    <Handle type="target" position={Position.Left} className="!h-4 !w-4 !border-[3px] !border-white !bg-amber-500" />
+    <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700"><Timer className="h-5 w-5" /></span><div><p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-amber-700">Пауза</p><p className="mt-0.5 text-xs font-bold text-[#858891]">Durable-очередь</p></div></div>
+    <h3 className="mt-5 text-lg font-extrabold">{data.title || 'Подождать перед следующим шагом'}</h3>
+    <div className="mt-4 rounded-2xl bg-amber-50 p-3.5 text-sm font-extrabold text-amber-900">{Number(data.seconds || 60) < 60 ? `${Number(data.seconds || 60)} сек` : `${Math.round(Number(data.seconds || 60) / 60)} мин`}</div>
+    <Handle type="source" position={Position.Right} className="!h-4 !w-4 !border-[3px] !border-white !bg-amber-500" />
+  </div>
+);
+
+const TagActionNode = ({ data }: { data: { title?: string; operation?: string; tags?: string[]; tag?: string } }) => {
+  const tags = Array.isArray(data.tags) ? data.tags : data.tag ? [data.tag] : [];
+  const removing = data.operation === 'REMOVE';
+  return <div className={`${nodeBase} ${removing ? 'border-red-300' : 'border-lime-300'}`}>
+    <Handle type="target" position={Position.Left} className={`!h-4 !w-4 !border-[3px] !border-white ${removing ? '!bg-red-500' : '!bg-lime-500'}`} />
+    <div className="flex items-center gap-3"><span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${removing ? 'bg-red-50 text-red-600' : 'bg-lime-50 text-lime-700'}`}><Tags className="h-5 w-5" /></span><div><p className={`text-[11px] font-extrabold uppercase tracking-[0.13em] ${removing ? 'text-red-600' : 'text-lime-700'}`}>{removing ? 'Удалить тег' : 'Добавить тег'}</p><p className="mt-0.5 text-xs font-bold text-[#858891]">Карточка контакта</p></div></div>
+    <h3 className="mt-5 text-lg font-extrabold">{data.title || (removing ? 'Очистить тег контакта' : 'Пометить контакт')}</h3>
+    <div className="mt-4 flex flex-wrap gap-2">{tags.length ? tags.map(tag => <span key={tag} className="rounded-full bg-[#F1F3F7] px-3 py-1.5 text-xs font-extrabold text-[#565961]">{tag}</span>) : <span className="text-sm text-[#777A82]">Тег не выбран</span>}</div>
+    <Handle type="source" position={Position.Right} className={`!h-4 !w-4 !border-[3px] !border-white ${removing ? '!bg-red-500' : '!bg-lime-500'}`} />
+  </div>;
+};
+
+const VariableNode = ({ data }: { data: { title?: string; key?: string; value?: string } }) => (
+  <div className={`${nodeBase} border-violet-300`}>
+    <Handle type="target" position={Position.Left} className="!h-4 !w-4 !border-[3px] !border-white !bg-violet-500" />
+    <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700"><Braces className="h-5 w-5" /></span><div><p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-violet-700">Переменная</p><p className="mt-0.5 text-xs font-bold text-[#858891]">Данные текущего запуска</p></div></div>
+    <h3 className="mt-5 text-lg font-extrabold">{data.title || 'Сохранить значение'}</h3>
+    <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-violet-50 p-3.5 text-xs text-violet-950"><strong className="truncate">{data.key || 'key'}</strong><span>=</span><span className="truncate">{data.value || 'value'}</span></div>
+    <Handle type="source" position={Position.Right} className="!h-4 !w-4 !border-[3px] !border-white !bg-violet-500" />
+  </div>
+);
+
+const nodeTypes = { channelTrigger: ChannelTriggerNode, instagramTrigger: ChannelTriggerNode, instagramMessage: InstagramMessageNode, aiAgent: AiAgentNode, kaspiPay: KaspiPayNode, webhook: WebhookNode, condition: ConditionNode, delay: DelayNode, tagAction: TagActionNode, variable: VariableNode };
 
 const initialNodes: Node[] = [
   { id: 'n1', type: 'channelTrigger', position: { x: 70, y: 70 }, data: { title: 'Клиент пишет «ПРАЙС»', keyword: 'ПРАЙС', scope: 'В личном сообщении подключённому Telegram-боту', provider: 'TELEGRAM' } },
@@ -155,6 +204,11 @@ const initialEdges: Edge[] = [
   { id: 'e3-4', source: 'n3', target: 'n4', type: 'smoothstep', animated: true, label: 'Готов к оплате', labelStyle: edgeLabel, labelBgStyle: edgeBg, labelBgPadding: [9, 6], labelBgBorderRadius: 10, style: { stroke: '#8B5CF6', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#8B5CF6' } }
 ];
 
+const edgeAppearance = (sourceHandle?: string | null) => {
+  const color = sourceHandle === 'true' ? '#10B981' : sourceHandle === 'false' ? '#EF4444' : '#1E5CFB';
+  return { type: 'smoothstep', animated: true, ...(sourceHandle === 'true' ? { label: 'ДА' } : sourceHandle === 'false' ? { label: 'НЕТ' } : {}), labelStyle: edgeLabel, labelBgStyle: edgeBg, labelBgPadding: [9, 6] as [number, number], labelBgBorderRadius: 10, markerEnd: { type: MarkerType.ArrowClosed, color }, style: { stroke: color, strokeWidth: 2.5 } };
+};
+
 const journeySteps = [
   { number: '01', title: 'Клиент пишет', text: 'Сообщение боту «ПРАЙС»', icon: Send, color: 'bg-sky-50 text-sky-600' },
   { number: '02', title: 'Получает предложение', text: 'Прайс и выбор тарифа', icon: MessageSquare, color: 'bg-blue-50 text-[#1E5CFB]' },
@@ -165,12 +219,17 @@ const journeySteps = [
 const blockOptions = [
   { type: 'channelTrigger', label: 'Триггер', icon: Zap, color: 'text-sky-600' },
   { type: 'instagramMessage', label: 'Сообщение', icon: MessageSquare, color: 'text-[#1E5CFB]' },
+  { type: 'condition', label: 'Условие', icon: GitBranch, color: 'text-cyan-700' },
+  { type: 'delay', label: 'Пауза', icon: Timer, color: 'text-amber-700' },
+  { type: 'tagAction', label: 'Тег', icon: Tags, color: 'text-lime-700' },
+  { type: 'variable', label: 'Переменная', icon: Braces, color: 'text-violet-700' },
   { type: 'aiAgent', label: 'AI-агент', icon: Bot, color: 'text-purple-600' },
   { type: 'kaspiPay', label: 'Сделка в CRM', icon: CreditCard, color: 'text-emerald-600' },
   { type: 'webhook', label: 'Webhook / CRM', icon: Webhook, color: 'text-orange-600' }
 ];
 
 interface IntegrationSummary { id: string; name: string; baseUrl: string; status: string }
+interface AiAgentSummary { id: string; name: string; model: string; status: string }
 
 interface StoredGraph {
   nodes: Array<{ id: string; type: string; uiType?: string; position: { x: number; y: number }; config: Record<string, unknown>; data?: Record<string, unknown> }>;
@@ -195,6 +254,10 @@ const engineType = (node: Node) => {
   if (node.type === 'aiAgent') return 'ai.agent';
   if (node.type === 'kaspiPay') return 'crm.create_deal';
   if (node.type === 'webhook') return 'http.request';
+  if (node.type === 'condition') return 'condition';
+  if (node.type === 'delay') return 'delay';
+  if (node.type === 'tagAction') return node.data.operation === 'REMOVE' ? 'tag.remove' : 'tag.add';
+  if (node.type === 'variable') return 'variable.set';
   return 'message.send';
 };
 
@@ -209,12 +272,16 @@ const uiTypeForEngine = (type: string) => {
   if (type === 'ai.agent') return 'aiAgent';
   if (type === 'crm.create_deal') return 'kaspiPay';
   if (type === 'http.request') return 'webhook';
+  if (type === 'condition') return 'condition';
+  if (type === 'delay') return 'delay';
+  if (type === 'tag.add' || type === 'tag.remove') return 'tagAction';
+  if (type === 'variable.set') return 'variable';
   return 'instagramMessage';
 };
 
 const graphForCanvas = (graph: StoredGraph) => ({
-  nodes: graph.nodes.map(node => ({ id: node.id, type: node.uiType || uiTypeForEngine(node.type), position: node.position, data: node.data || node.config } as Node)),
-  edges: graph.edges.map(edge => ({ ...edge, type: 'smoothstep', animated: true, markerEnd: { type: MarkerType.ArrowClosed, color: '#1E5CFB' }, style: { stroke: '#1E5CFB', strokeWidth: 2.5 } } as Edge))
+  nodes: graph.nodes.map(node => ({ id: node.id, type: node.uiType || uiTypeForEngine(node.type), position: node.position, data: { ...(node.data || node.config), ...(node.type === 'tag.remove' ? { operation: 'REMOVE' } : node.type === 'tag.add' ? { operation: 'ADD' } : {}) } } as Node)),
+  edges: graph.edges.map(edge => ({ ...edge, ...edgeAppearance(edge.sourceHandle) } as Edge))
 });
 
 export default function AutomationsPage() {
@@ -234,6 +301,7 @@ export default function AutomationsPage() {
   const [runs, setRuns] = useState<RunView[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
   const [integrations, setIntegrations] = useState<IntegrationSummary[]>([]);
+  const [aiAgents, setAiAgents] = useState<AiAgentSummary[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const loadRuns = async (id = automationId) => {
@@ -254,16 +322,20 @@ export default function AutomationsPage() {
   useEffect(() => {
     if (mode === 'demo') {
       setIntegrations([{ id: 'demo-webhook', name: 'Demo CRM', baseUrl: 'https://crm.example.kz/hooks/virale', status: 'ACTIVE' }]);
+      setAiAgents([{ id: 'demo-agent', name: 'AI-консультант продаж', model: 'gpt-5.6-terra', status: 'ACTIVE' }]);
       return;
     }
     if (mode !== 'account') return;
-    void Promise.all([fetch('/api/automations', { cache: 'no-store' }), fetch('/api/integrations', { cache: 'no-store' })])
-      .then(async ([automationResponse, integrationResponse]) => {
+    void Promise.all([fetch('/api/automations', { cache: 'no-store' }), fetch('/api/integrations', { cache: 'no-store' }), fetch('/api/ai-agents', { cache: 'no-store' })])
+      .then(async ([automationResponse, integrationResponse, agentsResponse]) => {
         if (!automationResponse.ok) throw new Error('Не удалось загрузить сценарии');
         if (!integrationResponse.ok) throw new Error('Не удалось загрузить интеграции');
+        if (!agentsResponse.ok) throw new Error('Не удалось загрузить AI-агентов');
         const data = await automationResponse.json() as { automations: Array<{ id: string; status: 'DRAFT' | 'ACTIVE' | 'PAUSED'; graph: StoredGraph }> };
         const integrationData = await integrationResponse.json() as { integrations: IntegrationSummary[] };
+        const agentsData = await agentsResponse.json() as { agents: AiAgentSummary[] };
         setIntegrations(integrationData.integrations.filter(integration => integration.status === 'ACTIVE'));
+        setAiAgents(agentsData.agents.filter(agent => agent.status === 'ACTIVE'));
         const automation = data.automations[0];
         if (!automation) return;
         const canvas = graphForCanvas(automation.graph);
@@ -278,7 +350,7 @@ export default function AutomationsPage() {
 
   const onNodesChange = useCallback((changes: NodeChange[]) => setNodes(current => applyNodeChanges(changes, current)), []);
   const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges(current => applyEdgeChanges(changes, current)), []);
-  const onConnect = useCallback((params: Connection) => setEdges(current => addEdge({ ...params, animated: true, type: 'smoothstep' }, current)), []);
+  const onConnect = useCallback((params: Connection) => setEdges(current => addEdge({ ...params, ...edgeAppearance(params.sourceHandle) }, current)), []);
 
   const addBlockToCanvas = (type: string, label: string) => {
     const blockIndex = nodes.length;
@@ -286,7 +358,11 @@ export default function AutomationsPage() {
     const dataByType: Record<string, Record<string, unknown>> = {
       channelTrigger: { title: 'Новое входящее сообщение', keyword: 'СЛОВО', scope: 'Сообщение подключённому Telegram-боту', provider: 'TELEGRAM' },
       instagramMessage: { text: 'Введите текст сообщения для клиента.', buttons: ['Первый вариант'], delay: 'без паузы', provider: 'TELEGRAM' },
-      aiAgent: { agentName: 'Новый AI-консультант', model: 'GPT-5.6 Terra', kbChunks: 'База не выбрана' },
+      condition: { title: 'Проверить ответ клиента', source: 'event.text', operator: 'contains', value: 'да' },
+      delay: { title: 'Подождать перед следующим шагом', seconds: 60 },
+      tagAction: { title: 'Пометить контакт', operation: 'ADD', tags: ['квалифицирован'] },
+      variable: { title: 'Сохранить выбор клиента', key: 'selected_plan', value: '{{event.text}}' },
+      aiAgent: { agentId: aiAgents[0]?.id || '', agentName: aiAgents[0]?.name || 'AI-агент не выбран', model: aiAgents[0]?.model || 'gpt-5.6-terra', kbChunks: 'База агента' },
       kaspiPay: { title: 'Новая сделка', amount: '0 ₸', provider: 'Virale CRM' },
       webhook: { title: 'Передать лид во внешнюю CRM', integrationId: integrations[0]?.id || '', integrationName: integrations[0]?.name || 'Интеграция не выбрана', method: 'POST', path: '', bodyJson: '{\n  "source": "Virale AI",\n  "message": "{{event.text}}"\n}' }
     };
@@ -306,6 +382,14 @@ export default function AutomationsPage() {
     setNodes(current => current.filter(node => node.id !== selectedNodeId));
     setEdges(current => current.filter(edge => edge.source !== selectedNodeId && edge.target !== selectedNodeId));
     setSelectedNodeId(null);
+  };
+  const copySelectedNode = () => {
+    if (!selectedNode) return;
+    const id = `n-${Date.now()}`;
+    const copy: Node = { ...selectedNode, id, selected: false, position: { x: selectedNode.position.x + 70, y: selectedNode.position.y + 70 }, data: { ...selectedNode.data } };
+    setNodes(current => [...current, copy]);
+    setSelectedNodeId(id);
+    setNotice('Копия блока добавлена рядом с оригиналом');
   };
 
   const saveScenario = async (): Promise<string | null> => {
@@ -395,6 +479,7 @@ export default function AutomationsPage() {
   const selectedData = selectedNode?.data as Record<string, unknown> | undefined;
   const selectedValue = (key: string) => String(selectedData?.[key] ?? '');
   const editorInput = 'mt-1.5 w-full rounded-xl border border-[#DDE0E7] bg-[#F7F8FB] px-3.5 py-3 text-sm outline-none focus:border-[#1E5CFB] focus:bg-white';
+  const editorTitles: Record<string, string> = { webhook: 'Webhook / внешняя CRM', channelTrigger: 'Триггер входящего сообщения', instagramMessage: 'Сообщение клиенту', aiAgent: 'AI-консультант', kaspiPay: 'Сделка в CRM', condition: 'Условие и две ветки', delay: 'Пауза', tagAction: 'Теги контакта', variable: 'Переменная запуска' };
 
   return (
     <div className="space-y-6">
@@ -465,7 +550,7 @@ export default function AutomationsPage() {
           <div className="fixed inset-0 z-[75] flex justify-end bg-black/35 p-3 sm:p-5" onClick={() => setSelectedNodeId(null)}>
             <aside className="flex h-full w-full max-w-[520px] flex-col overflow-hidden rounded-[26px] bg-white shadow-2xl" onClick={event => event.stopPropagation()}>
               <div className="flex items-start justify-between gap-4 border-b border-[#E4E6EB] bg-[#F7F8FB] p-5 sm:p-6">
-                <div className="flex min-w-0 items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1E5CFB] shadow-sm"><Settings2 className="h-5 w-5" /></span><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#1E5CFB]">Настройка блока</p><h2 className="mt-1 text-xl font-extrabold">{selectedNode.type === 'webhook' ? 'Webhook / внешняя CRM' : selectedNode.type === 'channelTrigger' ? 'Триггер входящего сообщения' : selectedNode.type === 'instagramMessage' ? 'Сообщение клиенту' : selectedNode.type === 'aiAgent' ? 'AI-консультант' : 'Сделка в CRM'}</h2><p className="mt-1 text-xs leading-relaxed text-[#777A82]">Изменения попадут в сценарий после сохранения и публикации.</p></div></div>
+                <div className="flex min-w-0 items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1E5CFB] shadow-sm"><Settings2 className="h-5 w-5" /></span><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#1E5CFB]">Настройка блока</p><h2 className="mt-1 text-xl font-extrabold">{editorTitles[selectedNode.type || ''] || 'Действие сценария'}</h2><p className="mt-1 text-xs leading-relaxed text-[#777A82]">Изменения попадут в сценарий после сохранения и публикации.</p></div></div>
                 <button onClick={() => setSelectedNodeId(null)} aria-label="Закрыть настройки" className="rounded-xl p-2 text-[#72757D] hover:bg-white"><X className="h-5 w-5" /></button>
               </div>
               <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
@@ -479,8 +564,31 @@ export default function AutomationsPage() {
                   <label className="block text-xs font-extrabold text-[#565961]">Пауза<input value={selectedValue('delay')} onChange={event => updateSelectedData({ delay: event.target.value })} className={editorInput} placeholder="через 2 сек" /></label>
                   <label className="block text-xs font-extrabold text-[#565961]">Кнопки — по одной в строке<textarea value={Array.isArray(selectedData?.buttons) ? selectedData.buttons.join('\n') : ''} onChange={event => updateSelectedData({ buttons: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) })} className={`${editorInput} min-h-28 resize-y`} /></label>
                 </>}
+                {selectedNode.type === 'condition' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название<input value={selectedValue('title')} onChange={event => updateSelectedData({ title: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Что проверить<input value={selectedValue('source')} onChange={event => updateSelectedData({ source: event.target.value })} className={editorInput} placeholder="event.text или selected_plan" /></label>
+                  <div className="grid grid-cols-2 gap-3"><label className="block text-xs font-extrabold text-[#565961]">Оператор<select value={selectedValue('operator') || 'contains'} onChange={event => updateSelectedData({ operator: event.target.value })} className={editorInput}><option value="contains">содержит</option><option value="equals">равно</option></select></label><label className="block text-xs font-extrabold text-[#565961]">Значение<input value={selectedValue('value')} onChange={event => updateSelectedData({ value: event.target.value })} className={editorInput} /></label></div>
+                  <div className="rounded-2xl bg-cyan-50 p-4 text-sm leading-relaxed text-cyan-950">Соедините зелёную точку «ДА» и красную точку «НЕТ» с разными следующими блоками.</div>
+                </>}
+                {selectedNode.type === 'delay' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название<input value={selectedValue('title')} onChange={event => updateSelectedData({ title: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Продолжить через, секунд<input type="number" min={1} max={2592000} value={selectedValue('seconds') || '60'} onChange={event => updateSelectedData({ seconds: Math.max(1, Math.min(2592000, Number(event.target.value) || 1)) })} className={editorInput} /></label>
+                  <p className="rounded-2xl bg-amber-50 p-4 text-sm leading-relaxed text-amber-950">Пауза сохраняется в PostgreSQL и продолжится через очередь даже после перезапуска приложения.</p>
+                </>}
+                {selectedNode.type === 'tagAction' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название<input value={selectedValue('title')} onChange={event => updateSelectedData({ title: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Действие<select value={selectedValue('operation') || 'ADD'} onChange={event => updateSelectedData({ operation: event.target.value })} className={editorInput}><option value="ADD">Добавить теги</option><option value="REMOVE">Удалить теги</option></select></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Теги — по одному в строке<textarea value={Array.isArray(selectedData?.tags) ? selectedData.tags.join('\n') : selectedValue('tag')} onChange={event => { const tags = event.target.value.split('\n').map(value => value.trim()).filter(Boolean).slice(0, 20); updateSelectedData({ tags, tag: tags[0] || '' }); }} className={`${editorInput} min-h-32 resize-y`} /></label>
+                </>}
+                {selectedNode.type === 'variable' && <>
+                  <label className="block text-xs font-extrabold text-[#565961]">Название<input value={selectedValue('title')} onChange={event => updateSelectedData({ title: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Ключ<input value={selectedValue('key')} onChange={event => updateSelectedData({ key: event.target.value.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 80) })} className={editorInput} placeholder="selected_plan" /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">Значение<input value={selectedValue('value')} onChange={event => updateSelectedData({ value: event.target.value })} className={editorInput} placeholder="{{event.text}}" /></label>
+                  <p className="rounded-2xl bg-violet-50 p-4 text-xs leading-relaxed text-violet-950">Используйте значение в следующих сообщениях и webhook как <code>{'{{selected_plan}}'}</code>.</p>
+                </>}
                 {selectedNode.type === 'aiAgent' && <>
-                  <label className="block text-xs font-extrabold text-[#565961]">Название агента<input value={selectedValue('agentName')} onChange={event => updateSelectedData({ agentName: event.target.value })} className={editorInput} /></label>
+                  <label className="block text-xs font-extrabold text-[#565961]">AI-агент<select value={selectedValue('agentId')} onChange={event => { const agent = aiAgents.find(item => item.id === event.target.value); updateSelectedData({ agentId: event.target.value, agentName: agent?.name || 'AI-агент не выбран', model: agent?.model || '' }); }} className={editorInput}><option value="">Автоматически по подключённому каналу</option>{aiAgents.map(agent => <option key={agent.id} value={agent.id}>{agent.name} · {agent.model}</option>)}</select></label>
+                  {!aiAgents.length && <a href="/ai-agents" className="block rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-relaxed text-amber-900">Сначала создайте и настройте AI-агента.</a>}
                   <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4 text-sm leading-relaxed text-purple-950">Промпт, модель и база знаний настраиваются в разделе «AI-агенты». Этот блок запускает выбранного консультанта.</div>
                 </>}
                 {selectedNode.type === 'kaspiPay' && <>
@@ -497,7 +605,7 @@ export default function AutomationsPage() {
                   <div className="rounded-2xl bg-orange-50 p-4 text-xs leading-relaxed text-orange-950"><strong className="block text-sm">Доступные переменные</strong><code className="mt-2 block break-all">{'{{event.text}}, {{contact.firstName}}, {{contact.phone}}, {{contact.email}}'}</code><p className="mt-2">Virale всегда добавляет event, contact и variables в защищённый payload.</p></div>
                 </>}
               </div>
-              <div className="flex gap-3 border-t border-[#E4E6EB] p-4 sm:p-5"><button onClick={deleteSelectedNode} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-4 text-sm font-extrabold text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" /> Удалить</button><button onClick={() => setSelectedNodeId(null)} className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#261930] px-4 text-sm font-extrabold text-white">Готово</button></div>
+              <div className="flex flex-wrap gap-3 border-t border-[#E4E6EB] p-4 sm:p-5"><button onClick={deleteSelectedNode} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-4 text-sm font-extrabold text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" /> Удалить</button><button onClick={copySelectedNode} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#DDE0E7] px-4 text-sm font-extrabold text-[#565961] hover:bg-[#F7F8FB]"><Copy className="h-4 w-4" /> Копировать</button><button onClick={() => setSelectedNodeId(null)} className="flex min-h-11 min-w-28 flex-1 items-center justify-center rounded-xl bg-[#261930] px-4 text-sm font-extrabold text-white">Готово</button></div>
             </aside>
           </div>
         )}

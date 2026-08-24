@@ -304,8 +304,8 @@ async function executeNode(
   }
   if (node.type === 'tag.add') {
     const tags = Array.isArray(node.config.tags)
-      ? node.config.tags.filter((tag): tag is string => typeof tag === 'string' && Boolean(tag.trim())).map(tag => tag.trim())
-      : typeof node.config.tag === 'string' && node.config.tag.trim() ? [node.config.tag.trim()] : [];
+      ? node.config.tags.filter((tag): tag is string => typeof tag === 'string' && Boolean(tag.trim())).map(tag => tag.trim().slice(0, 80)).slice(0, 20)
+      : typeof node.config.tag === 'string' && node.config.tag.trim() ? [node.config.tag.trim().slice(0, 80)] : [];
     const contact = await prisma.contact.findFirst({ where: { id: event.contactId, workspaceId: event.workspaceId }, select: { tags: true } });
     if (!contact) throw new Error('Контакт для добавления тега не найден');
     const merged = [...new Set([...contact.tags, ...tags])];
@@ -313,17 +313,19 @@ async function executeNode(
     return { status: 'SUCCESS', output: { tags: merged } };
   }
   if (node.type === 'tag.remove') {
-    const tag = typeof node.config.tag === 'string' ? node.config.tag.trim() : '';
+    const removeTags = Array.isArray(node.config.tags)
+      ? node.config.tags.filter((tag): tag is string => typeof tag === 'string' && Boolean(tag.trim())).map(tag => tag.trim().slice(0, 80)).slice(0, 20)
+      : typeof node.config.tag === 'string' && node.config.tag.trim() ? [node.config.tag.trim().slice(0, 80)] : [];
     const contact = await prisma.contact.findFirst({ where: { id: event.contactId, workspaceId: event.workspaceId }, select: { tags: true } });
     if (!contact) throw new Error('Контакт для удаления тега не найден');
-    const tags = contact.tags.filter(existing => existing !== tag);
+    const tags = contact.tags.filter(existing => !removeTags.includes(existing));
     await prisma.contact.update({ where: { id: event.contactId }, data: { tags } });
     return { status: 'SUCCESS', output: { tags } };
   }
   if (node.type === 'variable.set') {
     const key = typeof node.config.key === 'string' ? node.config.key.trim() : '';
-    if (!key) throw new Error('В блоке переменной не указан ключ');
-    variables[key] = String(node.config.value ?? '');
+    if (!/^[a-zA-Z0-9_.-]{1,80}$/.test(key)) throw new Error('Ключ переменной должен содержать только латиницу, цифры, точку, дефис или подчёркивание');
+    variables[key] = resolveTemplate(String(node.config.value ?? ''), { ...variables, 'event.text': event.text, 'event.id': event.eventId });
     return { status: 'SUCCESS', output: { key, value: variables[key] } };
   }
   if (node.type === 'condition') {

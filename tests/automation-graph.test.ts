@@ -37,3 +37,25 @@ test('rejects unsupported blocks and oversized graphs', () => {
   });
   assert.match(oversized.error || '', /превышает/);
 });
+
+test('preserves conditional branches and accepts the editable core block set', () => {
+  const result = validateAutomationGraph({
+    nodes: [
+      { id: 'trigger', type: 'trigger.telegram.message', position: {}, config: {} },
+      { id: 'condition', type: 'condition', position: {}, config: { source: 'event.text', operator: 'contains', value: 'да' } },
+      { id: 'delay', type: 'delay', position: {}, config: { seconds: 60 } },
+      { id: 'tag', type: 'tag.add', position: {}, config: { tags: ['qualified'] } },
+      { id: 'variable', type: 'variable.set', position: {}, config: { key: 'selected_plan', value: 'pro' } },
+      { id: 'http', type: 'http.request', position: {}, config: { integrationId: 'integration' } }
+    ],
+    edges: [
+      { id: 'start', source: 'trigger', target: 'condition' },
+      { id: 'yes', source: 'condition', target: 'delay', sourceHandle: 'true' },
+      { id: 'no', source: 'condition', target: 'tag', sourceHandle: 'false' },
+      { id: 'after-delay', source: 'delay', target: 'variable' },
+      { id: 'after-variable', source: 'variable', target: 'http' }
+    ]
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.graph?.edges.filter(edge => edge.source === 'condition').map(edge => edge.sourceHandle), ['true', 'false']);
+});
