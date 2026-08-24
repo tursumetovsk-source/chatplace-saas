@@ -22,6 +22,7 @@ export async function GET(request: Request) {
       usageCounters: true,
       usageEvents: { orderBy: { createdAt: 'desc' }, take: 10_000 },
       broadcastCampaigns: { include: { deliveries: { orderBy: { createdAt: 'desc' }, take: 10_000 } } },
+      contactSegments: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10_000 }
     }
   });

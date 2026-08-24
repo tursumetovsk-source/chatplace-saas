@@ -57,6 +57,7 @@ model Workspace {
   auditLogs       AuditLog[]
   privacyRequests PrivacyRequest[]
   broadcastCampaigns BroadcastCampaign[]
+  contactSegments ContactSegment[]
 
   @@map("workspaces")
 }
@@ -115,6 +116,7 @@ model Contact {
   marketingConsent Boolean      @default(false) @map("marketing_consent")
   marketingConsentAt DateTime?  @map("marketing_consent_at")
   marketingOptOutAt DateTime?   @map("marketing_opt_out_at")
+  customFields   Json           @default("{}") @map("custom_fields")
   createdAt      DateTime       @default(now()) @map("created_at")
   lastActivityAt DateTime       @default(now()) @map("last_activity_at")
   workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -461,10 +463,12 @@ model BroadcastCampaign {
   id               String              @id @default(uuid())
   workspaceId      String              @map("workspace_id")
   channelAccountId String              @map("channel_account_id")
+  segmentId        String?             @map("segment_id")
   name             String
   message          String
   tags             String[]            @default([])
   tagMatch         String              @default("ANY") @map("tag_match")
+  segmentSnapshot  Json?               @map("segment_snapshot")
   status           String              @default("DRAFT")
   scheduledAt      DateTime?           @map("scheduled_at")
   startedAt        DateTime?           @map("started_at")
@@ -478,10 +482,26 @@ model BroadcastCampaign {
   updatedAt        DateTime            @updatedAt @map("updated_at")
   workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   channelAccount   ChannelAccount      @relation(fields: [channelAccountId], references: [id], onDelete: Restrict)
+  segment          ContactSegment?     @relation(fields: [segmentId], references: [id], onDelete: SetNull)
   deliveries       BroadcastDelivery[]
 
   @@index([workspaceId, status, scheduledAt])
   @@map("broadcast_campaigns")
+}
+
+model ContactSegment {
+  id          String              @id @default(uuid())
+  workspaceId String              @map("workspace_id")
+  name        String
+  filters     Json
+  createdBy   String              @map("created_by")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaigns   BroadcastCampaign[]
+
+  @@index([workspaceId, updatedAt])
+  @@map("contact_segments")
 }
 
 model BroadcastDelivery {

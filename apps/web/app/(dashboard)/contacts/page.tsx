@@ -1,7 +1,7 @@
 'use client';
 
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Instagram, MessageCircle, Search, Send, UserPlus, Video, X } from 'lucide-react';
+import { BookmarkPlus, Download, Instagram, MessageCircle, Pencil, Search, Send, Trash2, Upload, UserPlus, Video, X } from 'lucide-react';
 import { useAccountMode } from '../../../lib/use-account-mode';
 
 type Channel = 'Все' | 'Instagram' | 'Telegram' | 'WhatsApp' | 'TikTok';
@@ -18,6 +18,7 @@ interface ContactView {
   initials: string;
   marketingConsent: boolean;
   tags: string[];
+  customFields: Record<string, string | number | boolean>;
 }
 interface ApiContact {
   id: string;
@@ -31,16 +32,24 @@ interface ApiContact {
   lastActivityAt: string;
   marketingConsent: boolean;
   tags: string[];
+  customFields: Record<string, string | number | boolean>;
   conversations?: Array<{ channelAccount: { provider: string; username?: string | null } }>;
   _count?: { conversations: number };
 }
 
+interface ContactSegment {
+  id: string;
+  name: string;
+  contactCount: number;
+  filters: { tags?: string[]; tagMatch?: 'ANY' | 'ALL'; statuses?: string[]; cities?: string[]; channels?: string[]; marketingConsent?: boolean | null };
+}
+
 const demoContacts: ContactView[] = [
-  { id: '1', name: 'Айдос Нурланов', handle: '@aidos_nurlan', channel: 'Instagram', status: 'Горячий лид', city: 'Алматы', lastSeen: '2 мин назад', conversations: 12, initials: 'АН', marketingConsent: true, tags: ['Тёплый лид'] },
-  { id: '2', name: 'Елена Смирнова', handle: '@elena_smirnova', channel: 'Telegram', status: 'Квалифицирован', city: 'Астана', lastSeen: '18 мин назад', conversations: 8, initials: 'ЕС', marketingConsent: true, tags: ['Вебинар'] },
-  { id: '3', name: 'Аскар Болатов', handle: '+7 701 999 88 77', channel: 'WhatsApp', status: 'Клиент', city: 'Шымкент', lastSeen: '1 ч назад', conversations: 21, initials: 'АБ', marketingConsent: false, tags: ['Клиент'] },
-  { id: '4', name: 'Динара Серикова', handle: '@dinara_tok', channel: 'TikTok', status: 'Новый лид', city: 'Караганда', lastSeen: 'вчера', conversations: 3, initials: 'ДС', marketingConsent: false, tags: [] },
-  { id: '5', name: 'Мадина Оспанова', handle: '@madina_shop', channel: 'Instagram', status: 'Нужен ответ', city: 'Алматы', lastSeen: 'вчера', conversations: 6, initials: 'МО', marketingConsent: true, tags: ['Тёплый лид'] }
+  { id: '1', name: 'Айдос Нурланов', handle: '@aidos_nurlan', channel: 'Instagram', status: 'Горячий лид', city: 'Алматы', lastSeen: '2 мин назад', conversations: 12, initials: 'АН', marketingConsent: true, tags: ['Тёплый лид'], customFields: { Бюджет: '150 000 ₸', Продукт: 'Pro' } },
+  { id: '2', name: 'Елена Смирнова', handle: '@elena_smirnova', channel: 'Telegram', status: 'Квалифицирован', city: 'Астана', lastSeen: '18 мин назад', conversations: 8, initials: 'ЕС', marketingConsent: true, tags: ['Вебинар'], customFields: { Источник: 'Вебинар' } },
+  { id: '3', name: 'Аскар Болатов', handle: '+7 701 999 88 77', channel: 'WhatsApp', status: 'Клиент', city: 'Шымкент', lastSeen: '1 ч назад', conversations: 21, initials: 'АБ', marketingConsent: false, tags: ['Клиент'], customFields: {} },
+  { id: '4', name: 'Динара Серикова', handle: '@dinara_tok', channel: 'TikTok', status: 'Новый лид', city: 'Караганда', lastSeen: 'вчера', conversations: 3, initials: 'ДС', marketingConsent: false, tags: [], customFields: {} },
+  { id: '5', name: 'Мадина Оспанова', handle: '@madina_shop', channel: 'Instagram', status: 'Нужен ответ', city: 'Алматы', lastSeen: 'вчера', conversations: 6, initials: 'МО', marketingConsent: true, tags: ['Тёплый лид'], customFields: { Размер: 'M' } }
 ];
 
 const channelName = (provider?: string): ContactView['channel'] => {
@@ -76,7 +85,8 @@ const mapContact = (contact: ApiContact): ContactView => {
     conversations: contact._count?.conversations ?? contact.conversations?.length ?? 0,
     initials: name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'К',
     marketingConsent: contact.marketingConsent,
-    tags: contact.tags
+    tags: contact.tags,
+    customFields: contact.customFields || {}
   };
 };
 
@@ -96,12 +106,21 @@ export default function ContactsPage() {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showSegment, setShowSegment] = useState(false);
+  const [showFields, setShowFields] = useState(false);
+  const [segments, setSegments] = useState<ContactSegment[]>([]);
+  const [selectedSegment, setSelectedSegment] = useState('');
+  const [fieldRows, setFieldRows] = useState<Array<{ key: string; value: string }>>([]);
+  const [editTags, setEditTags] = useState('');
+  const [segmentForm, setSegmentForm] = useState({ name: '', tags: '', tagMatch: 'ANY' as 'ANY' | 'ALL', status: '', city: '', channel: '', marketingConsent: 'ANY', customKey: '', customValue: '' });
   const [form, setForm] = useState({ firstName: '', lastName: '', username: '', phone: '', city: '', tags: '', marketingConsent: false });
 
   useEffect(() => {
     if (mode !== 'account') return;
     setLoading(true);
-    void fetch('/api/contacts', { cache: 'no-store' })
+    const params = new URLSearchParams();
+    if (selectedSegment) params.set('segment', selectedSegment);
+    void fetch(`/api/contacts${params.size ? `?${params}` : ''}`, { cache: 'no-store' })
       .then(async response => {
         if (!response.ok) throw new Error('Не удалось загрузить контакты');
         const data = await response.json() as { contacts: ApiContact[] };
@@ -111,6 +130,15 @@ export default function ContactsPage() {
       })
       .catch(error => setNotice(error instanceof Error ? error.message : 'Не удалось загрузить контакты'))
       .finally(() => setLoading(false));
+  }, [mode, selectedSegment]);
+
+  useEffect(() => {
+    if (mode !== 'account') return;
+    void fetch('/api/segments', { cache: 'no-store' }).then(async response => {
+      const data = await response.json() as { segments?: ContactSegment[]; error?: string };
+      if (!response.ok) throw new Error(data.error || 'Не удалось загрузить сегменты');
+      setSegments(data.segments || []);
+    }).catch(error => setNotice(error instanceof Error ? error.message : 'Не удалось загрузить сегменты'));
   }, [mode]);
 
   const filtered = useMemo(() => contacts.filter(contact => {
@@ -166,20 +194,103 @@ export default function ContactsPage() {
     } finally { setLoading(false); }
   };
 
+  const saveSegment = async (event: FormEvent) => {
+    event.preventDefault();
+    if (mode !== 'account') { setShowSegment(false); setNotice('Сегмент сохранён в демо'); return; }
+    setLoading(true);
+    try {
+      const filters = {
+        tags: segmentForm.tags.split(',').map(tag => tag.trim()).filter(Boolean), tagMatch: segmentForm.tagMatch,
+        statuses: segmentForm.status ? [segmentForm.status] : [], cities: segmentForm.city ? [segmentForm.city.trim()] : [],
+        channels: segmentForm.channel ? [segmentForm.channel] : [], marketingConsent: segmentForm.marketingConsent === 'ANY' ? null : segmentForm.marketingConsent === 'YES',
+        customFields: segmentForm.customKey.trim() && segmentForm.customValue.trim() ? { [segmentForm.customKey.trim()]: segmentForm.customValue.trim() } : {}
+      };
+      const response = await fetch('/api/segments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: segmentForm.name, filters }) });
+      const data = await response.json() as { segment?: ContactSegment; error?: string };
+      if (!response.ok || !data.segment) throw new Error(data.error || 'Не удалось сохранить сегмент');
+      setSegments(current => [data.segment!, ...current]);
+      setSelectedSegment(data.segment.id);
+      setShowSegment(false);
+      setSegmentForm({ name: '', tags: '', tagMatch: 'ANY', status: '', city: '', channel: '', marketingConsent: 'ANY', customKey: '', customValue: '' });
+      setNotice(`Сегмент сохранён: ${data.segment.contactCount} контактов`);
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось сохранить сегмент'); }
+    finally { setLoading(false); }
+  };
+
+  const deleteSegment = async () => {
+    if (!selectedSegment || mode !== 'account') return;
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/segments/${selectedSegment}`, { method: 'DELETE' });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || 'Не удалось удалить сегмент');
+      setSegments(current => current.filter(segment => segment.id !== selectedSegment));
+      setSelectedSegment('');
+      setNotice('Сегмент удалён');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось удалить сегмент'); }
+    finally { setLoading(false); }
+  };
+
+  const importCsv = async (file?: File) => {
+    if (!file || mode !== 'account') return;
+    const payload = new FormData(); payload.set('file', file);
+    setLoading(true);
+    try {
+      const response = await fetch('/api/contacts/import', { method: 'POST', body: payload });
+      const data = await response.json() as { created?: number; updated?: number; invalid?: number; error?: string };
+      if (!response.ok) throw new Error(data.error || 'Не удалось импортировать CSV');
+      setNotice(`Импорт завершён: создано ${data.created || 0}, обновлено ${data.updated || 0}, пропущено ${data.invalid || 0}`);
+      setSelectedSegment('');
+      const refreshed = await fetch('/api/contacts', { cache: 'no-store' });
+      const refreshedData = await refreshed.json() as { contacts: ApiContact[] };
+      setContacts(refreshedData.contacts.map(mapContact));
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось импортировать CSV'); }
+    finally { setLoading(false); }
+  };
+
+  const openFields = (contact: ContactView) => {
+    setFieldRows(Object.entries(contact.customFields).map(([key, value]) => ({ key, value: String(value) })));
+    setEditTags(contact.tags.join(', '));
+    setShowFields(true);
+  };
+
+  const saveFields = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!active) return;
+    const customFields = Object.fromEntries(fieldRows.map(row => [row.key.trim(), row.value.trim()]).filter(([key]) => key));
+    if (mode !== 'account') { setContacts(current => current.map(item => item.id === active.id ? { ...item, customFields, tags: editTags.split(',').map(tag => tag.trim()).filter(Boolean) } : item)); setShowFields(false); return; }
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/contacts/${active.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customFields, replaceCustomFields: true, tags: editTags.split(',').map(tag => tag.trim()).filter(Boolean) }) });
+      const data = await response.json() as { contact?: ApiContact; error?: string };
+      if (!response.ok || !data.contact) throw new Error(data.error || 'Не удалось сохранить поля');
+      const updated = mapContact(data.contact);
+      setContacts(current => current.map(item => item.id === updated.id ? updated : item));
+      setShowFields(false); setNotice('Поля и теги контакта сохранены');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось сохранить поля'); }
+    finally { setLoading(false); }
+  };
+
   return (
     <div className="space-y-6 text-[#0C0C0C]">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#1E5CFB]">Клиентская база</p>
-          <h1 className="font-display-extended text-2xl sm:text-3xl font-extrabold mt-1">Контакты</h1>
-          <p className="text-sm text-[#737378] mt-1">Единый профиль клиента из всех подключённых каналов</p>
+          <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#1E5CFB]">Клиентская база</p>
+          <h1 className="font-display-extended text-3xl sm:text-4xl font-extrabold mt-1">Контакты</h1>
+          <p className="text-base text-[#737378] mt-2">Единый профиль клиента, его теги, поля и разрешения на коммуникацию</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E5CFB] text-white px-4 py-2.5 text-xs font-bold hover:bg-[#184AC9] transition">
-          <UserPlus className="w-4 h-4" /> Добавить контакт
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {mode === 'account' && <><label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#DCDCE2] bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50"><Upload className="w-4 h-4" /> Импорт CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={event => { void importCsv(event.target.files?.[0]); event.currentTarget.value = ''; }} /></label><a href={`/api/contacts/export${selectedSegment ? `?segment=${encodeURIComponent(selectedSegment)}` : ''}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DCDCE2] bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50"><Download className="w-4 h-4" /> Экспорт</a></>}
+          <button onClick={() => setShowCreate(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E5CFB] text-white px-4 py-3 text-sm font-bold hover:bg-[#184AC9] transition"><UserPlus className="w-4 h-4" /> Добавить контакт</button>
+        </div>
       </header>
 
       {notice && <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 text-xs font-bold text-[#1E5CFB]" role="status">{notice}</div>}
+
+      <section className="rounded-2xl border border-[#E2E2E7] bg-white p-4 shadow-subtle flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1"><label className="block text-xs font-extrabold uppercase tracking-[0.12em] text-[#777A82] mb-2">Сохранённый сегмент</label><select value={selectedSegment} onChange={event => setSelectedSegment(event.target.value)} className="w-full max-w-lg rounded-xl border border-[#DCDCE2] bg-[#F8F8FA] px-4 py-3 text-sm font-semibold outline-none"><option value="">Все контакты</option>{segments.map(segment => <option key={segment.id} value={segment.id}>{segment.name} · {segment.contactCount}</option>)}</select></div>
+        <div className="flex gap-2 self-end"><button onClick={() => setShowSegment(true)} className="inline-flex items-center gap-2 rounded-xl bg-[#261930] px-4 py-3 text-sm font-bold text-white"><BookmarkPlus className="w-4 h-4" /> Новый сегмент</button>{selectedSegment && mode === 'account' && <button aria-label="Удалить сегмент" disabled={loading} onClick={() => void deleteSegment()} className="rounded-xl border border-red-200 p-3 text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>}</div>
+      </section>
 
       <div className="grid xl:grid-cols-[1fr_320px] gap-5">
         <section className="rounded-[22px] border border-[#E7E7E7] bg-white overflow-hidden shadow-subtle">
@@ -222,6 +333,8 @@ export default function ContactsPage() {
               <div className="flex justify-between gap-4"><dt className="text-[#737378]">Рассылки</dt><dd className={`font-bold text-right ${active.marketingConsent ? 'text-emerald-700' : 'text-zinc-500'}`}>{active.marketingConsent ? 'Согласие есть' : 'Нет согласия'}</dd></div>
             </dl>
             {active.tags.length > 0 && <div className="mt-4 flex flex-wrap gap-1.5">{active.tags.map(tag => <span key={tag} className="rounded-full bg-white border border-zinc-200 px-2.5 py-1 text-[11px] font-semibold">{tag}</span>)}</div>}
+            {Object.keys(active.customFields).length > 0 && <div className="mt-5 border-t border-zinc-200 pt-4"><p className="text-xs font-extrabold uppercase tracking-[0.1em] text-zinc-500">Пользовательские поля</p><dl className="mt-3 space-y-2">{Object.entries(active.customFields).slice(0, 8).map(([key, value]) => <div key={key} className="flex justify-between gap-3 text-xs"><dt className="text-zinc-500">{key}</dt><dd className="font-bold text-right break-all">{String(value)}</dd></div>)}</dl></div>}
+            <button onClick={() => openFields(active)} className="mt-4 w-full rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-[#1E5CFB] flex items-center justify-center gap-2"><Pencil className="w-3.5 h-3.5" /> Поля и теги</button>
             <button disabled={loading} onClick={() => void setMarketingConsent(active, !active.marketingConsent)} className={`mt-5 w-full rounded-xl border py-2.5 text-xs font-bold disabled:opacity-50 ${active.marketingConsent ? 'border-zinc-300 text-zinc-600' : 'border-emerald-300 bg-emerald-50 text-emerald-800'}`}>{active.marketingConsent ? 'Исключить из рассылок' : 'Зафиксировать согласие'}</button>
             <a href="/inbox" className="mt-6 w-full rounded-xl bg-[#1E5CFB] text-white py-2.5 text-xs font-bold flex items-center justify-center hover:bg-[#184AC9] transition">Открыть диалог</a>
           </> : <div className="py-10 text-center text-sm text-[#737378]">Выберите контакт</div>}
@@ -242,6 +355,36 @@ export default function ContactsPage() {
             </div>
             <label className="mt-4 flex items-start gap-3 rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-950"><input type="checkbox" checked={form.marketingConsent} onChange={event => setForm(current => ({ ...current, marketingConsent: event.target.checked }))} className="mt-0.5" /><span><strong className="block">Контакт дал согласие на рассылки</strong>Отмечайте только если можете подтвердить согласие клиента.</span></label>
             <button disabled={loading} className="mt-5 w-full rounded-xl bg-[#1E5CFB] text-white py-3 text-sm font-bold disabled:opacity-50">{loading ? 'Сохраняем…' : 'Добавить контакт'}</button>
+          </form>
+        </div>
+      )}
+
+      {showSegment && (
+        <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center" onMouseDown={() => setShowSegment(false)}>
+          <form onSubmit={saveSegment} onMouseDown={event => event.stopPropagation()} className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between"><div><h2 className="text-xl font-extrabold">Новый сегмент</h2><p className="text-sm text-[#737378] mt-1">Сохраните набор фильтров и используйте его в рассылках.</p></div><button type="button" onClick={() => setShowSegment(false)} className="p-2 rounded-full hover:bg-zinc-100"><X className="w-4 h-4" /></button></div>
+            <div className="mt-5 grid sm:grid-cols-2 gap-3">
+              <label className="sm:col-span-2"><span className="block text-sm font-bold mb-2">Название</span><input required minLength={2} value={segmentForm.name} onChange={event => setSegmentForm(current => ({ ...current, name: event.target.value }))} placeholder="Например, тёплые лиды Алматы" className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-[#1E5CFB]" /></label>
+              <label><span className="block text-sm font-bold mb-2">Статус</span><select value={segmentForm.status} onChange={event => setSegmentForm(current => ({ ...current, status: event.target.value }))} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm"><option value="">Любой</option><option value="NEW">Новый лид</option><option value="QUALIFIED">Квалифицирован</option><option value="HOT">Горячий лид</option><option value="CUSTOMER">Клиент</option><option value="NEEDS_REPLY">Нужен ответ</option></select></label>
+              <label><span className="block text-sm font-bold mb-2">Канал</span><select value={segmentForm.channel} onChange={event => setSegmentForm(current => ({ ...current, channel: event.target.value }))} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm"><option value="">Любой</option><option value="TELEGRAM">Telegram</option><option value="INSTAGRAM">Instagram</option><option value="WHATSAPP">WhatsApp</option><option value="TIKTOK">TikTok</option></select></label>
+              <label><span className="block text-sm font-bold mb-2">Город</span><input value={segmentForm.city} onChange={event => setSegmentForm(current => ({ ...current, city: event.target.value }))} placeholder="Алматы" className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm" /></label>
+              <label><span className="block text-sm font-bold mb-2">Согласие на рассылки</span><select value={segmentForm.marketingConsent} onChange={event => setSegmentForm(current => ({ ...current, marketingConsent: event.target.value }))} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm"><option value="ANY">Не учитывать</option><option value="YES">Есть</option><option value="NO">Нет или отозвано</option></select></label>
+              <label className="sm:col-span-2"><span className="block text-sm font-bold mb-2">Теги через запятую</span><input value={segmentForm.tags} onChange={event => setSegmentForm(current => ({ ...current, tags: event.target.value }))} placeholder="Тёплый лид, Алматы" className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm" /></label>
+              <div className="sm:col-span-2 grid grid-cols-2 gap-3"><label><span className="block text-sm font-bold mb-2">Поле клиента</span><input value={segmentForm.customKey} onChange={event => setSegmentForm(current => ({ ...current, customKey: event.target.value }))} placeholder="Например, Продукт" className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm" /></label><label><span className="block text-sm font-bold mb-2">Равно</span><input value={segmentForm.customValue} onChange={event => setSegmentForm(current => ({ ...current, customValue: event.target.value }))} placeholder="Pro" className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm" /></label></div>
+              <div className="sm:col-span-2 flex gap-2"><button type="button" onClick={() => setSegmentForm(current => ({ ...current, tagMatch: 'ANY' }))} className={`rounded-full px-3 py-2 text-xs font-bold ${segmentForm.tagMatch === 'ANY' ? 'bg-[#261930] text-white' : 'bg-zinc-100 text-zinc-600'}`}>Любой тег</button><button type="button" onClick={() => setSegmentForm(current => ({ ...current, tagMatch: 'ALL' }))} className={`rounded-full px-3 py-2 text-xs font-bold ${segmentForm.tagMatch === 'ALL' ? 'bg-[#261930] text-white' : 'bg-zinc-100 text-zinc-600'}`}>Все теги</button></div>
+            </div>
+            <button disabled={loading} className="mt-6 w-full rounded-xl bg-[#1E5CFB] text-white py-3.5 text-sm font-bold disabled:opacity-50">{loading ? 'Сохраняем…' : 'Сохранить сегмент'}</button>
+          </form>
+        </div>
+      )}
+
+      {showFields && active && (
+        <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center" onMouseDown={() => setShowFields(false)}>
+          <form onSubmit={saveFields} onMouseDown={event => event.stopPropagation()} className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between"><div><h2 className="text-xl font-extrabold">Поля клиента</h2><p className="text-sm text-[#737378] mt-1">Данные можно использовать для сегментов и персонализации.</p></div><button type="button" onClick={() => setShowFields(false)} className="p-2 rounded-full hover:bg-zinc-100"><X className="w-4 h-4" /></button></div>
+            <label className="block mt-5"><span className="block text-sm font-bold mb-2">Теги через запятую</span><input value={editTags} onChange={event => setEditTags(event.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm" /></label>
+            <div className="mt-5 space-y-2"><div className="flex items-center justify-between"><span className="text-sm font-bold">Пользовательские поля</span><button type="button" onClick={() => setFieldRows(current => [...current, { key: '', value: '' }])} className="text-xs font-bold text-[#1E5CFB]">+ Добавить поле</button></div>{fieldRows.map((row, index) => <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2"><input value={row.key} onChange={event => setFieldRows(current => current.map((item, rowIndex) => rowIndex === index ? { ...item, key: event.target.value } : item))} placeholder="Название" className="min-w-0 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" /><input value={row.value} onChange={event => setFieldRows(current => current.map((item, rowIndex) => rowIndex === index ? { ...item, value: event.target.value } : item))} placeholder="Значение" className="min-w-0 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" /><button type="button" aria-label="Удалить поле" onClick={() => setFieldRows(current => current.filter((_, rowIndex) => rowIndex !== index))} className="rounded-xl p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600"><X className="w-4 h-4" /></button></div>)}</div>
+            <button disabled={loading} className="mt-6 w-full rounded-xl bg-[#261930] text-white py-3.5 text-sm font-bold disabled:opacity-50">{loading ? 'Сохраняем…' : 'Сохранить поля'}</button>
           </form>
         </div>
       )}

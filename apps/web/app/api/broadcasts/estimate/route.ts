@@ -3,6 +3,7 @@ import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../lib/auth-context';
 import { audienceWhere, normalizeTagMatch, normalizeTags } from '../../../../lib/broadcasts';
 import { checkRateLimit } from '../../../../lib/rate-limit';
+import { segmentContactWhere } from '../../../../lib/contact-segments';
 
 export async function POST(request: NextRequest) {
   const account = await getAccountContext();
@@ -15,6 +16,10 @@ export async function POST(request: NextRequest) {
   if (!channel) return NextResponse.json({ error: 'Выберите активный Telegram-канал' }, { status: 400 });
   const tags = normalizeTags(body?.tags);
   const tagMatch = normalizeTagMatch(body?.tagMatch);
-  const audienceCount = await prisma.contact.count({ where: audienceWhere({ workspaceId: account.workspaceId, channelAccountId, tags, tagMatch }) });
+  const segmentId = typeof body?.segmentId === 'string' && body.segmentId ? body.segmentId : null;
+  const segment = segmentId ? await prisma.contactSegment.findFirst({ where: { id: segmentId, workspaceId: account.workspaceId }, select: { filters: true } }) : null;
+  if (segmentId && !segment) return NextResponse.json({ error: 'Сегмент не найден' }, { status: 400 });
+  const segmentWhere = segment ? segmentContactWhere(account.workspaceId, segment.filters) : undefined;
+  const audienceCount = await prisma.contact.count({ where: audienceWhere({ workspaceId: account.workspaceId, channelAccountId, tags, tagMatch, segmentWhere }) });
   return NextResponse.json({ audienceCount, eligibleOnly: true });
 }

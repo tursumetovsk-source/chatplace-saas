@@ -27,6 +27,7 @@ export function audienceWhere(input: {
   channelAccountId: string;
   tags: string[];
   tagMatch: TagMatch;
+  segmentWhere?: Prisma.ContactWhereInput;
 }): Prisma.ContactWhereInput {
   return {
     workspaceId: input.workspaceId,
@@ -42,7 +43,8 @@ export function audienceWhere(input: {
         externalThreadId: { not: null },
         NOT: { externalThreadId: { contains: ':' } }
       }
-    }
+    },
+    ...(input.segmentWhere ? { AND: [input.segmentWhere] } : {})
   };
 }
 
@@ -51,6 +53,7 @@ export async function resolveBroadcastAudience(input: {
   channelAccountId: string;
   tags: string[];
   tagMatch: TagMatch;
+  segmentWhere?: Prisma.ContactWhereInput;
 }) {
   const contacts = await prisma.contact.findMany({
     where: audienceWhere(input),

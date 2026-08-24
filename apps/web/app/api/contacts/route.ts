@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../lib/auth-context';
 import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
+import { normalizeContactCustomFields, segmentContactWhere } from '../../../lib/contact-segments';
 
 function unauthorized() {
   return NextResponse.json({ error: 'Требуется вход в аккаунт' }, { status: 401 });
@@ -13,6 +14,9 @@ export async function GET(request: NextRequest) {
 
   const query = request.nextUrl.searchParams.get('q')?.trim();
   const channel = request.nextUrl.searchParams.get('channel')?.trim().toUpperCase();
+  const segmentId = request.nextUrl.searchParams.get('segment')?.trim();
+  const segment = segmentId ? await prisma.contactSegment.findFirst({ where: { id: segmentId, workspaceId: account.workspaceId }, select: { filters: true } }) : null;
+  if (segmentId && !segment) return NextResponse.json({ error: 'Сегмент не найден' }, { status: 404 });
 
   const contacts = await prisma.contact.findMany({
     where: {
@@ -29,7 +33,8 @@ export async function GET(request: NextRequest) {
       } : {}),
       ...(channel && channel !== 'ALL' ? {
         conversations: { some: { channelAccount: { provider: channel } } }
-      } : {})
+      } : {}),
+      ...(segment ? { AND: [segmentContactWhere(account.workspaceId, segment.filters)] } : {})
     },
     include: {
       conversations: {
@@ -79,7 +84,8 @@ export async function POST(request: NextRequest) {
       tags,
       note: optional(body?.note),
       marketingConsent: body?.marketingConsent === true,
-      marketingConsentAt: body?.marketingConsent === true ? new Date() : null
+      marketingConsentAt: body?.marketingConsent === true ? new Date() : null,
+      customFields: normalizeContactCustomFields(body?.customFields)
     },
     include: { _count: { select: { conversations: true, deals: true } } }
   });

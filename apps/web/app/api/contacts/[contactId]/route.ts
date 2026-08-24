@@ -3,6 +3,7 @@ import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../lib/auth-context';
 import { writeAuditLog } from '../../../../lib/audit';
 import { normalizeTags } from '../../../../lib/broadcasts';
+import { normalizeContactCustomFields, type ContactCustomFields } from '../../../../lib/contact-segments';
 
 const CONTACT_STATUSES = new Set(['NEW', 'QUALIFIED', 'HOT', 'CUSTOMER', 'NEEDS_REPLY', 'ARCHIVED']);
 
@@ -10,7 +11,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const account = await getAccountContext();
   if (!account) return NextResponse.json({ error: 'Требуется вход в аккаунт' }, { status: 401 });
   const { contactId } = await params;
-  const existing = await prisma.contact.findFirst({ where: { id: contactId, workspaceId: account.workspaceId }, select: { id: true, marketingConsent: true } });
+  const existing = await prisma.contact.findFirst({ where: { id: contactId, workspaceId: account.workspaceId }, select: { id: true, marketingConsent: true, customFields: true } });
   if (!existing) return NextResponse.json({ error: 'Контакт не найден' }, { status: 404 });
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return NextResponse.json({ error: 'Некорректные данные' }, { status: 400 });
@@ -21,6 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     marketingConsent?: boolean;
     marketingConsentAt?: Date | null;
     marketingOptOutAt?: Date | null;
+    customFields?: ContactCustomFields;
   } = {};
   if ('tags' in body) data.tags = normalizeTags(body.tags);
   if ('status' in body) {
@@ -38,6 +40,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     } else {
       data.marketingOptOutAt = new Date();
     }
+  }
+  if ('customFields' in body) {
+    const current = body.replaceCustomFields === true ? {} : existing.customFields && typeof existing.customFields === 'object' && !Array.isArray(existing.customFields) ? existing.customFields as ContactCustomFields : {};
+    const rawPatch = body.customFields && typeof body.customFields === 'object' && !Array.isArray(body.customFields) ? body.customFields as Record<string, unknown> : {};
+    const next: ContactCustomFields = { ...current, ...normalizeContactCustomFields(rawPatch) };
+    for (const [key, value] of Object.entries(rawPatch)) if (value === null) delete next[key.trim().slice(0, 40)];
+    data.customFields = normalizeContactCustomFields(next);
   }
   if (!Object.keys(data).length) return NextResponse.json({ error: 'Нет изменений' }, { status: 400 });
   const contact = await prisma.contact.update({

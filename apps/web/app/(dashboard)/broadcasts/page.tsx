@@ -5,6 +5,7 @@ import { AlertCircle, BarChart3, CalendarClock, CheckCircle2, ChevronRight, Mega
 import { useAccountMode } from '../../../lib/use-account-mode';
 
 interface ChannelAccount { id: string; provider: string; username?: string | null; displayName?: string | null; }
+interface SegmentSummary { id: string; name: string; }
 interface Campaign {
   id: string;
   name: string;
@@ -19,11 +20,13 @@ interface Campaign {
   failedCount: number;
   skippedCount: number;
   channelAccount: ChannelAccount;
+  segment?: SegmentSummary | null;
   _count?: { deliveries: number };
 }
 interface BroadcastResponse {
   campaigns: Campaign[];
   channels: ChannelAccount[];
+  segments: SegmentSummary[];
   tags: string[];
   summary: { consentedContacts: number; deliveredLast30Days: number; inProgress: number };
 }
@@ -59,12 +62,13 @@ export default function BroadcastsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>(demoCampaigns);
   const [channels, setChannels] = useState<ChannelAccount[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [segments, setSegments] = useState<SegmentSummary[]>([]);
   const [summary, setSummary] = useState({ consentedContacts: 334, deliveredLast30Days: 1248, inProgress: 1 });
   const [composerOpen, setComposerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [audience, setAudience] = useState<number | null>(null);
-  const [form, setForm] = useState({ name: '', message: '', channelAccountId: '', tags: [] as string[], tagMatch: 'ANY' as 'ANY' | 'ALL', scheduledAt: localDateTime() });
+  const [form, setForm] = useState({ name: '', message: '', channelAccountId: '', segmentId: '', tags: [] as string[], tagMatch: 'ANY' as 'ANY' | 'ALL', scheduledAt: localDateTime() });
 
   const load = useCallback(async () => {
     if (mode !== 'account') return;
@@ -76,6 +80,7 @@ export default function BroadcastsPage() {
       setCampaigns(data.campaigns);
       setChannels(data.channels);
       setAvailableTags(data.tags);
+      setSegments(data.segments);
       setSummary(data.summary);
       setForm(current => ({ ...current, channelAccountId: current.channelAccountId || data.channels[0]?.id || '' }));
     } catch (error) {
@@ -198,7 +203,7 @@ export default function BroadcastsPage() {
               <article key={campaign.id} className="p-5 sm:p-6 grid lg:grid-cols-[1fr_220px_190px] gap-5 items-center hover:bg-[#FAFAFB] transition">
                 <div className="flex items-start gap-4 min-w-0">
                   <span className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center shrink-0"><Send className="w-5 h-5 text-sky-600" /></span>
-                  <div className="min-w-0"><h3 className="text-base font-extrabold truncate">{campaign.name}</h3><p className="text-sm text-[#626268] mt-1 line-clamp-1">{campaign.message}</p><p className="text-xs font-semibold text-[#85858B] mt-2">Telegram @{campaign.channelAccount.username || campaign.channelAccount.displayName || 'бот'} · {campaign.tags.length ? `${campaign.tagMatch === 'ALL' ? 'Все теги' : 'Любой тег'}: ${campaign.tags.join(', ')}` : 'Все контакты с согласием'}</p></div>
+                  <div className="min-w-0"><h3 className="text-base font-extrabold truncate">{campaign.name}</h3><p className="text-sm text-[#626268] mt-1 line-clamp-1">{campaign.message}</p><p className="text-xs font-semibold text-[#85858B] mt-2">Telegram @{campaign.channelAccount.username || campaign.channelAccount.displayName || 'бот'} · {campaign.segment ? `Сегмент: ${campaign.segment.name}` : campaign.tags.length ? `${campaign.tagMatch === 'ALL' ? 'Все теги' : 'Любой тег'}: ${campaign.tags.join(', ')}` : 'Все контакты с согласием'}</p></div>
                 </div>
                 <div>
                   <div className="flex justify-between text-sm"><span className="text-[#737378]">Отправлено</span><strong>{campaign.sentCount} из {campaign.audienceCount || campaign._count?.deliveries || 0}</strong></div>
@@ -222,6 +227,7 @@ export default function BroadcastsPage() {
             {!channels.length && mode === 'account' ? <a href="/channels" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex items-center justify-between gap-4 text-amber-950"><span><strong className="block text-base">Нужен Telegram-бот</strong><span className="block text-sm mt-1">Подключите канал, чтобы отправлять реальные сообщения.</span></span><ChevronRight className="w-5 h-5" /></a> : <div className="space-y-5">
               <label className="block"><span className="block text-sm font-bold mb-2">Название кампании</span><input required minLength={2} maxLength={120} value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} placeholder="Например, приглашение на консультацию" className="w-full rounded-xl border border-[#DCDCE2] bg-[#F8F8FA] px-4 py-3.5 text-base outline-none focus:border-[#1E5CFB]" /></label>
               <label className="block"><span className="block text-sm font-bold mb-2">Telegram-канал</span><select required value={form.channelAccountId} onChange={event => { setForm(current => ({ ...current, channelAccountId: event.target.value })); setAudience(null); }} className="w-full rounded-xl border border-[#DCDCE2] bg-[#F8F8FA] px-4 py-3.5 text-base outline-none"><option value="">Выберите бота</option>{channels.map(channel => <option key={channel.id} value={channel.id}>@{channel.username || channel.displayName || 'Telegram-бот'}</option>)}{mode !== 'account' && <option value="demo">@virale_demo_bot</option>}</select></label>
+              {segments.length > 0 && <label className="block"><span className="block text-sm font-bold mb-2">Сохранённый сегмент</span><select value={form.segmentId} onChange={event => { setForm(current => ({ ...current, segmentId: event.target.value })); setAudience(null); }} className="w-full rounded-xl border border-[#DCDCE2] bg-[#F8F8FA] px-4 py-3.5 text-base outline-none"><option value="">Не использовать сохранённый сегмент</option>{segments.map(segment => <option key={segment.id} value={segment.id}>{segment.name}</option>)}</select><span className="block text-xs text-[#85858B] mt-1">Теги ниже дополнительно сузят выбранный сегмент.</span></label>}
               <label className="block"><span className="block text-sm font-bold mb-2">Сообщение</span><textarea required maxLength={4096} rows={5} value={form.message} onChange={event => setForm(current => ({ ...current, message: event.target.value }))} placeholder="Напишите полезное сообщение и объясните, почему клиент его получает" className="w-full resize-y rounded-xl border border-[#DCDCE2] bg-[#F8F8FA] px-4 py-3.5 text-base leading-6 outline-none focus:border-[#1E5CFB]" /><span className="block text-right text-xs text-[#85858B] mt-1">{form.message.length} / 4096</span></label>
 
               <fieldset><legend className="text-sm font-bold mb-2">Сегмент по тегам</legend><div className="flex flex-wrap gap-2 mb-3"><button type="button" onClick={() => { setForm(current => ({ ...current, tagMatch: 'ANY' })); setAudience(null); }} className={`rounded-full px-4 py-2 text-sm font-bold ${form.tagMatch === 'ANY' ? 'bg-[#261930] text-white' : 'bg-zinc-100 text-zinc-700'}`}>Любой выбранный тег</button><button type="button" onClick={() => { setForm(current => ({ ...current, tagMatch: 'ALL' })); setAudience(null); }} className={`rounded-full px-4 py-2 text-sm font-bold ${form.tagMatch === 'ALL' ? 'bg-[#261930] text-white' : 'bg-zinc-100 text-zinc-700'}`}>Все выбранные теги</button></div><div className="flex flex-wrap gap-2">{sortedTags.length ? sortedTags.map(tag => { const active = form.tags.includes(tag); return <button type="button" key={tag} onClick={() => { setForm(current => ({ ...current, tags: active ? current.tags.filter(item => item !== tag) : [...current.tags, tag] })); setAudience(null); }} className={`rounded-full border px-3 py-2 text-sm font-semibold ${active ? 'border-[#1E5CFB] bg-blue-50 text-[#1E5CFB]' : 'border-zinc-200 text-zinc-600'}`}>{tag}</button>; }) : <p className="text-sm text-[#737378]">Тегов пока нет — будут выбраны все контакты с согласием.</p>}</div></fieldset>

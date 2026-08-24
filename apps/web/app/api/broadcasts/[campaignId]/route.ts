@@ -20,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (claimed.count !== 1) return null;
     const skipped = await transaction.broadcastDelivery.updateMany({ where: { campaignId, status: { in: ['PENDING', 'RETRYING'] } }, data: { status: 'SKIPPED', error: 'Рассылка отменена', lockedAt: null, lockedBy: null } });
     if (skipped.count) await transaction.broadcastCampaign.update({ where: { id: campaignId }, data: { skippedCount: { increment: skipped.count } } });
-    return transaction.broadcastCampaign.findUnique({ where: { id: campaignId }, include: { channelAccount: { select: { id: true, provider: true, username: true, displayName: true, status: true } }, _count: { select: { deliveries: true } } } });
+    return transaction.broadcastCampaign.findUnique({ where: { id: campaignId }, include: { channelAccount: { select: { id: true, provider: true, username: true, displayName: true, status: true } }, segment: { select: { id: true, name: true } }, _count: { select: { deliveries: true } } } });
   });
   if (!updated) return NextResponse.json({ error: 'Статус рассылки уже изменился' }, { status: 409 });
   await writeAuditLog({ workspaceId: account.workspaceId, actorUserId: account.userId, action: 'broadcast.canceled', entityType: 'BroadcastCampaign', entityId: campaignId, request });

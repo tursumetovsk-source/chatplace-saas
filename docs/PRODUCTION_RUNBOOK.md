@@ -23,6 +23,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 6. Register a real account, connect a disposable Telegram bot, publish a small scenario and confirm Inbox → outbox → automation → reply.
 7. Create one opted-in test contact, schedule a Telegram broadcast and confirm that the delivery reaches `SENT` in Analytics.
 8. Confirm that the automation run appears in Analytics and that no failed/retrying jobs remain.
+9. Import a two-row CSV in staging, verify duplicate matching, then export the same segment and open it in the target spreadsheet application.
 
 ## Backups and restore drills
 

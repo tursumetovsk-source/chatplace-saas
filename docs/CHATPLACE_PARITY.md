@@ -10,9 +10,9 @@ This document tracks product parity against current public ChatPlace materials a
 | --- | --- | --- | --- |
 | Projects / workspaces | Projects with connected social accounts | Real accounts, roles, signed sessions and isolated PostgreSQL workspaces | Implemented |
 | Channels | Instagram, TikTok, Telegram bots and Telegram Business | Telegram Bot API is end-to-end; Instagram, WhatsApp and TikTok remain planned | Partial |
-| Unified chats and clients | Chats, client profiles, variables and tags | Persistent Inbox, contacts, tags and CRM; assignment and custom variables remain | Partial |
+| Unified chats and clients | Chats, client profiles, variables and tags | Persistent Inbox, contacts, tags, custom fields, saved segments, CSV import/export and CRM; manager assignment remains | Partial |
 | Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs, publishing, run/step logs, PostgreSQL outbox, delayed resume and idempotent retry; full block editor remains | Partial |
-| Variables and tags | Stored client variables, reserved variables, filters and segmentation | Runtime variables, template resolution, persistent contact tags and ANY/ALL broadcast segments; custom field UI and saved segments remain | Partial |
+| Variables and tags | Stored client variables, reserved variables, filters and segmentation | Runtime variables, template resolution, editable contact fields/tags, saved multi-filter segments and segment-aware broadcasts | Implemented core |
 | Broadcasts | Targeted broadcasts using tags and account audiences | Persistent Telegram campaigns, consent-only audience estimation, scheduling, cancel, delivery queue, retry, opt-out and usage accounting | Implemented for Telegram |
 | AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Responses API, local conversation memory, file-search knowledge, channel assignment, testing and operator handoff; account scan/corrections analytics remain | Partial |
 | CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM board and `crm.create_deal` type; amoCRM connector missing | Partial |
@@ -35,7 +35,7 @@ This document tracks product parity against current public ChatPlace materials a
 
 6. Persisted automation graphs, versions, publishing, execution runs, delays and failure recovery. **Implemented for the Telegram path.**
 7. Real Inbox with assignment, AI/Human mode, unread state, attachments and delivery status.
-8. Contact variables, tags, filters, imports/exports and CRM pipeline persistence.
+8. Contact variables, tags, filters, imports/exports and CRM pipeline persistence. **Implemented; manager assignment and duplicate-review tools remain.**
 9. AI provider, conversation memory, RAG knowledge base, testing and human handoff. **Implemented for the Telegram path; production credentials and live smoke test remain.**
 
 ### P1 — commercial launch

@@ -41,7 +41,9 @@ const auditLabels: Record<string, string> = {
   CHANNEL_RECONNECTED: 'Переподключён канал', CHANNEL_DISCONNECTED: 'Отключён канал', AUTOMATION_PUBLISHED: 'Опубликован сценарий',
   PLAN_CHANGE_REQUESTED: 'Запрошена смена тарифа',
   'broadcast.created': 'Создана рассылка', 'broadcast.scheduled': 'Запланирована рассылка',
-  'broadcast.canceled': 'Отменена рассылка', 'contact.updated': 'Обновлён контакт'
+  'broadcast.canceled': 'Отменена рассылка', 'contact.updated': 'Обновлён контакт',
+  'segment.created': 'Создан сегмент', 'segment.updated': 'Обновлён сегмент', 'segment.deleted': 'Удалён сегмент',
+  'contacts.imported': 'Импортированы контакты', 'contacts.exported': 'Экспортированы контакты'
 };
 
 export default function AnalyticsPage() {
