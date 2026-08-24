@@ -11,7 +11,7 @@ This document tracks product parity against current public ChatPlace materials a
 | Projects / workspaces | Projects with connected social accounts | Real accounts, roles, signed sessions and isolated PostgreSQL workspaces | Implemented |
 | Channels | Instagram, TikTok, Telegram bots and Telegram Business | Telegram Bot API is end-to-end; Instagram, WhatsApp and TikTok remain planned | Partial |
 | Unified chats and clients | Chats, client profiles, variables and tags | Persistent Inbox, contacts, tags and CRM; assignment and custom variables remain | Partial |
-| Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs, publishing, run/step logs and Telegram execution; delayed queue resume and full editor remain | Partial |
+| Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs, publishing, run/step logs, PostgreSQL outbox, delayed resume and idempotent retry; full block editor remains | Partial |
 | Variables and tags | Stored client variables, reserved variables, filters and segmentation | Runtime variables, template resolution and persistent contact tags; custom field UI and segmentation remain | Partial |
 | Broadcasts | Targeted broadcasts using tags and account audiences | Interactive campaign composer | Demo only |
 | AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Responses API, local conversation memory, file-search knowledge, channel assignment, testing and operator handoff; account scan/corrections analytics remain | Partial |
@@ -33,7 +33,7 @@ This document tracks product parity against current public ChatPlace materials a
 
 ### P0 — usable core
 
-6. Persisted automation graphs, versions, publishing, execution runs, delays and failure recovery.
+6. Persisted automation graphs, versions, publishing, execution runs, delays and failure recovery. **Implemented for the Telegram path.**
 7. Real Inbox with assignment, AI/Human mode, unread state, attachments and delivery status.
 8. Contact variables, tags, filters, imports/exports and CRM pipeline persistence.
 9. AI provider, conversation memory, RAG knowledge base, testing and human handoff. **Implemented for the Telegram path; production credentials and live smoke test remain.**

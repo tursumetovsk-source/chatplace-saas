@@ -2,9 +2,9 @@ import { Prisma, prisma } from '@chatplace/database';
 import { validateAutomationGraph, type ValidatedAutomationGraph } from './automation-graph';
 import { decryptCredential } from './credentials';
 import { generateAgentReply } from './openai';
-import { sendTelegramMessage } from './telegram';
+import { sendTelegramMessage, TelegramApiError } from './telegram';
 
-interface InboundAutomationEvent {
+export interface InboundAutomationEvent {
   workspaceId: string;
   channelAccountId: string;
   provider: 'TELEGRAM' | 'INSTAGRAM' | 'WHATSAPP' | 'TIKTOK';
@@ -46,7 +46,7 @@ function resolveTemplate(template: string, values: Record<string, string>) {
   return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, key: string) => values[key] ?? '');
 }
 
-async function executeMessageNode(config: Record<string, unknown>, event: InboundAutomationEvent, variables: Record<string, string>) {
+async function executeMessageNode(config: Record<string, unknown>, event: InboundAutomationEvent, variables: Record<string, string>, automationStepId: string) {
   const conversation = await prisma.conversation.findFirst({
     where: { id: event.conversationId, workspaceId: event.workspaceId },
     include: { channelAccount: true, contact: true }
@@ -62,18 +62,25 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
     'event.text': event.text
   });
 
-  let message = await prisma.message.create({
-    data: {
-      workspaceId: event.workspaceId,
-      conversationId: event.conversationId,
-      direction: 'OUTBOUND',
-      senderType: 'SYSTEM',
-      type: 'TEXT',
-      text,
-      status: 'PENDING',
-      payload: { automation: true }
-    }
-  });
+  let message = await prisma.message.findUnique({ where: { automationStepId } });
+  if (message?.status === 'SENT' || message?.status === 'DELIVERED' || message?.status === 'READ') {
+    return { messageId: message.id, providerMessageId: message.providerMessageId, text: message.text, duplicatePrevented: true };
+  }
+  message = message
+    ? await prisma.message.update({ where: { id: message.id }, data: { status: 'PENDING' } })
+    : await prisma.message.create({
+        data: {
+          workspaceId: event.workspaceId,
+          conversationId: event.conversationId,
+          direction: 'OUTBOUND',
+          senderType: 'SYSTEM',
+          type: 'TEXT',
+          text,
+          status: 'PENDING',
+          automationStepId,
+          payload: { automation: true }
+        }
+      });
 
   try {
     if (
@@ -99,7 +106,7 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
   }
 }
 
-async function executeAiAgentNode(config: Record<string, unknown>, event: InboundAutomationEvent) {
+async function executeAiAgentNode(config: Record<string, unknown>, event: InboundAutomationEvent, automationStepId: string) {
   const requestedAgentId = typeof config.agentId === 'string' ? config.agentId.trim() : '';
   const agent = await prisma.aiAgent.findFirst({
     where: requestedAgentId
@@ -126,13 +133,27 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
   if (!conversation) throw new Error('Диалог AI-агента не найден');
   if (conversation.mode === 'HUMAN') return { skipped: true, reason: 'HUMAN_MODE', agentId: agent.id };
 
-  const lowerText = event.text.toLocaleLowerCase('ru');
-  const keywordHandoff = agent.handoffKeywords.some(keyword => lowerText.includes(keyword.toLocaleLowerCase('ru')));
-  let reply;
-  try {
-    reply = keywordHandoff
-      ? { answer: agent.handoffMessage, handoff: true, reason: 'Запрос пользователя на оператора' }
-      : await generateAgentReply({
+  const existingMessage = await prisma.message.findUnique({ where: { automationStepId } });
+  if (existingMessage?.status === 'SENT' || existingMessage?.status === 'DELIVERED' || existingMessage?.status === 'READ') {
+    return { messageId: existingMessage.id, agentId: agent.id, duplicatePrevented: true };
+  }
+  let reply: { answer: string; handoff: boolean; reason: string };
+  if (existingMessage) {
+    const payload = existingMessage.payload && typeof existingMessage.payload === 'object' && !Array.isArray(existingMessage.payload)
+      ? existingMessage.payload as Record<string, unknown>
+      : {};
+    reply = {
+      answer: existingMessage.text,
+      handoff: payload.handoff === true,
+      reason: typeof payload.handoffReason === 'string' ? payload.handoffReason : 'Повторная доставка сохранённого ответа'
+    };
+  } else {
+    const lowerText = event.text.toLocaleLowerCase('ru');
+    const keywordHandoff = agent.handoffKeywords.some(keyword => lowerText.includes(keyword.toLocaleLowerCase('ru')));
+    try {
+      reply = keywordHandoff
+        ? { answer: agent.handoffMessage, handoff: true, reason: 'Запрос пользователя на оператора' }
+        : await generateAgentReply({
           model: agent.model,
           systemPrompt: agent.systemPrompt,
           goal: agent.goal,
@@ -144,27 +165,31 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
           vectorStoreId: agent.vectorStoreId,
           maxOutputTokens: agent.maxOutputTokens,
           temperature: agent.temperature
-        });
-  } catch (error) {
-    reply = {
-      answer: agent.fallbackMessage,
-      handoff: true,
-      reason: error instanceof Error ? error.message : 'Ошибка AI-провайдера'
-    };
+          });
+    } catch (error) {
+      reply = {
+        answer: agent.fallbackMessage,
+        handoff: true,
+        reason: error instanceof Error ? error.message : 'Ошибка AI-провайдера'
+      };
+    }
   }
 
-  let message = await prisma.message.create({
-    data: {
-      workspaceId: event.workspaceId,
-      conversationId: event.conversationId,
-      direction: 'OUTBOUND',
-      senderType: 'AI',
-      type: 'TEXT',
-      text: reply.answer,
-      status: 'PENDING',
-      payload: { automation: true, aiAgentId: agent.id, handoff: reply.handoff, handoffReason: reply.reason }
-    }
-  });
+  let message = existingMessage
+    ? await prisma.message.update({ where: { id: existingMessage.id }, data: { status: 'PENDING' } })
+    : await prisma.message.create({
+        data: {
+          workspaceId: event.workspaceId,
+          conversationId: event.conversationId,
+          direction: 'OUTBOUND',
+          senderType: 'AI',
+          type: 'TEXT',
+          text: reply.answer,
+          status: 'PENDING',
+          automationStepId,
+          payload: { automation: true, aiAgentId: agent.id, handoff: reply.handoff, handoffReason: reply.reason }
+        }
+      });
 
   try {
     if (
@@ -203,11 +228,12 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
 async function executeNode(
   node: ValidatedAutomationGraph['nodes'][number],
   event: InboundAutomationEvent,
-  variables: Record<string, string>
+  variables: Record<string, string>,
+  automationStepId: string
 ): Promise<NodeExecutionResult> {
   if (node.type.startsWith('trigger.')) return { status: 'SUCCESS', output: { matched: true } };
   if (node.type === 'message.send') {
-    return { status: 'SUCCESS', output: await executeMessageNode(node.config, event, variables) };
+    return { status: 'SUCCESS', output: await executeMessageNode(node.config, event, variables, automationStepId) };
   }
   if (node.type === 'tag.add') {
     const tags = Array.isArray(node.config.tags)
@@ -244,10 +270,13 @@ async function executeNode(
   if (node.type === 'crm.create_deal') {
     const rawAmount = String(node.config.amount ?? '0').replace(/[^\d.,-]/g, '').replace(',', '.');
     const amount = Number(rawAmount) || 0;
-    const deal = await prisma.deal.create({
-      data: {
+    const deal = await prisma.deal.upsert({
+      where: { automationStepId },
+      update: {},
+      create: {
         workspaceId: event.workspaceId,
         contactId: event.contactId,
+        automationStepId,
         title: typeof node.config.title === 'string' && node.config.title.trim() ? node.config.title.trim() : 'Сделка из автоматизации',
         amount,
         stage: 'NEW',
@@ -261,9 +290,112 @@ async function executeNode(
     return { status: 'WAITING', resumeAt: new Date(Date.now() + seconds * 1000), output: { seconds } };
   }
   if (node.type === 'ai.agent') {
-    return { status: 'SUCCESS', output: await executeAiAgentNode(node.config, event) };
+    return { status: 'SUCCESS', output: await executeAiAgentNode(node.config, event, automationStepId) };
   }
   return { status: 'FAILED', output: { reason: `Неподдерживаемый блок: ${node.type}` } };
+}
+
+function isRetryableError(error: unknown) {
+  if (error instanceof TelegramApiError) return error.status === 408 || error.status === 409 || error.status === 429 || error.status >= 500;
+  if (error instanceof Prisma.PrismaClientKnownRequestError) return ['P1001', 'P1002', 'P2024'].includes(error.code);
+  return false;
+}
+
+function retryAt(attempt: number) {
+  const seconds = Math.min(60 * 60, 15 * (2 ** Math.max(0, attempt - 1)));
+  return new Date(Date.now() + seconds * 1000);
+}
+
+function storedVariables(value: Prisma.JsonValue): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item ?? '')]));
+}
+
+async function continueAutomationRun(
+  run: { id: string; currentNodeId: string | null },
+  graph: ValidatedAutomationGraph,
+  startNodeId: string | undefined,
+  event: InboundAutomationEvent,
+  variables: Record<string, string>
+) {
+  const completedSteps = await prisma.automationStep.findMany({
+    where: { runId: run.id, status: 'SUCCESS' },
+    select: { nodeId: true }
+  });
+  const visited = new Set(completedSteps.map(step => step.nodeId));
+  let currentNodeId = startNodeId;
+
+  for (let index = visited.size; currentNodeId && index < 50; index += 1) {
+    if (visited.has(currentNodeId)) {
+      const reason = 'Обнаружен цикл без условия остановки';
+      await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'FAILED', error: reason, completedAt: new Date() } });
+      return { runId: run.id, status: 'FAILED', error: reason };
+    }
+    const node = graph.nodes.find(candidate => candidate.id === currentNodeId);
+    if (!node) {
+      const reason = `Блок ${currentNodeId} не найден`;
+      await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'FAILED', error: reason, completedAt: new Date() } });
+      return { runId: run.id, status: 'FAILED', error: reason };
+    }
+    const step = await prisma.automationStep.upsert({
+      where: { runId_nodeId: { runId: run.id, nodeId: node.id } },
+      create: { runId: run.id, nodeId: node.id, nodeType: node.type, attempts: 1, input: json({ config: node.config, variables }) },
+      update: { status: 'RUNNING', attempts: { increment: 1 }, input: json({ config: node.config, variables }), output: Prisma.DbNull, error: null, startedAt: new Date(), completedAt: null }
+    });
+
+    let result: NodeExecutionResult;
+    try {
+      result = await executeNode(node, event, variables, step.id);
+      if (result.status === 'FAILED') throw new Error(String(result.output?.reason || 'Ошибка шага'));
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Неизвестная ошибка шага';
+      const canRetry = isRetryableError(error) && step.attempts < 5;
+      await prisma.automationStep.update({ where: { id: step.id }, data: { status: canRetry ? 'RETRYING' : 'FAILED', error: reason, completedAt: new Date() } });
+      await prisma.automationRun.update({
+        where: { id: run.id },
+        data: canRetry
+          ? { status: 'RETRYING', currentNodeId: node.id, variables: json(variables), resumeAt: retryAt(step.attempts), error: reason, completedAt: null }
+          : { status: 'FAILED', currentNodeId: node.id, variables: json(variables), resumeAt: null, error: reason, completedAt: new Date() }
+      });
+      return { runId: run.id, status: canRetry ? 'RETRYING' : 'FAILED', error: reason };
+    }
+
+    const nextEdge = graph.edges.find(edge => edge.source === node.id && (!result.nextHandle || edge.sourceHandle === result.nextHandle));
+    const nextNodeId = nextEdge?.target;
+    if (result.status === 'WAITING') {
+      await prisma.automationStep.update({
+        where: { id: step.id },
+        data: { status: 'SUCCESS', output: json({ ...(result.output || {}), scheduledFor: result.resumeAt?.toISOString() }), completedAt: new Date() }
+      });
+      await prisma.automationRun.update({
+        where: { id: run.id },
+        data: { status: 'WAITING', currentNodeId: nextNodeId || null, variables: json(variables), output: json(result.output || {}), resumeAt: result.resumeAt, error: null }
+      });
+      return { runId: run.id, status: 'WAITING' };
+    }
+
+    visited.add(node.id);
+    currentNodeId = nextNodeId;
+    await prisma.automationStep.update({
+      where: { id: step.id },
+      data: { status: 'SUCCESS', output: json(result.output || {}), error: null, completedAt: new Date() }
+    });
+    await prisma.automationRun.update({
+      where: { id: run.id },
+      data: { status: 'RUNNING', currentNodeId: currentNodeId || null, variables: json(variables), resumeAt: null, error: null }
+    });
+  }
+
+  if (currentNodeId) {
+    const reason = 'Превышен лимит из 50 шагов';
+    await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'FAILED', error: reason, completedAt: new Date() } });
+    return { runId: run.id, status: 'FAILED', error: reason };
+  }
+  await prisma.automationRun.update({
+    where: { id: run.id },
+    data: { status: 'COMPLETED', currentNodeId: null, variables: json(variables), resumeAt: null, error: null, completedAt: new Date() }
+  });
+  return { runId: run.id, status: 'COMPLETED' };
 }
 
 async function runAutomation(automation: { id: string; workspaceId: string }, graph: ValidatedAutomationGraph, triggerNodeId: string, event: InboundAutomationEvent) {
@@ -278,54 +410,52 @@ async function runAutomation(automation: { id: string; workspaceId: string }, gr
         conversationId: event.conversationId,
         eventKey,
         currentNodeId: triggerNodeId,
-        input: json({ provider: event.provider, eventId: event.eventId, text: event.text, payload: event.payload })
+        input: json({ provider: event.provider, eventId: event.eventId, channelAccountId: event.channelAccountId, text: event.text, payload: event.payload }),
+        graphSnapshot: json(graph)
       }
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return { duplicate: true };
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const existing = await prisma.automationRun.findUnique({ where: { eventKey }, select: { id: true, status: true } });
+      return { duplicate: true, runId: existing?.id, status: existing?.status };
+    }
     throw error;
   }
+  return continueAutomationRun(run, graph, triggerNodeId, event, {});
+}
 
-  const variables: Record<string, string> = {};
-  const visited = new Set<string>();
-  let currentNodeId: string | undefined = triggerNodeId;
-  try {
-    for (let index = 0; currentNodeId && index < 50; index += 1) {
-      if (visited.has(currentNodeId)) throw new Error('Обнаружен цикл без условия остановки');
-      visited.add(currentNodeId);
-      const node = graph.nodes.find(candidate => candidate.id === currentNodeId);
-      if (!node) throw new Error(`Блок ${currentNodeId} не найден`);
-      const step = await prisma.automationStep.create({
-        data: { runId: run.id, nodeId: node.id, nodeType: node.type, input: json({ config: node.config, variables }) }
-      });
-      const result = await executeNode(node, event, variables);
-      await prisma.automationStep.update({
-        where: { id: step.id },
-        data: { status: result.status, output: json(result.output || {}), completedAt: result.status === 'WAITING' ? null : new Date() }
-      });
-
-      if (result.status === 'FAILED') throw new Error(String(result.output?.reason || 'Ошибка шага'));
-      if (result.status === 'WAITING') {
-        await prisma.automationRun.update({
-          where: { id: run.id },
-          data: { status: 'WAITING', currentNodeId: node.id, variables: json(variables), output: json(result.output || {}), resumeAt: result.resumeAt }
-        });
-        return { runId: run.id, status: 'WAITING' };
-      }
-
-      const nextEdge = graph.edges.find(edge => edge.source === node.id && (!result.nextHandle || edge.sourceHandle === result.nextHandle));
-      currentNodeId = nextEdge?.target;
-      await prisma.automationRun.update({ where: { id: run.id }, data: { currentNodeId: currentNodeId || null, variables: json(variables) } });
-    }
-
-    if (currentNodeId) throw new Error('Превышен лимит из 50 шагов');
-    await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'COMPLETED', currentNodeId: null, variables: json(variables), completedAt: new Date() } });
-    return { runId: run.id, status: 'COMPLETED' };
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : 'Неизвестная ошибка сценария';
-    await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'FAILED', error: reason, completedAt: new Date() } });
-    return { runId: run.id, status: 'FAILED', error: reason };
+export async function resumeAutomationRun(runId: string) {
+  const run = await prisma.automationRun.findUnique({
+    where: { id: runId },
+    include: { conversation: { select: { channelAccountId: true } } }
+  });
+  if (!run || !['RUNNING', 'WAITING', 'RETRYING'].includes(run.status)) return { skipped: true };
+  const validated = validateAutomationGraph(run.graphSnapshot);
+  if (!validated.graph) {
+    await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'FAILED', error: 'Снимок графа повреждён', completedAt: new Date() } });
+    return { runId: run.id, status: 'FAILED', error: 'Снимок графа повреждён' };
   }
+  const input = run.input && typeof run.input === 'object' && !Array.isArray(run.input) ? run.input as Record<string, unknown> : {};
+  const provider = input.provider;
+  if (provider !== 'TELEGRAM' && provider !== 'INSTAGRAM' && provider !== 'WHATSAPP' && provider !== 'TIKTOK') {
+    await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'FAILED', error: 'Провайдер события не поддерживается', completedAt: new Date() } });
+    return { runId: run.id, status: 'FAILED', error: 'Провайдер события не поддерживается' };
+  }
+  if (!run.contactId || !run.conversationId) {
+    await prisma.automationRun.update({ where: { id: run.id }, data: { status: 'FAILED', error: 'Контекст события утрачен', completedAt: new Date() } });
+    return { runId: run.id, status: 'FAILED', error: 'Контекст события утрачен' };
+  }
+  const event: InboundAutomationEvent = {
+    workspaceId: run.workspaceId,
+    channelAccountId: typeof input.channelAccountId === 'string' ? input.channelAccountId : run.conversation?.channelAccountId || '',
+    provider,
+    eventId: typeof input.eventId === 'string' ? input.eventId : run.eventKey,
+    contactId: run.contactId,
+    conversationId: run.conversationId,
+    text: typeof input.text === 'string' ? input.text : '',
+    payload: input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload) ? input.payload as Record<string, unknown> : {}
+  };
+  return continueAutomationRun(run, validated.graph, run.currentNodeId || undefined, event, storedVariables(run.variables));
 }
 
 export async function runInboundAutomations(event: InboundAutomationEvent) {

@@ -28,6 +28,7 @@ import {
   Instagram,
   MessageSquare,
   Plus,
+  RefreshCw,
   Save,
   Send,
   Smartphone,
@@ -153,6 +154,16 @@ interface StoredGraph {
   edges: Array<{ id: string; source: string; target: string; sourceHandle?: string }>;
 }
 
+interface RunView {
+  id: string;
+  status: 'RUNNING' | 'WAITING' | 'RETRYING' | 'COMPLETED' | 'FAILED';
+  error?: string | null;
+  resumeAt?: string | null;
+  startedAt: string;
+  completedAt?: string | null;
+  steps: Array<{ id: string; nodeType: string; status: string; attempts: number }>;
+}
+
 const engineType = (node: Node) => {
   if (node.type === 'channelTrigger' || node.type === 'instagramTrigger') {
     return node.data.provider === 'TELEGRAM' ? 'trigger.telegram.message' : 'trigger.instagram.comment';
@@ -195,6 +206,23 @@ export default function AutomationsPage() {
   const [addedBlock, setAddedBlock] = useState('');
   const [simLogs, setSimLogs] = useState<Array<{ sender: string; text: string }>>([]);
   const [simInput, setSimInput] = useState('');
+  const [runs, setRuns] = useState<RunView[]>([]);
+  const [runsLoading, setRunsLoading] = useState(false);
+
+  const loadRuns = async (id = automationId) => {
+    if (!id || mode !== 'account') return;
+    setRunsLoading(true);
+    try {
+      const response = await fetch(`/api/automations/${id}/runs`, { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Не удалось загрузить запуски');
+      setRuns(data.runs as RunView[]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось загрузить запуски');
+    } finally {
+      setRunsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (mode !== 'account') return;
@@ -209,6 +237,7 @@ export default function AutomationsPage() {
         setAutomationStatus(automation.status);
         setNodes(canvas.nodes);
         setEdges(canvas.edges);
+        void loadRuns(automation.id);
       })
       .catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить сценарии'));
   }, [mode]);
@@ -277,6 +306,7 @@ export default function AutomationsPage() {
       if (!response.ok) throw new Error(data.error || 'Не удалось опубликовать сценарий');
       setAutomationStatus('ACTIVE');
       setNotice('Сценарий опубликован и готов принимать события подключённых каналов');
+      void loadRuns(id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Не удалось опубликовать сценарий');
     } finally {
@@ -301,6 +331,18 @@ export default function AutomationsPage() {
       setSimLogs(current => [...current, { sender: message.toLowerCase().includes('прайс') ? 'BOT' : 'AI', text: answer }]);
     }, 700);
   };
+
+  const runLabel = (status: RunView['status']) => ({
+    RUNNING: 'Выполняется', WAITING: 'Ожидает', RETRYING: 'Повторная попытка', COMPLETED: 'Завершён', FAILED: 'Ошибка'
+  })[status];
+
+  const runStyle = (status: RunView['status']) => status === 'COMPLETED'
+    ? 'bg-emerald-50 text-emerald-700'
+    : status === 'FAILED'
+      ? 'bg-red-50 text-red-700'
+      : status === 'WAITING' || status === 'RETRYING'
+        ? 'bg-amber-50 text-amber-800'
+        : 'bg-blue-50 text-[#1E5CFB]';
 
   return (
     <div className="space-y-6">
@@ -381,6 +423,11 @@ export default function AutomationsPage() {
             </aside>
           </div>
         )}
+      </section>
+
+      <section className="rounded-[26px] border border-[#E4E6EB] bg-white p-5 shadow-subtle sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#1E5CFB]">Контроль выполнения</p><h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em]">Последние запуски</h2><p className="mt-1 text-sm text-[#73767E]">Видно, какой шаг завершился, ожидает времени или будет повторён после временной ошибки.</p></div><button disabled={runsLoading || !automationId || mode !== 'account'} onClick={() => void loadRuns()} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#DDE0E7] px-4 text-xs font-extrabold text-[#565961] hover:bg-[#F7F8FB] disabled:opacity-40"><RefreshCw className={`h-4 w-4 ${runsLoading ? 'animate-spin' : ''}`} /> Обновить</button></div>
+        <div className="mt-5 space-y-2.5">{runs.map(run => <article key={run.id} className="grid gap-3 rounded-2xl border border-[#E7E8EC] p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${runStyle(run.status)}`}>{runLabel(run.status)}</span><strong className="text-sm">{run.steps.length} шагов</strong><span className="text-xs text-[#858891]">{new Date(run.startedAt).toLocaleString('ru-RU')}</span></div>{run.error && <p className="mt-2 truncate text-xs text-red-600" title={run.error}>{run.error}</p>}{run.resumeAt && <p className="mt-2 text-xs font-semibold text-amber-700">Продолжение: {new Date(run.resumeAt).toLocaleString('ru-RU')}</p>}</div><div className="flex flex-wrap gap-1.5">{run.steps.slice(-6).map((step, index) => <span key={step.id} title={`${step.nodeType} · попыток: ${step.attempts}`} className={`flex h-7 min-w-7 items-center justify-center rounded-lg px-2 text-[10px] font-extrabold ${step.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-800' : step.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'}`}>{index + 1}</span>)}</div></article>)}{mode === 'account' && !runsLoading && runs.length === 0 && <div className="rounded-2xl bg-[#F7F8FB] p-5 text-center text-sm text-[#73767E]">После публикации напишите подключённому Telegram-боту кодовое слово — запуск появится здесь.</div>}{mode !== 'account' && <div className="grid gap-2 sm:grid-cols-3">{[['Завершён', '4 шага', 'bg-emerald-50 text-emerald-700'], ['Ожидает', 'до 11:48', 'bg-amber-50 text-amber-800'], ['Повтор', 'попытка 2 из 5', 'bg-blue-50 text-[#1E5CFB]']].map(([label, meta, style]) => <div key={label} className="rounded-2xl border border-[#E7E8EC] p-4"><span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${style}`}>{label}</span><p className="mt-3 text-sm font-bold">{meta}</p></div>)}</div>}</div>
       </section>
 
       <section className="rounded-[24px] bg-[#261930] p-5 text-white sm:p-6">
