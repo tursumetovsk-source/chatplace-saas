@@ -1,15 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
 import { 
   X, 
   ArrowRight, 
   Mail, 
-  Lock, 
   Gift, 
-  Globe,
-  ChevronDown
+  Play
 } from 'lucide-react';
 
 export interface AuthModalProps {
@@ -24,22 +21,34 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setMode(initialMode);
+    setEmailForm(false);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [initialMode, isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      {/* Top right language switch on overlay */}
-      <div className="absolute top-6 right-6 flex items-center gap-1.5 text-xs text-white bg-black/40 border border-white/20 px-3 py-1.5 rounded-full font-medium cursor-pointer">
-        <Globe className="w-3.5 h-3.5" />
-        <span>Русский</span>
-        <ChevronDown className="w-3.5 h-3.5" />
-      </div>
-
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="auth-title">
       {/* Auth Card Modal (Exact Match to Screenshot 4) */}
       <div className="w-full max-w-[440px] bg-white rounded-[24px] p-8 text-[#0C0C0C] shadow-2xl relative border border-zinc-100 animate-in zoom-in-95 duration-150">
         {/* Close Button */}
         <button
           onClick={onClose}
+          aria-label="Закрыть окно"
           className="absolute top-5 right-5 w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 hover:text-black hover:bg-zinc-200 transition"
         >
           <X className="w-4 h-4" />
@@ -47,7 +56,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
 
         {/* Header Title & Subtitle */}
         <div className="mb-6">
-          <h2 className="font-display-extended text-2xl font-bold text-[#0C0C0C]">
+          <h2 id="auth-title" className="font-display-extended text-2xl font-bold text-[#0C0C0C]">
             {mode === 'sign-up' ? 'Начните бесплатно' : 'Вход в аккаунт'}
           </h2>
           <p className="text-xs text-[#727272] mt-1.5">
@@ -80,7 +89,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
           <div className="p-4 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-between mb-6">
             <div>
               <div className="text-xs font-bold text-purple-950">Зарегистрируйтесь сегодня</div>
-              <div className="text-[11px] text-purple-700 mt-0.5">Получите 7 дней на Pro бесплатно</div>
+              <div className="text-[11px] text-purple-700 mt-0.5">Откройте интерактивный кабинет без оплаты</div>
             </div>
             <div className="w-10 h-10 rounded-2xl bg-purple-200/80 flex items-center justify-center text-purple-700 shrink-0">
               <Gift className="w-5 h-5" />
@@ -138,32 +147,19 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
             </button>
           </form>
         ) : (
-          /* Auth Buttons Stack (Exact Match to Screenshot 4) */
+          /* Preview and email entry */
           <div className="space-y-3">
             <button
               onClick={() => { window.location.href = '/dashboard'; }}
-              className="w-full p-3.5 rounded-full border border-zinc-200 hover:border-zinc-400 bg-white text-[#0C0C0C] font-semibold text-xs transition flex items-center justify-between px-5 shadow-subtle group"
+              className="w-full p-3.5 rounded-full border border-[#261930] bg-[#261930] text-white font-semibold text-xs transition flex items-center justify-between px-5 shadow-md group hover:bg-[#392648]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center font-bold text-red-500 text-sm">
-                  G
+                <div className="w-7 h-7 rounded-full bg-[#BEFF53] text-[#0C0C0C] flex items-center justify-center">
+                  <Play className="w-3 h-3 fill-current" />
                 </div>
-                <span>{mode === 'sign-up' ? 'Регистрация через Google' : 'Войти через Google'}</span>
+                <span>Открыть демо-кабинет</span>
               </div>
-              <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-black transition-transform group-hover:translate-x-0.5" />
-            </button>
-
-            <button
-              onClick={() => { window.location.href = '/dashboard'; }}
-              className="w-full p-3.5 rounded-full border border-zinc-200 hover:border-zinc-400 bg-white text-[#0C0C0C] font-semibold text-xs transition flex items-center justify-between px-5 shadow-subtle group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center font-bold text-blue-600 text-sm">
-                  f
-                </div>
-                <span>{mode === 'sign-up' ? 'Регистрация через Facebook' : 'Войти через Facebook'}</span>
-              </div>
-              <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-black transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="w-4 h-4 text-[#BEFF53] transition-transform group-hover:translate-x-0.5" />
             </button>
 
             <button
@@ -172,7 +168,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
             >
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-zinc-700" />
-                <span>{mode === 'sign-up' ? 'Регистрация через почту' : 'Войти через почту'}</span>
+                <span>{mode === 'sign-up' ? 'Продолжить через почту' : 'Войти через почту'}</span>
               </div>
               <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-black transition-transform group-hover:translate-x-0.5" />
             </button>
@@ -181,10 +177,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'sign-up' }: 
 
         {/* Footer Disclaimer (Exact Match to Screenshot 4) */}
         <p className="mt-6 text-[10px] text-zinc-400 text-center leading-relaxed">
-          Нажимая на одну из кнопок, вы соглашаетесь на обработку ваших{' '}
-          <a href="#" className="underline hover:text-zinc-600">Персональных данных</a>{' '}
-          и принимаете <a href="#" className="underline hover:text-zinc-600">Пользовательское соглашение</a>{' '}
-          и <a href="#" className="underline hover:text-zinc-600">Политику конфиденциальности</a>
+          Демо-режим не создаёт аккаунт и не отправляет данные во внешние сервисы. Подключение полноценной авторизации выполняется перед боевым запуском.
         </p>
       </div>
     </div>

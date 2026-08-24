@@ -24,5 +24,5 @@ app.post('/webhooks/tiktok', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`⚡ ChatPlace Webhook Gateway running on http://localhost:${PORT}`);
+  console.log(`⚡ Virale AI Webhook Gateway running on http://localhost:${PORT}`);
 });

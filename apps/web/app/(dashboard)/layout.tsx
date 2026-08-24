@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Главная', href: '/dashboard', icon: Home },
     { label: 'Автоматизации', href: '/automations', icon: Workflow },
     { label: 'AI-Агенты', href: '/ai-agents', icon: Sparkles },
-    { label: 'Шаблоны', href: '/automations', icon: Grid },
+    { label: 'Шаблоны', href: '/templates', icon: Grid },
     { label: 'Virale AI', href: '/ai-agents', icon: Eye },
     { label: 'Inbox', href: '/inbox', icon: MessageSquare },
     { label: 'Контакты', href: '/contacts', icon: Users },
@@ -53,6 +53,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <button
           onClick={() => setMobileNavOpen(!mobileNavOpen)}
+          aria-label={mobileNavOpen ? 'Закрыть навигацию' : 'Открыть навигацию'}
+          aria-expanded={mobileNavOpen}
           className="p-2 rounded-lg text-[#000000] hover:bg-[#F2F2F7] transition"
         >
           {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

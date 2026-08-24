@@ -79,6 +79,7 @@ export default function InboxPage() {
   ]);
 
   const [activeChat, setActiveChat] = useState<Chat>(chats[0]);
+  const [operatorMode, setOperatorMode] = useState<'AI' | 'HUMAN'>(chats[0].mode === 'HUMAN' ? 'HUMAN' : 'AI');
   const [messages, setMessages] = useState([
     { 
       id: 'm1', 
@@ -128,9 +129,9 @@ export default function InboxPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex rounded-[24px] border border-zinc-200 bg-white overflow-hidden shadow-subtle">
+    <div className="h-[calc(100vh-9rem)] md:h-[calc(100vh-6rem)] min-h-[560px] flex rounded-[24px] border border-zinc-200 bg-white overflow-hidden shadow-subtle">
       {/* Conversations List */}
-      <div className="w-80 border-r border-zinc-200 flex flex-col bg-[#F6F5F8] shrink-0">
+      <div className="hidden md:flex w-72 lg:w-80 border-r border-zinc-200 flex-col bg-[#F6F5F8] shrink-0">
         <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-white">
           <h2 className="font-display-extended font-bold text-[#0C0C0C] text-sm">
             Единый Inbox
@@ -144,7 +145,7 @@ export default function InboxPage() {
           {chats.map(chat => (
             <div
               key={chat.id}
-              onClick={() => setActiveChat(chat)}
+              onClick={() => { setActiveChat(chat); setOperatorMode(chat.mode === 'HUMAN' ? 'HUMAN' : 'AI'); }}
               className={`p-4 cursor-pointer transition ${
                 activeChat.id === chat.id ? 'bg-white border-l-4 border-[#261930] shadow-subtle' : 'hover:bg-white/60'
               }`}
@@ -177,7 +178,7 @@ export default function InboxPage() {
       {/* Chat Thread */}
       <div className="flex-1 flex flex-col bg-white">
         {/* Thread Header */}
-        <div className="p-4 border-b border-zinc-200 bg-white flex items-center justify-between">
+        <div className="p-3 sm:p-4 border-b border-zinc-200 bg-white flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#261930] text-[#BEFF53] flex items-center justify-center font-bold text-sm">
               AN
@@ -185,12 +186,12 @@ export default function InboxPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-[#0C0C0C] text-sm">{activeChat.name}</h3>
-                <span className="text-xs text-pink-600 font-mono">{activeChat.username}</span>
+                <span className="hidden sm:inline text-xs text-pink-600 font-mono">{activeChat.username}</span>
               </div>
               {activeChat.triggerContext && (
                 <div className="text-[11px] text-[#727272] flex items-center gap-1.5 mt-0.5">
                   <Instagram className="w-3 h-3 text-pink-600" />
-                  <span>Триггер: <strong>{activeChat.triggerContext}</strong></span>
+                  <span className="hidden sm:inline">Триггер: <strong>{activeChat.triggerContext}</strong></span>
                 </div>
               )}
             </div>
@@ -198,18 +199,18 @@ export default function InboxPage() {
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 p-1 rounded-full bg-[#F6F5F8] border border-zinc-200 text-xs">
-              <button className={`px-3.5 py-1 rounded-full font-semibold transition ${activeChat.mode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'text-[#727272]'}`}>
-                🤖 AI Copilot
+              <button onClick={() => setOperatorMode('AI')} className={`px-2 sm:px-3.5 py-1 rounded-full font-semibold transition ${operatorMode === 'AI' ? 'bg-[#261930] text-[#BEFF53]' : 'text-[#727272]'}`}>
+                🤖 <span className="hidden sm:inline">AI Copilot</span>
               </button>
-              <button className={`px-3.5 py-1 rounded-full font-semibold transition ${activeChat.mode === 'HUMAN' ? 'bg-[#261930] text-white' : 'text-[#727272]'}`}>
-                👤 Менеджер
+              <button onClick={() => setOperatorMode('HUMAN')} className={`px-2 sm:px-3.5 py-1 rounded-full font-semibold transition ${operatorMode === 'HUMAN' ? 'bg-[#261930] text-white' : 'text-[#727272]'}`}>
+                👤 <span className="hidden sm:inline">Менеджер</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Message History */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-[#F6F5F8]/40">
+        <div className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4 bg-[#F6F5F8]/40">
           {messages.map(msg => (
             <div key={msg.id} className={`flex flex-col ${msg.sender === 'CONTACT' ? 'items-start' : 'items-end'}`}>
               {msg.trigger && (

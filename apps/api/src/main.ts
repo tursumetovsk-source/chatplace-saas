@@ -8,7 +8,7 @@ app.use(express.json());
 const PORT = process.env.PORT || 4000;
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'ChatPlace Modular Monolith API Gateway', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'Virale AI Modular Monolith API Gateway', timestamp: new Date().toISOString() });
 });
 
 // Conversations REST API matching section 45
@@ -27,5 +27,5 @@ app.post('/v1/automations/test', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 ChatPlace API Gateway running on http://localhost:${PORT}`);
+  console.log(`🚀 Virale AI API Gateway running on http://localhost:${PORT}`);
 });

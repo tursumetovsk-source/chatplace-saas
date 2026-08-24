@@ -7,12 +7,12 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h2 className="text-2xl font-bold text-white tracking-tight">Настройки & Биллинг</h2>
-        <p className="text-sm text-zinc-400 mt-1">Управление подпиской SaaS, лимитами и доступом команды</p>
+        <h2 className="text-2xl font-bold text-[#0C0C0C] tracking-tight">Настройки & Биллинг</h2>
+        <p className="text-sm text-[#737378] mt-1">Управление подпиской SaaS, лимитами и доступом команды</p>
       </div>
 
       {/* Plan Card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-500/40 space-y-4">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-[#21162B] to-[#432349] border border-purple-900/40 space-y-4 shadow-subtle">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">Текущий тариф</span>

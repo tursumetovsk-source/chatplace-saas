@@ -31,7 +31,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-// ChatPlace Instagram Trigger Node
+// Virale AI Instagram Trigger Node
 const InstagramTriggerNode = ({ data }: { data: { title: string; keyword: string; scope: string } }) => (
   <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-pink-500 shadow-lg w-76">
     <div className="flex items-center justify-between mb-2">
@@ -55,7 +55,7 @@ const InstagramTriggerNode = ({ data }: { data: { title: string; keyword: string
   </div>
 );
 
-// ChatPlace Instagram Direct Message Node
+// Virale AI Instagram Direct Message Node
 const InstagramMessageNode = ({ data }: { data: { text: string; buttons: string[]; delay?: string } }) => (
   <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-indigo-400 shadow-lg w-80">
     <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
@@ -87,7 +87,7 @@ const InstagramMessageNode = ({ data }: { data: { text: string; buttons: string[
   </div>
 );
 
-// ChatPlace AI Agent Node
+// Virale AI Agent Node
 const AiAgentNode = ({ data }: { data: { agentName: string; model: string; kbChunks: string } }) => (
   <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-purple-400 shadow-lg w-76">
     <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
@@ -109,7 +109,7 @@ const AiAgentNode = ({ data }: { data: { agentName: string; model: string; kbChu
   </div>
 );
 
-// ChatPlace Kaspi Pay & CRM Node
+// Virale AI Kaspi Pay & CRM Node
 const KaspiPayNode = ({ data }: { data: { title: string; amount: string; provider: string } }) => (
   <div className="px-5 py-4 rounded-[24px] bg-[#261930] text-white border-2 border-emerald-400 shadow-lg w-76">
     <Handle type="target" position={Position.Top} className="w-3.5 h-3.5 bg-[#BEFF53] border-2 border-[#261930]" />
@@ -177,6 +177,7 @@ export default function AutomationsPage() {
   ]);
 
   const [simulating, setSimulating] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [simLogs, setSimLogs] = useState<Array<{ sender: string; text: string }>>([]);
   const [simInput, setSimInput] = useState('');
 
@@ -224,9 +225,9 @@ export default function AutomationsPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex flex-col rounded-[24px] border border-zinc-200 bg-white overflow-hidden relative shadow-subtle">
+    <div className="h-[calc(100vh-9rem)] md:h-[calc(100vh-6rem)] min-h-[560px] flex flex-col rounded-[24px] border border-zinc-200 bg-white overflow-hidden relative shadow-subtle">
       {/* Top Toolbar */}
-      <div className="p-4 border-b border-zinc-200 bg-white flex items-center justify-between z-10">
+      <div className="p-3 sm:p-4 border-b border-zinc-200 bg-white flex items-center justify-between gap-3 z-10">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#261930] text-[#BEFF53] flex items-center justify-center font-bold">
             <Instagram className="w-5 h-5" />
@@ -238,30 +239,31 @@ export default function AutomationsPage() {
                 АКТИВЕН
               </span>
             </h2>
-            <p className="text-xs text-[#727272]">Сценарий: Reels "ПРАЙС" → Direct автоответ → AI Продажи → Kaspi Pay</p>
+            <p className="hidden sm:block text-xs text-[#727272]">Сценарий: Reels "ПРАЙС" → Direct автоответ → AI Продажи → Kaspi Pay</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={startSimulator}
+            aria-label="Тестировать воронку"
             className="px-4 py-2 rounded-full bg-[#BEFF53] text-[#0C0C0C] font-semibold text-xs transition flex items-center gap-2 shadow-sm hover:bg-[#b0f542]"
           >
             <Smartphone className="w-4 h-4" />
-            Тестировать воронку
+            <span className="hidden sm:inline">Тестировать воронку</span>
           </button>
 
-          <button className="px-4 py-2 rounded-full bg-[#261930] text-white font-semibold text-xs transition flex items-center gap-2 hover:bg-[#392648]">
+          <button onClick={() => { setSaved(true); window.setTimeout(() => setSaved(false), 1800); }} aria-label="Сохранить сценарий" className="px-4 py-2 rounded-full bg-[#261930] text-white font-semibold text-xs transition flex items-center gap-2 hover:bg-[#392648]">
             <Save className="w-4 h-4" />
-            Сохранить сценарий
+            <span className="hidden sm:inline">{saved ? 'Сохранено' : 'Сохранить сценарий'}</span>
           </button>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Node Palette Toolbar */}
-        <div className="w-64 border-r border-zinc-200 bg-[#F6F5F8] p-4 space-y-4 shrink-0 overflow-y-auto">
-          <div className="text-xs font-bold text-[#727272] uppercase tracking-wider">Блоки сценария ChatPlace</div>
+        <div className="hidden lg:block w-64 border-r border-zinc-200 bg-[#F6F5F8] p-4 space-y-4 shrink-0 overflow-y-auto">
+          <div className="text-xs font-bold text-[#727272] uppercase tracking-wider">Блоки сценария Virale AI</div>
           
           <div className="space-y-2.5">
             <div className="p-3.5 rounded-2xl bg-white border border-zinc-200 shadow-subtle hover:border-[#261930] cursor-pointer transition">
@@ -316,13 +318,13 @@ export default function AutomationsPage() {
 
         {/* Right Phone Direct Simulator Drawer */}
         {simulating && (
-          <div className="w-80 border-l border-zinc-200 bg-white flex flex-col shrink-0 animate-in slide-in-from-right duration-200 shadow-lg">
+          <div className="absolute inset-0 z-20 sm:relative sm:inset-auto w-full sm:w-80 border-l border-zinc-200 bg-white flex flex-col shrink-0 animate-in slide-in-from-right duration-200 shadow-lg">
             <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-[#F6F5F8]">
               <div className="flex items-center gap-2 text-xs font-bold text-[#0C0C0C]">
                 <Smartphone className="w-4 h-4 text-pink-600" />
                 Имитатор Instagram Direct
               </div>
-              <button onClick={() => setSimulating(false)} className="text-[#727272] hover:text-[#0C0C0C]">
+              <button onClick={() => setSimulating(false)} aria-label="Закрыть симулятор" className="text-[#727272] hover:text-[#0C0C0C]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -355,7 +357,7 @@ export default function AutomationsPage() {
                 placeholder="Напишите 'ПРАЙС'..."
                 className="flex-1 bg-[#F6F5F8] border border-zinc-200 rounded-full px-4 py-2 text-xs text-[#0C0C0C] focus:outline-none focus:border-[#261930] font-sans"
               />
-              <button onClick={handleSimSend} className="p-2.5 rounded-full bg-[#261930] text-[#BEFF53]">
+              <button onClick={handleSimSend} aria-label="Отправить сообщение" className="p-2.5 rounded-full bg-[#261930] text-[#BEFF53]">
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>

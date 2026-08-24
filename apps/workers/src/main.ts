@@ -1,7 +1,7 @@
 import { AutomationEngine } from '@chatplace/automation-engine';
 import { ChannelService } from '@chatplace/channel-sdk';
 
-console.log('⚙️ ChatPlace Background Workers initialized (BullMQ Automation / AI / Messaging Queues)');
+console.log('⚙️ Virale AI Background Workers initialized (BullMQ Automation / AI / Messaging Queues)');
 
 const engine = new AutomationEngine();
 const channels = new ChannelService();
