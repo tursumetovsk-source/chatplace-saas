@@ -14,7 +14,7 @@ This document tracks product parity against current public ChatPlace materials a
 | Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs with editable trigger, message, condition, delay, tag, variable, AI, CRM and webhook blocks; two-way branches, copy/delete, publishing, run/step logs and durable retry | Implemented core |
 | Variables and tags | Stored client variables, reserved variables, filters and segmentation | Runtime variables, template resolution, editable contact fields/tags, saved multi-filter segments and segment-aware broadcasts | Implemented core |
 | Broadcasts | Targeted broadcasts using tags and account audiences | Persistent Telegram campaigns, consent-only audience estimation, scheduling, cancel, delivery queue, retry, opt-out and usage accounting | Implemented for Telegram |
-| AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Responses API, local conversation memory, file-search knowledge, channel assignment, testing and operator handoff; account scan/corrections analytics remain | Partial |
+| AI agent | Channel assignment, account scan, files/text knowledge, testing, corrections, memory and operator handoff | Responses API, local conversation memory, file-search knowledge, channel assignment, testing, explicit helpful/correction feedback with audit trail and bounded correction context, and operator handoff; account scan/topic analytics remain | Partial |
 | CRM integration | Client data transfer to amoCRM and automation actions | Persistent internal CRM, `crm.create_deal` and secure generic HTTPS webhook/CRM actions; native amoCRM OAuth/mapping remains | Partial |
 | Analytics | Contact, automation and knowledge-topic analytics | Live workspace metrics, funnel, channel counts, queue health, failures and audit log; knowledge-topic analytics remain | Partial |
 | Billing and limits | Free/Pro/Creator/Premium, active-contact and AI-credit limits | Subscription/trial records, KZT plans, monthly usage ledger, server-enforced quotas and upgrade requests; payment provider webhooks remain | Partial |
@@ -36,7 +36,7 @@ This document tracks product parity against current public ChatPlace materials a
 6. Persisted automation graphs, versions, editable core blocks, conditional branches, publishing, execution runs, delays and failure recovery. **Implemented for the Telegram path.**
 7. Real Inbox with assignment, AI/Human mode, unread state, attachments and delivery status. **Assignment, human-handoff queue, unread state, Telegram outbound photo/video/document attachments and delivery status implemented; other provider attachments remain.**
 8. Contact variables, tags, filters, imports/exports, exact-identity duplicate review/merge and CRM pipeline persistence. **Implemented.**
-9. AI provider, conversation memory, RAG knowledge base, testing and human handoff. **Implemented for the Telegram path; production credentials and live smoke test remain.**
+9. AI provider, conversation memory, RAG knowledge base, testing, correction feedback and human handoff. **Implemented for the Telegram path; operator corrections are persisted, audited and applied to subsequent test/automation prompts; production credentials and live smoke test remain.**
 
 ### P1 — commercial launch
 
@@ -49,7 +49,7 @@ This document tracks product parity against current public ChatPlace materials a
 ### P2 — ChatPlace differentiation/parity
 
 15. Account/profile scanning for AI knowledge generation.
-16. Knowledge-topic analytics and answer correction that feeds learning.
+16. Knowledge-topic analytics and answer correction that feeds learning. **Explicit answer feedback and bounded operator corrections are implemented; topic analytics remain.**
 17. Instagram subscription checks, referral flows, gamification and leaderboards.
 18. AI creator for scripts, carousels, images and video.
 19. External CRM connectors and generic HTTP/webhook actions. **Secure generic HTTPS action implemented; provider-specific OAuth, field mapping and sync remain.**

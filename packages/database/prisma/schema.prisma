@@ -45,6 +45,7 @@ model Workspace {
   conversations   Conversation[]
   automations     Automation[]
   aiAgents        AiAgent[]
+  aiAgentCorrections AiAgentCorrection[]
   deals           Deal[]
   automationRuns  AutomationRun[]
   aiAgentChannels AiAgentChannel[]
@@ -354,6 +355,7 @@ model AiAgent {
   workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   channelAssignments AiAgentChannel[]
   knowledgeDocuments KnowledgeDocument[]
+  corrections       AiAgentCorrection[]
 
   @@map("ai_agents")
 }
@@ -373,6 +375,24 @@ model AiAgentChannel {
   @@unique([aiAgentId, channelAccountId])
   @@index([workspaceId, status])
   @@map("ai_agent_channels")
+}
+
+model AiAgentCorrection {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  aiAgentId   String   @map("ai_agent_id")
+  question    String
+  answer      String
+  rating      String
+  correction  String?
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  aiAgent     AiAgent  @relation(fields: [aiAgentId], references: [id], onDelete: Cascade)
+
+  @@index([aiAgentId, createdAt])
+  @@index([workspaceId, rating, createdAt])
+  @@map("ai_agent_corrections")
 }
 
 model KnowledgeDocument {

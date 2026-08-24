@@ -8,12 +8,14 @@ import {
   FileText,
   LoaderCircle,
   MessageSquareText,
+  PenLine,
   Plus,
   Save,
   Send,
   ShieldCheck,
   Sparkles,
   Trash2,
+  ThumbsUp,
   Upload,
   UserRoundCheck,
   X
@@ -109,6 +111,7 @@ export default function AiAgentsPage() {
   const [newAgentName, setNewAgentName] = useState('');
   const [testQuestion, setTestQuestion] = useState('');
   const [testMessages, setTestMessages] = useState<TestMessage[]>([]);
+  const [feedback, setFeedback] = useState<Record<number, 'HELPFUL' | 'CORRECTION'>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   const active = useMemo(() => agents.find(agent => agent.id === activeId) || agents[0], [agents, activeId]);
@@ -142,6 +145,7 @@ export default function AiAgentsPage() {
     }
     setSelectedChannelIds(active.channelAssignments.map(assignment => assignment.channelAccount.id));
     setTestMessages([]);
+    setFeedback({});
   }, [active?.id]);
 
   const updateActive = (patch: Partial<Agent>) => {
@@ -303,6 +307,34 @@ export default function AiAgentsPage() {
     }
   };
 
+  const submitFeedback = async (messageIndex: number, rating: 'HELPFUL' | 'CORRECTION') => {
+    if (!active) return;
+    const message = testMessages[messageIndex];
+    if (!message || message.role !== 'assistant') return;
+    const question = [...testMessages.slice(0, messageIndex)].reverse().find(item => item.role === 'user')?.content || '';
+    if (!question) return;
+    const correction = rating === 'CORRECTION' ? window.prompt('Что нужно исправить в этом ответе?')?.trim() || '' : '';
+    if (rating === 'CORRECTION' && !correction) return;
+    if (mode !== 'account') {
+      setFeedback(current => ({ ...current, [messageIndex]: rating }));
+      showNotice(rating === 'HELPFUL' ? 'Отметка сохранена в демо.' : 'Правка отмечена в демо.');
+      return;
+    }
+    try {
+      const response = await fetch(`/api/ai-agents/${active.id}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, answer: message.content, rating, correction })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Не удалось сохранить оценку');
+      setFeedback(current => ({ ...current, [messageIndex]: rating }));
+      showNotice(rating === 'HELPFUL' ? 'Ответ отмечен как полезный.' : 'Правка сохранена и будет учтена в следующих ответах.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось сохранить оценку');
+    }
+  };
+
   return (
     <div className="space-y-7 text-[#0C0C0C]">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -346,7 +378,7 @@ export default function AiAgentsPage() {
 
           <section className="grid gap-5 rounded-[26px] border border-[#E4E6EB] bg-white p-6 shadow-subtle lg:grid-cols-2 lg:p-7">
             <div><h2 className="flex items-center gap-2 text-lg font-extrabold"><UserRoundCheck className="h-5 w-5 text-emerald-600" /> Передача оператору</h2><p className="mt-2 text-sm leading-relaxed text-[#73767E]">При явном запросе или недостатке данных агент меняет режим диалога на «Менеджер».</p><label className="mt-5 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">Ключевые слова через запятую</span><input value={active.handoffKeywords.join(', ')} onChange={event => updateActive({ handoffKeywords: event.target.value.split(',').map(item => item.trim()).filter(Boolean) })} className="w-full rounded-xl border border-[#DFE1E6] px-4 py-3 text-sm outline-none focus:border-emerald-500" /></label><label className="mt-4 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">Сообщение при передаче</span><textarea rows={3} value={active.handoffMessage} onChange={event => updateActive({ handoffMessage: event.target.value })} className="w-full resize-none rounded-xl border border-[#DFE1E6] px-4 py-3 text-sm leading-relaxed outline-none focus:border-emerald-500" /></label></div>
-            <div className="rounded-2xl bg-[#261930] p-5 text-white"><div className="flex items-center justify-between gap-4"><div><h2 className="flex items-center gap-2 text-lg font-extrabold"><MessageSquareText className="h-5 w-5 text-[#BEFF53]" /> Тестовый чат</h2><p className="mt-1 text-xs text-white/60">Проверьте ответ до запуска</p></div><span className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-extrabold text-[#BEFF53]">{active.knowledgeDocuments.length} документов</span></div><div className="mt-4 h-56 space-y-3 overflow-y-auto rounded-xl bg-black/15 p-3">{testMessages.length === 0 && <div className="flex h-full items-center justify-center px-4 text-center text-sm leading-relaxed text-white/55">Спросите о цене, условиях или попросите связать с менеджером.</div>}{testMessages.map((message, index) => <div key={`${message.role}-${index}`} className={`max-w-[88%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${message.role === 'user' ? 'ml-auto bg-[#BEFF53] text-[#17200C]' : 'bg-white/12 text-white'}`}>{message.content}{message.handoff && <span className="mt-2 flex items-center gap-1 text-[10px] font-extrabold text-[#BEFF53]"><UserRoundCheck className="h-3 w-3" /> Передача менеджеру</span>}</div>)}{testing && <div className="flex items-center gap-2 text-xs text-white/60"><LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Агент думает…</div>}</div><form onSubmit={sendTest} className="mt-3 flex gap-2"><input value={testQuestion} onChange={event => setTestQuestion(event.target.value)} placeholder="Введите вопрос клиента…" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#BEFF53]/60" /><button disabled={testing || !testQuestion.trim()} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#BEFF53] text-[#17200C] disabled:opacity-40" aria-label="Отправить тест"><Send className="h-4 w-4" /></button></form></div>
+            <div className="rounded-2xl bg-[#261930] p-5 text-white"><div className="flex items-center justify-between gap-4"><div><h2 className="flex items-center gap-2 text-lg font-extrabold"><MessageSquareText className="h-5 w-5 text-[#BEFF53]" /> Тестовый чат</h2><p className="mt-1 text-xs text-white/60">Проверьте ответ до запуска</p></div><span className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-extrabold text-[#BEFF53]">{active.knowledgeDocuments.length} документов</span></div><div className="mt-4 h-56 space-y-3 overflow-y-auto rounded-xl bg-black/15 p-3">{testMessages.length === 0 && <div className="flex h-full items-center justify-center px-4 text-center text-sm leading-relaxed text-white/55">Спросите о цене, условиях или попросите связать с менеджером.</div>}{testMessages.map((message, index) => <div key={`${message.role}-${index}`} className={`max-w-[88%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${message.role === 'user' ? 'ml-auto bg-[#BEFF53] text-[#17200C]' : 'bg-white/12 text-white'}`}>{message.content}{message.handoff && <span className="mt-2 flex items-center gap-1 text-[10px] font-extrabold text-[#BEFF53]"><UserRoundCheck className="h-3 w-3" /> Передача менеджеру</span>}{message.role === 'assistant' && <div className="mt-2 flex items-center gap-1 border-t border-white/10 pt-2"><button type="button" onClick={() => void submitFeedback(index, 'HELPFUL')} className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold transition ${feedback[index] === 'HELPFUL' ? 'bg-[#BEFF53] text-[#17200C]' : 'bg-white/10 text-white/65 hover:bg-white/20 hover:text-white'}`}><ThumbsUp className="h-3 w-3" /> Полезно</button><button type="button" onClick={() => void submitFeedback(index, 'CORRECTION')} className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold transition ${feedback[index] === 'CORRECTION' ? 'bg-amber-300 text-[#24180A]' : 'bg-white/10 text-white/65 hover:bg-white/20 hover:text-white'}`}><PenLine className="h-3 w-3" /> Исправить</button></div>}</div>)}{testing && <div className="flex items-center gap-2 text-xs text-white/60"><LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Агент думает…</div>}</div><form onSubmit={sendTest} className="mt-3 flex gap-2"><input value={testQuestion} onChange={event => setTestQuestion(event.target.value)} placeholder="Введите вопрос клиента…" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#BEFF53]/60" /><button disabled={testing || !testQuestion.trim()} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#BEFF53] text-[#17200C] disabled:opacity-40" aria-label="Отправить тест"><Send className="h-4 w-4" /></button></form></div>
           </section>
 
           <div className="sticky bottom-4 z-10 flex flex-col gap-3 rounded-2xl border border-[#DFE1E6] bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-2 text-sm text-[#656871]"><ShieldCheck className="h-4 w-4 text-emerald-600" /> История хранится в Virale AI, запросы к модели отправляются без серверного хранения ответа.</div><button disabled={saving} onClick={saveAgent} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 text-sm font-extrabold text-white hover:bg-purple-700 disabled:opacity-50">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Сохранить агента</button></div>

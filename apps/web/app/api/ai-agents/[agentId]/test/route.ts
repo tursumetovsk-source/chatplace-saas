@@ -5,6 +5,7 @@ import { getAccountContext } from '../../../../../lib/auth-context';
 import { generateAgentReply, OpenAIRequestError, type AgentHistoryMessage } from '../../../../../lib/openai';
 import { assertWorkspaceQuota, QuotaExceededError, recordUsage } from '../../../../../lib/billing';
 import { checkRateLimit } from '../../../../../lib/rate-limit';
+import { buildCorrectionContext } from '../../../../../lib/ai-corrections';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ agentId: string }> }) {
   const account = await getAccountContext();
@@ -12,6 +13,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { agentId } = await params;
   const agent = await prisma.aiAgent.findFirst({ where: { id: agentId, workspaceId: account.workspaceId } });
   if (!agent) return NextResponse.json({ error: 'AI-агент не найден' }, { status: 404 });
+  const corrections = await prisma.aiAgentCorrection.findMany({
+    where: { aiAgentId: agent.id, workspaceId: account.workspaceId, rating: 'CORRECTION' },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: { question: true, answer: true, correction: true }
+  });
+  const correctionContext = buildCorrectionContext(corrections);
   const body = await request.json().catch(() => null) as { question?: unknown; history?: unknown } | null;
   const question = typeof body?.question === 'string' ? body.question.trim() : '';
   if (!question || question.length > 8_000) return NextResponse.json({ error: 'Введите вопрос до 8000 символов' }, { status: 400 });
@@ -31,7 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await assertWorkspaceQuota(account.workspaceId, 'AI_REPLIES');
     const reply = await generateAgentReply({
       model: agent.model,
-      systemPrompt: agent.systemPrompt,
+      systemPrompt: [agent.systemPrompt, correctionContext].filter(Boolean).join('\n\n'),
       goal: agent.goal,
       tone: agent.tone,
       history: [...history, { role: 'user', content: question }],

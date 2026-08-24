@@ -48,7 +48,7 @@ const auditLabels: Record<string, string> = {
   'team.role_changed': 'Изменена роль', 'team.member_removed': 'Удалён участник', 'workspace.switched': 'Сменено рабочее пространство',
   'conversation.assigned': 'Назначен менеджер', 'conversation.updated': 'Обновлён диалог',
   'integration.created': 'Подключён внешний webhook', 'integration.test_succeeded': 'Проверен внешний webhook', 'integration.disconnected': 'Отключён внешний webhook',
-  'contacts.merged': 'Объединены дубли контактов'
+  'contacts.merged': 'Объединены дубли контактов', 'ai.feedback_submitted': 'Оценён ответ AI'
 };
 
 export default function AnalyticsPage() {

@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       contacts: { include: { identities: true } },
       conversations: { include: { messages: { orderBy: { createdAt: 'asc' }, take: 10_000 } } },
       automations: { include: { runs: { include: { steps: true }, take: 1_000 } } },
-      aiAgents: { include: { knowledgeDocuments: true, channelAssignments: true } },
+      aiAgents: { include: { knowledgeDocuments: true, channelAssignments: true, corrections: true } },
       deals: true,
       subscription: { select: { plan: true, status: true, trialEndsAt: true, currentPeriodStart: true, currentPeriodEnd: true, cancelAtPeriodEnd: true } },
       usageCounters: true,

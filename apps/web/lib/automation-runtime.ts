@@ -5,6 +5,7 @@ import { generateAgentReply } from './openai';
 import { sendTelegramMessage, TelegramApiError } from './telegram';
 import { assertWorkspaceQuota, recordUsage } from './billing';
 import { ExternalWebhookError, sendWorkspaceWebhook } from './external-webhooks';
+import { buildCorrectionContext } from './ai-corrections';
 
 export interface InboundAutomationEvent {
   workspaceId: string;
@@ -178,6 +179,14 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
   });
   if (!agent) throw new Error('Активный AI-агент для этого канала не найден');
 
+  const corrections = await prisma.aiAgentCorrection.findMany({
+    where: { aiAgentId: agent.id, workspaceId: event.workspaceId, rating: 'CORRECTION' },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: { question: true, answer: true, correction: true }
+  });
+  const correctionContext = buildCorrectionContext(corrections);
+
   const conversation = await prisma.conversation.findFirst({
     where: { id: event.conversationId, workspaceId: event.workspaceId },
     include: {
@@ -218,7 +227,7 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
         ? { answer: agent.handoffMessage, handoff: true, reason: 'Запрос пользователя на оператора' }
         : await generateAgentReply({
           model: agent.model,
-          systemPrompt: agent.systemPrompt,
+          systemPrompt: [agent.systemPrompt, correctionContext].filter(Boolean).join('\n\n'),
           goal: agent.goal,
           tone: agent.tone,
           history: conversation.messages.reverse().flatMap(message => {
