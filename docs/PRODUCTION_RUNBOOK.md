@@ -27,6 +27,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 10. Invite a disposable manager account, accept the link, switch workspaces, self-assign a handoff conversation and remove the test member.
 11. In staging, connect a disposable public HTTPS receiver, run the integration test, publish a scenario with a webhook block and verify the signed payload and `Idempotency-Key`.
 12. Create two staging contacts with the same normalized phone, choose the richer card as primary, merge them and verify that conversations, deals and consent state remain correct.
+13. In a staging Telegram conversation, send a small JPEG, MP4 and PDF from Inbox and verify that each appears in Telegram and persists with the correct message type/status. Keep larger media on a direct-storage upload roadmap; the current Vercel path is capped at 4 MB.
 
 ## Backups and restore drills
 

@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@chatplace/database';
 import { getAccountContext } from '../../../../../lib/auth-context';
 import { decryptCredential } from '../../../../../lib/credentials';
-import { sendTelegramMessage, TelegramApiError } from '../../../../../lib/telegram';
+import { classifyTelegramAttachment, sendTelegramFile, sendTelegramMessage, TELEGRAM_ATTACHMENT_MAX_BYTES, TelegramApiError } from '../../../../../lib/telegram';
 import { assertWorkspaceQuota, QuotaExceededError, recordUsage } from '../../../../../lib/billing';
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 async function findConversation(workspaceId: string, conversationId: string) {
   return prisma.conversation.findFirst({
@@ -38,10 +41,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const conversation = await findConversation(account.workspaceId, conversationId);
   if (!conversation) return NextResponse.json({ error: 'Диалог не найден' }, { status: 404 });
 
-  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
-  const text = typeof body?.text === 'string' ? body.text.trim() : '';
-  if (!text || text.length > 5000) {
-    return NextResponse.json({ error: 'Сообщение должно содержать от 1 до 5000 символов' }, { status: 400 });
+  const contentType = request.headers.get('content-type') || '';
+  let text = '';
+  let attachment: File | null = null;
+  if (contentType.includes('multipart/form-data')) {
+    const form = await request.formData().catch(() => null);
+    const formText = form?.get('text');
+    const formFile = form?.get('file');
+    text = typeof formText === 'string' ? formText.trim() : '';
+    attachment = formFile instanceof File ? formFile : null;
+  } else {
+    const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+    text = typeof body?.text === 'string' ? body.text.trim() : '';
+  }
+  if (!text && !attachment) return NextResponse.json({ error: 'Добавьте текст или вложение' }, { status: 400 });
+  if (text.length > (attachment ? 1_024 : 5_000)) return NextResponse.json({ error: attachment ? 'Подпись к вложению должна быть не длиннее 1024 символов' : 'Сообщение должно содержать не более 5000 символов' }, { status: 400 });
+  if (attachment) {
+    if (conversation.channelAccount.provider !== 'TELEGRAM') return NextResponse.json({ error: 'Вложения в Inbox сейчас доступны только для Telegram' }, { status: 400 });
+    if (attachment.size <= 0 || attachment.size > TELEGRAM_ATTACHMENT_MAX_BYTES) return NextResponse.json({ error: 'Размер вложения должен быть от 1 байта до 4 МБ' }, { status: 413 });
   }
   try {
     await assertWorkspaceQuota(account.workspaceId, 'OUTBOUND_MESSAGES');
@@ -51,6 +68,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const now = new Date();
+  const attachmentType = attachment ? classifyTelegramAttachment(attachment.type, attachment.name) : null;
+  const messageText = text || (attachmentType === 'IMAGE' ? 'Фото' : attachmentType === 'VIDEO' ? 'Видео' : 'Файл');
   const membership = await prisma.workspaceMember.findFirst({ where: { workspaceId: account.workspaceId, userId: account.userId, status: 'ACTIVE' }, select: { id: true } });
   let message = await prisma.$transaction(async transaction => {
     const created = await transaction.message.create({
@@ -59,8 +78,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         conversationId,
         direction: 'OUTBOUND',
         senderType: 'MANAGER',
-        type: 'TEXT',
-        text,
+        type: attachmentType || 'TEXT',
+        text: messageText,
+        payload: attachment ? { attachment: { name: attachment.name.slice(0, 140), size: attachment.size, contentType: attachment.type || 'application/octet-stream' } } : undefined,
         status: conversation.channelAccount.provider === 'TELEGRAM' ? 'PENDING' : 'QUEUED'
       }
     });
@@ -77,14 +97,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   ) {
     try {
       const chatId = conversation.externalThreadId.split(':')[0];
-      const sent = await sendTelegramMessage(decryptCredential(conversation.channelAccount.accessTokenEncrypted), chatId, text);
+      const token = decryptCredential(conversation.channelAccount.accessTokenEncrypted);
+      const sent = attachment
+        ? await sendTelegramFile(token, chatId, attachment, text, attachmentType || 'FILE')
+        : await sendTelegramMessage(token, chatId, text);
       message = await prisma.message.update({
         where: { id: message.id },
         data: { providerMessageId: String(sent.message_id), status: 'SENT', deliveredAt: new Date(sent.date * 1000) }
       });
     } catch (error) {
       const reason = error instanceof TelegramApiError ? error.message : 'Ошибка отправки в Telegram';
-      message = await prisma.message.update({ where: { id: message.id }, data: { status: 'FAILED', payload: { deliveryError: reason } } });
+      const previousPayload = message.payload && typeof message.payload === 'object' && !Array.isArray(message.payload) ? message.payload as Record<string, unknown> : {};
+      message = await prisma.message.update({ where: { id: message.id }, data: { status: 'FAILED', payload: { ...previousPayload, deliveryError: reason } } });
       return NextResponse.json({ error: reason, message }, { status: 502 });
     }
   }

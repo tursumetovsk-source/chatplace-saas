@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CreditCard, Instagram, MessageCircle, Phone, Send, SendHorizontal, Sparkles, UserCheck, UserRound, Users, Video } from 'lucide-react';
+import { CreditCard, FileText, Instagram, MessageCircle, Paperclip, Phone, Send, SendHorizontal, Sparkles, UserCheck, UserRound, Users, Video, X } from 'lucide-react';
 import { useAccountMode } from '../../../lib/use-account-mode';
 
 type Provider = 'INSTAGRAM' | 'TELEGRAM' | 'WHATSAPP' | 'TIKTOK';
@@ -36,6 +36,8 @@ interface ChatMessage {
   status?: string;
   trigger?: string;
   payStatus?: string;
+  type?: string;
+  attachment?: { name: string; size: number; contentType: string };
 }
 
 interface ApiConversation {
@@ -56,6 +58,8 @@ interface ApiMessage {
   text: string;
   status: string;
   createdAt: string;
+  type?: string;
+  payload?: unknown;
 }
 
 const demoChats: Chat[] = [
@@ -73,6 +77,18 @@ const demoMessages: ChatMessage[] = [
 ];
 
 const formatTime = (value: string) => new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+const formatFileSize = (value: number) => value >= 1024 * 1024 ? `${(value / 1024 / 1024).toFixed(1)} МБ` : `${Math.max(1, Math.ceil(value / 1024))} КБ`;
+
+function attachmentFromPayload(payload: unknown, type?: string) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return undefined;
+  const raw = (payload as { attachment?: unknown }).attachment;
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const value = raw as Record<string, unknown>;
+    if (typeof value.name === 'string' && typeof value.size === 'number' && typeof value.contentType === 'string') return { name: value.name, size: value.size, contentType: value.contentType };
+  }
+  if (typeof (payload as { mediaFileId?: unknown }).mediaFileId === 'string' && ['IMAGE', 'VIDEO', 'FILE', 'AUDIO'].includes(type || '')) return { name: type === 'IMAGE' ? 'Фото Telegram' : type === 'VIDEO' ? 'Видео Telegram' : type === 'AUDIO' ? 'Аудио Telegram' : 'Файл Telegram', size: 0, contentType: 'application/telegram' };
+  return undefined;
+}
 
 const mapConversation = (conversation: ApiConversation): Chat => {
   const provider = ['INSTAGRAM', 'TELEGRAM', 'WHATSAPP', 'TIKTOK'].includes(conversation.channelAccount.provider)
@@ -105,6 +121,7 @@ export default function InboxPage() {
   const [operatorMode, setOperatorMode] = useState<OperatorMode>(demoChats[0].mode);
   const [messages, setMessages] = useState<ChatMessage[]>(demoMessages);
   const [inputText, setInputText] = useState('');
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -144,7 +161,7 @@ export default function InboxPage() {
       .then(async response => {
         if (!response.ok) throw new Error('Не удалось загрузить сообщения');
         const data = await response.json() as { messages: ApiMessage[] };
-        setMessages(data.messages.map(message => ({ id: message.id, sender: message.senderType, text: message.text, status: message.status, time: formatTime(message.createdAt) })));
+        setMessages(data.messages.map(message => ({ id: message.id, sender: message.senderType, text: message.text, type: message.type, attachment: attachmentFromPayload(message.payload, message.type), status: message.status, time: formatTime(message.createdAt) })));
       })
       .catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить сообщения'))
       .finally(() => setLoading(false));
@@ -154,6 +171,7 @@ export default function InboxPage() {
     setActiveChat(chat);
     setOperatorMode(chat.mode);
     if (mode === 'demo') setMessages(chat.id === 'c1' ? demoMessages : []);
+    setAttachmentFile(null);
     setChats(current => current.map(item => item.id === chat.id ? { ...item, unread: 0 } : item));
   };
 
@@ -184,24 +202,27 @@ export default function InboxPage() {
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text || !activeChat || sending) return;
+    if ((!text && !attachmentFile) || !activeChat || sending) return;
+    if (attachmentFile && activeChat.provider !== 'TELEGRAM') { setError('Вложения в Inbox сейчас доступны только для Telegram'); return; }
     setSending(true);
     setError('');
     try {
       if (mode === 'account') {
-        const response = await fetch(`/api/conversations/${activeChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+        const requestBody = attachmentFile ? (() => { const form = new FormData(); form.set('text', text); form.set('file', attachmentFile); return form; })() : JSON.stringify({ text });
+        const response = await fetch(`/api/conversations/${activeChat.id}/messages`, { method: 'POST', ...(attachmentFile ? {} : { headers: { 'Content-Type': 'application/json' } }), body: requestBody });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Не удалось отправить сообщение');
         const message = data.message as ApiMessage;
-        setMessages(current => [...current, { id: message.id, sender: 'MANAGER', text: message.text, status: message.status, time: formatTime(message.createdAt) }]);
+        setMessages(current => [...current, { id: message.id, sender: 'MANAGER', text: message.text, type: message.type, attachment: attachmentFromPayload(message.payload, message.type) || (attachmentFile ? { name: attachmentFile.name, size: attachmentFile.size, contentType: attachmentFile.type || 'application/octet-stream' } : undefined), status: message.status, time: formatTime(message.createdAt) }]);
       } else {
-        setMessages(current => [...current, { id: `m_${Date.now()}`, sender: 'MANAGER', text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+        setMessages(current => [...current, { id: `m_${Date.now()}`, sender: 'MANAGER', text: text || `Файл: ${attachmentFile?.name}`, attachment: attachmentFile ? { name: attachmentFile.name, size: attachmentFile.size, contentType: attachmentFile.type || 'application/octet-stream' } : undefined, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
       }
       setInputText('');
+      setAttachmentFile(null);
       setOperatorMode('HUMAN');
       const me = members.find(member => member.userId === currentUserId) || null;
       setActiveChat(current => current ? { ...current, mode: 'HUMAN', assignedTo: me } : current);
-      setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, lastMessage: text, time: 'сейчас', mode: 'HUMAN', assignedTo: me } : chat));
+      setChats(current => current.map(chat => chat.id === activeChat.id ? { ...chat, lastMessage: text || `Файл: ${attachmentFile?.name || 'вложение'}`, time: 'сейчас', mode: 'HUMAN', assignedTo: me } : chat));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Не удалось отправить сообщение');
     } finally {
@@ -255,14 +276,16 @@ export default function InboxPage() {
                     <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 max-w-md w-full my-2 shadow-subtle"><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2 font-bold text-xs text-emerald-800"><CreditCard className="w-4 h-4" />СЧЕТ KASPI PAY</div><span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-extrabold">ОПЛАЧЕНО</span></div><div className="text-sm font-bold text-[#0C0C0C]">{message.text}</div><div className="text-xs text-emerald-700 border-t border-emerald-200 pt-2 mt-2">{message.time}</div></div>
                   ) : (
                     <div className={`max-w-md p-4 rounded-2xl text-sm leading-relaxed ${message.sender === 'CONTACT' ? 'bg-white border border-zinc-200 text-[#0C0C0C] rounded-bl-none shadow-subtle' : message.sender === 'AI' ? 'bg-[#261930] text-white rounded-br-none shadow-subtle' : 'bg-[#BEFF53] text-[#0C0C0C] font-semibold rounded-br-none shadow-subtle'}`}>
-                      <div className="flex items-center gap-1.5 mb-1 font-semibold opacity-75 text-[10px]">{message.sender === 'CONTACT' && <span>Клиент</span>}{message.sender === 'AI' && <span className="flex items-center gap-1 text-[#BEFF53]"><Sparkles className="w-3 h-3" /> AI-агент</span>}{message.sender === 'MANAGER' && <span>Вы</span>}{message.sender === 'SYSTEM' && <span>Система</span>}<span className="ml-auto opacity-60">{message.time}</span></div><p>{message.text}</p>{message.status === 'QUEUED' && <div className="mt-1 text-[10px] opacity-60">В очереди на отправку</div>}
+                      <div className="flex items-center gap-1.5 mb-1 font-semibold opacity-75 text-[10px]">{message.sender === 'CONTACT' && <span>Клиент</span>}{message.sender === 'AI' && <span className="flex items-center gap-1 text-[#BEFF53]"><Sparkles className="w-3 h-3" /> AI-агент</span>}{message.sender === 'MANAGER' && <span>Вы</span>}{message.sender === 'SYSTEM' && <span>Система</span>}<span className="ml-auto opacity-60">{message.time}</span></div><p>{message.text}</p>
+                      {message.attachment && <div className="mt-2 flex items-center gap-2 rounded-xl border border-black/10 bg-white/35 px-3 py-2 text-xs"><FileText className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1 truncate">{message.attachment.name}</span><span className="shrink-0 opacity-65">{message.attachment.size ? formatFileSize(message.attachment.size) : 'Telegram'}</span></div>}
+                      {message.status === 'QUEUED' && <div className="mt-1 text-[10px] opacity-60">В очереди на отправку</div>}
                     </div>
                   )}
                 </div>
               ))}
             </div>
 
-            <div className="p-4 border-t border-zinc-200 bg-white flex items-center gap-3"><input value={inputText} onChange={event => setInputText(event.target.value)} onKeyDown={event => event.key === 'Enter' && void handleSend()} placeholder={`Напишите сообщение в ${activeChat.provider.toLowerCase()}…`} className="flex-1 bg-[#F6F5F8] border border-zinc-200 rounded-full px-5 py-3 text-sm text-[#0C0C0C] placeholder-[#727272] focus:outline-none focus:border-[#261930]" /><button disabled={sending} onClick={() => void handleSend()} aria-label="Отправить" className="p-3 rounded-full bg-[#261930] text-[#BEFF53] transition hover:bg-[#392648] disabled:opacity-50"><SendHorizontal className="w-4 h-4" /></button></div>
+            <div className="border-t border-zinc-200 bg-white p-3 sm:p-4"><div className="mb-2 flex items-center gap-2">{attachmentFile && <div className="flex min-w-0 max-w-full items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900"><Paperclip className="h-3.5 w-3.5 shrink-0" /><span className="min-w-0 truncate">{attachmentFile.name}</span><span className="shrink-0 text-blue-700/70">{formatFileSize(attachmentFile.size)}</span><button type="button" onClick={() => setAttachmentFile(null)} aria-label="Убрать вложение" className="rounded-md p-0.5 hover:bg-white"><X className="h-3.5 w-3.5" /></button></div>}</div><div className="flex items-center gap-3"><label className={`flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-200 text-zinc-600 hover:bg-[#F6F5F8] ${activeChat.provider !== 'TELEGRAM' ? 'cursor-not-allowed opacity-40' : ''}`} title={activeChat.provider === 'TELEGRAM' ? 'Вложение до 4 МБ' : 'Вложения доступны только в Telegram'}><Paperclip className="h-4 w-4" /><input type="file" disabled={activeChat.provider !== 'TELEGRAM' || sending} onChange={event => { const file = event.target.files?.[0] || null; setAttachmentFile(file); event.currentTarget.value = ''; }} className="hidden" /></label><input value={inputText} onChange={event => setInputText(event.target.value)} onKeyDown={event => event.key === 'Enter' && void handleSend()} placeholder={`Напишите сообщение в ${activeChat.provider.toLowerCase()}…`} className="flex-1 bg-[#F6F5F8] border border-zinc-200 rounded-full px-5 py-3 text-sm text-[#0C0C0C] placeholder-[#727272] focus:outline-none focus:border-[#261930]" /><button disabled={sending || (!inputText.trim() && !attachmentFile)} onClick={() => void handleSend()} aria-label="Отправить" className="p-3 rounded-full bg-[#261930] text-[#BEFF53] transition hover:bg-[#392648] disabled:opacity-50"><SendHorizontal className="w-4 h-4" /></button></div><p className="mt-2 text-[10px] text-zinc-500">Telegram: фото, MP4 и документы до 4 МБ. Другие каналы пока принимают только текст.</p></div>
           </div>
 
           <aside className="w-72 border-l border-zinc-200 bg-[#F6F5F8] p-5 shrink-0 space-y-6 hidden lg:block">
