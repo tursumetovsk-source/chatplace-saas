@@ -9,7 +9,7 @@ This document tracks product parity against current public ChatPlace materials a
 | Capability | ChatPlace | Virale AI today | Status |
 | --- | --- | --- | --- |
 | Projects / workspaces | Projects with connected social accounts | Real accounts, expiring team invitations, role management, workspace switching, signed sessions and isolated PostgreSQL workspaces | Implemented |
-| Channels | Instagram, TikTok, Telegram bots and Telegram Business | Telegram Bot API is end-to-end; Instagram, WhatsApp and TikTok remain planned | Partial |
+| Channels | Instagram, TikTok, Telegram bots and Telegram Business | Telegram Bot API and Instagram Graph API text path (Business Account validation, signed Direct/comment webhook and replies); WhatsApp and TikTok remain planned | Partial |
 | Unified chats and clients | Chats, client profiles, variables and tags | Persistent Inbox, manager assignment, unassigned human-handoff queue, contacts, tags, custom fields, saved segments, CSV import/export, exact-identity duplicate detection/merge, Telegram photo/video/document outbound and CRM | Implemented core |
 | Automation builder | Message, condition and action blocks; triggers; zoom; copy/delete; branching | Persisted/versioned React Flow graphs with editable trigger, message, condition, delay, tag, variable, AI, CRM and webhook blocks; two-way branches, copy/delete, publishing, run/step logs and durable retry | Implemented core |
 | Variables and tags | Stored client variables, reserved variables, filters and segmentation | Runtime variables, template resolution, editable contact fields/tags, saved multi-filter segments and segment-aware broadcasts | Implemented core |
@@ -36,7 +36,7 @@ This document tracks product parity against current public ChatPlace materials a
 6. Persisted automation graphs, versions, editable core blocks, conditional branches, publishing, execution runs, delays and failure recovery. **Implemented for the Telegram path.**
 7. Real Inbox with assignment, AI/Human mode, unread state, attachments and delivery status. **Assignment, human-handoff queue, unread state, Telegram outbound photo/video/document attachments and delivery status implemented; other provider attachments remain.**
 8. Contact variables, tags, filters, imports/exports, exact-identity duplicate review/merge and CRM pipeline persistence. **Implemented.**
-9. AI provider, conversation memory, RAG knowledge base, testing, correction feedback and human handoff. **Implemented for the Telegram path; operator corrections are persisted, audited and applied to subsequent test/automation prompts; production credentials and live smoke test remain.**
+9. AI provider, conversation memory, RAG knowledge base, testing, correction feedback and human handoff. **Implemented for Telegram and Instagram text paths; operator corrections are persisted, audited and applied to subsequent test/automation prompts; production credentials and live smoke test remain.**
 
 ### P1 — commercial launch
 

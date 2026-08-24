@@ -17,6 +17,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ aut
   if (!validated.graph.nodes.some(node => node.type.startsWith('trigger.'))) {
     return NextResponse.json({ error: 'Перед публикацией добавьте триггер запуска' }, { status: 400 });
   }
+  const triggerProviders = [...new Set(validated.graph.nodes.filter(node => node.type.startsWith('trigger.')).map(node => node.type.split('.')[1]?.toUpperCase()).filter((provider): provider is string => Boolean(provider)))];
+  const unsupportedProvider = triggerProviders.find(provider => !['TELEGRAM', 'INSTAGRAM', 'WEBHOOK'].includes(provider));
+  if (unsupportedProvider) return NextResponse.json({ error: `${unsupportedProvider}: production-подключение ещё не настроено` }, { status: 400 });
+  const channelTriggerProviders = triggerProviders.filter(provider => provider !== 'WEBHOOK');
+  const activeChannels = await prisma.channelAccount.count({ where: { workspaceId: account.workspaceId, provider: { in: channelTriggerProviders }, status: 'ACTIVE' } });
+  if (activeChannels !== channelTriggerProviders.length) return NextResponse.json({ error: 'Подключите активный канал для каждого провайдера-триггера перед публикацией' }, { status: 400 });
   for (const node of validated.graph.nodes) {
     if (node.type === 'message.send' && (typeof node.config.text !== 'string' || !node.config.text.trim())) return NextResponse.json({ error: 'Заполните текст во всех блоках сообщений' }, { status: 400 });
     if (node.type === 'condition') {

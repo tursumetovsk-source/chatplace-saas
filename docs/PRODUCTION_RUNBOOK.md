@@ -10,6 +10,7 @@ Updated: 2026-08-24
 - `CRON_SECRET`: random 16+ byte secret used by Vercel Cron.
 - `OPENAI_API_KEY` and optional `OPENAI_MODEL`.
 - `BILLING_WEBHOOK_SECRET`: separate random secret shared with the selected payment provider.
+- `META_APP_SECRET`: Meta App secret used to verify signed Instagram webhook requests; `META_GRAPH_API_VERSION` is optional.
 - `NEXT_PUBLIC_APP_URL=https://virale-ai.vercel.app`.
 
 Never put provider tokens into the repository. Telegram bot tokens are entered per workspace and stored with AES-256-GCM encryption.
@@ -31,6 +32,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 13. In a staging Telegram conversation, send a small JPEG, MP4 and PDF from Inbox and verify that each appears in Telegram and persists with the correct message type/status. Keep larger media on a direct-storage upload roadmap; the current Vercel path is capped at 4 MB.
 14. In the AI-agent test chat, mark one answer «Полезно» and one «Исправить», reload the agent, and verify the correction is present in the audit log and influences a subsequent test response.
 15. In staging, send a signed event to `POST /api/webhooks/billing`, replay the same `eventId`, and verify the first request updates the subscription while the replay returns `duplicate: true` without a second state change.
+16. For Instagram staging, connect a disposable Business Account, complete Meta Webhooks verification, send a Direct message and a comment, and verify both create one contact/conversation and one automation event; send a manager reply and an AI reply back to the same thread.
 
 ## Backups and restore drills
 

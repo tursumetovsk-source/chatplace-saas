@@ -248,7 +248,7 @@ interface RunView {
 
 const engineType = (node: Node) => {
   if (node.type === 'channelTrigger' || node.type === 'instagramTrigger') {
-    return node.data.provider === 'TELEGRAM' ? 'trigger.telegram.message' : 'trigger.instagram.comment';
+    return node.data.provider === 'TELEGRAM' ? 'trigger.telegram.message' : 'trigger.instagram.message';
   }
   if (node.type === 'instagramMessage') return 'message.send';
   if (node.type === 'aiAgent') return 'ai.agent';

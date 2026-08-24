@@ -26,7 +26,7 @@ interface ConnectedChannel {
 }
 
 const channelItems: ChannelItem[] = [
-  { id: 'instagram', provider: 'INSTAGRAM', name: 'Instagram', description: 'Комментарии, Direct, ответы на Stories и Reels', requirement: 'Meta Business Account', availability: 'Следующая интеграция', icon: Instagram, color: 'from-pink-500 to-purple-600' },
+  { id: 'instagram', provider: 'INSTAGRAM', name: 'Instagram', description: 'Комментарии и Direct через Instagram Graph API', requirement: 'Business Account, ID профиля и access token', availability: 'Доступно сейчас', icon: Instagram, color: 'from-pink-500 to-purple-600' },
   { id: 'telegram', provider: 'TELEGRAM', name: 'Telegram', description: 'Сообщения боту сразу появляются в Inbox', requirement: 'Bot Token от @BotFather', availability: 'Доступно сейчас', icon: Send, color: 'from-sky-400 to-blue-600' },
   { id: 'whatsapp', provider: 'WHATSAPP', name: 'WhatsApp', description: 'Диалоги, шаблоны сообщений и статусы доставки', requirement: 'WhatsApp Business Cloud API', availability: 'В плане', icon: MessageCircle, color: 'from-emerald-400 to-emerald-700' },
   { id: 'tiktok', provider: 'TIKTOK', name: 'TikTok', description: 'Лиды и сообщения из TikTok Business', requirement: 'TikTok Business Account', availability: 'В плане', icon: Video, color: 'from-zinc-700 to-black' }
@@ -37,7 +37,10 @@ export default function ChannelsPage() {
   const [demoConnected, setDemoConnected] = useState<string[]>(['instagram']);
   const [channels, setChannels] = useState<ConnectedChannel[]>([]);
   const [showTelegram, setShowTelegram] = useState(false);
+  const [showInstagram, setShowInstagram] = useState(false);
   const [token, setToken] = useState('');
+  const [instagramForm, setInstagramForm] = useState({ token: '', externalId: '' });
+  const [instagramWebhook, setInstagramWebhook] = useState<{ url: string; verifyToken: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -80,8 +83,36 @@ export default function ChannelsPage() {
     }
     if (item.provider === 'TELEGRAM') {
       setShowTelegram(true);
+    } else if (item.provider === 'INSTAGRAM') {
+      setShowInstagram(true);
     } else {
       setNotice(`${item.name}: ${item.availability.toLowerCase()}. Сейчас полностью работает Telegram.`);
+    }
+  };
+
+  const connectInstagram = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!instagramForm.token.trim() || !instagramForm.externalId.trim()) return;
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'INSTAGRAM', token: instagramForm.token.trim(), externalId: instagramForm.externalId.trim() })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Не удалось подключить Instagram');
+      const connected = data.channel as ConnectedChannel;
+      setChannels(current => [connected, ...current.filter(channel => channel.id !== connected.id)]);
+      setInstagramWebhook(data.webhook as { url: string; verifyToken: string });
+      setInstagramForm({ token: '', externalId: '' });
+      setShowInstagram(false);
+      setNotice('Instagram подключён. Добавьте URL и verify token из карточки ниже в Meta App Webhooks.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось подключить Instagram');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,6 +150,7 @@ export default function ChannelsPage() {
 
       {notice && <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-[#1E5CFB]" role="status">{notice}</div>}
       {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">{error}</div>}
+      {instagramWebhook && mode === 'account' && <section className="rounded-2xl border border-pink-200 bg-pink-50 p-4 text-sm text-pink-950"><strong>Завершите настройку Instagram webhook</strong><p className="mt-1 text-xs leading-relaxed text-pink-900/75">В Meta App → Webhooks → Instagram укажите callback URL и verify token. Подпись POST проверяется через META_APP_SECRET.</p><div className="mt-3 grid gap-2 text-xs"><code className="break-all rounded-lg bg-white/80 px-3 py-2">URL: {instagramWebhook.url}</code><code className="break-all rounded-lg bg-white/80 px-3 py-2">Verify token: {instagramWebhook.verifyToken}</code></div></section>}
 
       <section className="grid gap-5 lg:grid-cols-2">
         {channelItems.map(item => {
@@ -149,6 +181,18 @@ export default function ChannelsPage() {
             <label className="mt-5 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">Bot Token</span><input type="password" autoComplete="off" required value={token} onChange={event => setToken(event.target.value)} placeholder="1234567890:AA..." className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-[#1E5CFB]" /></label>
             <p className="mt-3 text-xs leading-relaxed text-[#73767E]">Virale AI проверит токен, зашифрует его и установит защищённый webhook. Токен не отображается после сохранения.</p>
             <button disabled={loading || !token.trim()} className="mt-5 w-full rounded-xl bg-[#1E5CFB] py-3 text-sm font-extrabold text-white disabled:opacity-50">{loading ? 'Проверяем и подключаем…' : 'Подключить бота'}</button>
+          </form>
+        </div>
+      )}
+      {showInstagram && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={() => !loading && setShowInstagram(false)}>
+          <form onSubmit={connectInstagram} onMouseDown={event => event.stopPropagation()} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4"><div className="flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 text-white"><Instagram className="h-5 w-5" /></span><div><h2 className="text-xl font-extrabold">Подключить Instagram</h2><p className="mt-1 text-xs text-[#73767E]">Instagram Graph API · текстовые Direct и комментарии</p></div></div><button type="button" disabled={loading} onClick={() => setShowInstagram(false)} className="rounded-full p-2 hover:bg-zinc-100"><X className="h-4 w-4" /></button></div>
+            <ol className="mt-6 space-y-3 rounded-2xl bg-[#F7F8FB] p-4 text-sm text-[#565961]"><li><strong className="text-[#0C0C0C]">1.</strong> Создайте Meta App с продуктом Instagram Graph API и включите Webhooks</li><li><strong className="text-[#0C0C0C]">2.</strong> Получите User access token с правами на сообщения и ID Instagram Business Account</li><li><strong className="text-[#0C0C0C]">3.</strong> После подключения добавьте callback URL и verify token в Meta App</li></ol>
+            <label className="mt-5 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">Instagram access token</span><input type="password" autoComplete="off" required value={instagramForm.token} onChange={event => setInstagramForm(current => ({ ...current, token: event.target.value }))} placeholder="EAAB..." className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-pink-500" /></label>
+            <label className="mt-4 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">ID Instagram Business Account</span><input inputMode="numeric" required value={instagramForm.externalId} onChange={event => setInstagramForm(current => ({ ...current, externalId: event.target.value }))} placeholder="17841400000000000" className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-pink-500" /></label>
+            <p className="mt-3 text-xs leading-relaxed text-[#73767E]">Токен хранится зашифрованно и не возвращается API. Для входящего webhook задайте META_APP_SECRET в Vercel.</p>
+            <button disabled={loading || !instagramForm.token.trim() || !instagramForm.externalId.trim()} className="mt-5 w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 text-sm font-extrabold text-white disabled:opacity-50">{loading ? 'Проверяем и подключаем…' : 'Подключить Instagram'}</button>
           </form>
         </div>
       )}

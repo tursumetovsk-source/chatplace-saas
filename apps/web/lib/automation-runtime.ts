@@ -3,6 +3,7 @@ import { validateAutomationGraph, type ValidatedAutomationGraph } from './automa
 import { decryptCredential } from './credentials';
 import { generateAgentReply } from './openai';
 import { sendTelegramMessage, TelegramApiError } from './telegram';
+import { sendInstagramMessage } from './instagram';
 import { assertWorkspaceQuota, recordUsage } from './billing';
 import { ExternalWebhookError, sendWorkspaceWebhook } from './external-webhooks';
 import { buildCorrectionContext } from './ai-corrections';
@@ -34,7 +35,8 @@ function triggerType(provider: InboundAutomationEvent['provider']) {
 }
 
 function triggerMatches(node: ValidatedAutomationGraph['nodes'][number], event: InboundAutomationEvent) {
-  if (node.type !== triggerType(event.provider)) return false;
+  const instagramCommentCompatibility = event.provider === 'INSTAGRAM' && node.type === 'trigger.instagram.comment';
+  if (node.type !== triggerType(event.provider) && !instagramCommentCompatibility) return false;
   const keyword = typeof node.config.keyword === 'string' ? node.config.keyword.trim() : '';
   if (!keyword) return true;
   const mode = typeof node.config.match === 'string' ? node.config.match : 'contains';
@@ -138,18 +140,20 @@ async function executeMessageNode(config: Record<string, unknown>, event: Inboun
 
   try {
     if (
-      conversation.channelAccount.provider !== 'TELEGRAM' ||
+      !['TELEGRAM', 'INSTAGRAM'].includes(conversation.channelAccount.provider) ||
       conversation.channelAccount.status !== 'ACTIVE' ||
       !conversation.channelAccount.accessTokenEncrypted ||
       !conversation.externalThreadId
     ) {
       throw new Error('Для этого канала отправка из автоматизации пока недоступна');
     }
-    const chatId = conversation.externalThreadId.split(':')[0];
-    const sent = await sendTelegramMessage(decryptCredential(conversation.channelAccount.accessTokenEncrypted), chatId, text);
+    const token = decryptCredential(conversation.channelAccount.accessTokenEncrypted);
+    const sent = conversation.channelAccount.provider === 'TELEGRAM'
+      ? await sendTelegramMessage(token, conversation.externalThreadId.split(':')[0], text)
+      : await sendInstagramMessage(token, conversation.externalThreadId, text);
     message = await prisma.message.update({
       where: { id: message.id },
-      data: { providerMessageId: String(sent.message_id), status: 'SENT', deliveredAt: new Date(sent.date * 1000) }
+      data: { providerMessageId: String('message_id' in sent ? sent.message_id || message.id : message.id), status: 'SENT', deliveredAt: new Date() }
     });
     await prisma.conversation.update({ where: { id: event.conversationId }, data: { lastMessageAt: new Date(), mode: 'HYBRID' } });
     await recordUsage({ workspaceId: event.workspaceId, metric: 'OUTBOUND_MESSAGES', idempotencyKey: message.id, metadata: { senderType: 'SYSTEM' } })
@@ -265,22 +269,20 @@ async function executeAiAgentNode(config: Record<string, unknown>, event: Inboun
 
   try {
     if (
-      conversation.channelAccount.provider !== 'TELEGRAM' ||
+      !['TELEGRAM', 'INSTAGRAM'].includes(conversation.channelAccount.provider) ||
       conversation.channelAccount.status !== 'ACTIVE' ||
       !conversation.channelAccount.accessTokenEncrypted ||
       !conversation.externalThreadId
     ) {
       throw new Error('Для этого канала отправка AI-ответа пока недоступна');
     }
-    const chatId = conversation.externalThreadId.split(':')[0];
-    const sent = await sendTelegramMessage(
-      decryptCredential(conversation.channelAccount.accessTokenEncrypted),
-      chatId,
-      reply.answer
-    );
+    const token = decryptCredential(conversation.channelAccount.accessTokenEncrypted);
+    const sent = conversation.channelAccount.provider === 'TELEGRAM'
+      ? await sendTelegramMessage(token, conversation.externalThreadId.split(':')[0], reply.answer)
+      : await sendInstagramMessage(token, conversation.externalThreadId, reply.answer);
     message = await prisma.message.update({
       where: { id: message.id },
-      data: { providerMessageId: String(sent.message_id), status: 'SENT', deliveredAt: new Date(sent.date * 1000) }
+      data: { providerMessageId: String('message_id' in sent ? sent.message_id || message.id : message.id), status: 'SENT', deliveredAt: new Date() }
     });
     await prisma.conversation.update({
       where: { id: event.conversationId },

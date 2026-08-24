@@ -5,6 +5,7 @@ import { getAccountContext } from '../../../lib/auth-context';
 import { assertWorkspaceQuota, QuotaExceededError } from '../../../lib/billing';
 import { encryptCredential } from '../../../lib/credentials';
 import { getTelegramBot, setTelegramWebhook, TelegramApiError } from '../../../lib/telegram';
+import { getInstagramProfile, InstagramApiError, instagramWebhookUrl } from '../../../lib/instagram';
 import { writeAuditLog } from '../../../lib/audit';
 
 const channelSelect = {
@@ -52,9 +53,43 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const provider = typeof body?.provider === 'string' ? body.provider.toUpperCase() : '';
   const token = typeof body?.token === 'string' ? body.token.trim() : '';
-  if (provider !== 'TELEGRAM') {
-    return NextResponse.json({ error: 'Сейчас реальное подключение доступно для Telegram. Instagram будет следующим.' }, { status: 400 });
+  const externalId = typeof body?.externalId === 'string' ? body.externalId.trim() : '';
+  if (provider === 'INSTAGRAM') {
+    if (!token || !/^\d{5,}$/.test(externalId)) return NextResponse.json({ error: 'Укажите access token и ID Instagram Business Account' }, { status: 400 });
+    try {
+      const profile = await getInstagramProfile(token, externalId);
+      const existing = await prisma.channelAccount.findUnique({ where: { provider_externalId: { provider, externalId } }, select: { id: true, workspaceId: true } });
+      if (existing && existing.workspaceId !== account.workspaceId) return NextResponse.json({ error: 'Этот Instagram Business Account уже подключён к другому рабочему пространству' }, { status: 409 });
+      if (!existing) {
+        try {
+          await assertWorkspaceQuota(account.workspaceId, 'CHANNELS');
+        } catch (error) {
+          if (error instanceof QuotaExceededError) return NextResponse.json({ error: error.message, metric: error.metric, upgradeRequired: true }, { status: error.status });
+          throw error;
+        }
+      }
+      const channelId = existing?.id ?? randomUUID();
+      const webhookVerifyToken = randomBytes(24).toString('base64url');
+      const webhookUrl = instagramWebhookUrl(webhookOrigin(request), channelId);
+      const data = {
+        username: profile.username ? `@${profile.username}` : null,
+        displayName: profile.name || profile.username || `Instagram ${externalId}`,
+        accessTokenEncrypted: encryptCredential(token),
+        webhookSecretEncrypted: encryptCredential(webhookVerifyToken),
+        status: 'ACTIVE'
+      };
+      const channel = existing
+        ? await prisma.channelAccount.update({ where: { id: channelId }, data, select: channelSelect })
+        : await prisma.channelAccount.create({ data: { id: channelId, workspaceId: account.workspaceId, provider, externalId, ...data }, select: channelSelect });
+      await writeAuditLog({ workspaceId: account.workspaceId, actorUserId: account.userId, action: existing ? 'CHANNEL_RECONNECTED' : 'CHANNEL_CONNECTED', entityType: 'CHANNEL', entityId: channel.id, request, metadata: { provider, externalId } });
+      return NextResponse.json({ channel, webhook: { url: webhookUrl, verifyToken: webhookVerifyToken, note: 'Добавьте этот URL и verify token в Meta App Webhooks для Instagram.' } }, { status: existing ? 200 : 201 });
+    } catch (error) {
+      if (error instanceof InstagramApiError) return NextResponse.json({ error: error.status === 401 || error.status === 403 ? 'Instagram отклонил access token или права приложения' : error.message }, { status: error.status >= 400 && error.status < 500 ? 400 : 502 });
+      console.error('[channels.instagram.connect]', error);
+      return NextResponse.json({ error: 'Не удалось подключить Instagram Business Account' }, { status: 500 });
+    }
   }
+  if (provider !== 'TELEGRAM') return NextResponse.json({ error: 'Для этого провайдера ещё не настроен безопасный production-коннектор' }, { status: 400 });
   if (!/^\d{6,}:[A-Za-z0-9_-]{20,}$/.test(token)) {
     return NextResponse.json({ error: 'Проверьте формат Telegram Bot Token от @BotFather' }, { status: 400 });
   }
