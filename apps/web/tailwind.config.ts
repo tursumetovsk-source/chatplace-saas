@@ -19,8 +19,9 @@ const config: Config = {
         }
       },
       fontFamily: {
-        display: ['var(--font-syne)', 'Space Grotesk', 'sans-serif'],
-        body: ['var(--font-roboto)', 'Inter', 'sans-serif']
+        sans: ['var(--font-manrope)', 'Arial', 'sans-serif'],
+        display: ['var(--font-manrope)', 'Arial', 'sans-serif'],
+        body: ['var(--font-manrope)', 'Arial', 'sans-serif']
       },
       borderRadius: {
         'card': '24px',

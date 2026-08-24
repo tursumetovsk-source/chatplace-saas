@@ -3,159 +3,208 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
 import {
-  Home,
-  Workflow,
-  Sparkles,
-  Grid,
-  Eye,
-  MessageSquare,
-  Users,
   BarChart3,
-  Send,
+  Cable,
   GraduationCap,
-  Settings,
-  MessageCircle,
+  Grid,
+  Home,
   Menu,
+  MessageCircle,
+  MessageSquare,
+  Send,
+  Settings,
+  Sparkles,
+  Users,
+  Workflow,
   X
 } from 'lucide-react';
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const navSections: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: 'Рабочее пространство',
+    items: [
+      { label: 'Обзор', href: '/dashboard', icon: Home },
+      { label: 'Каналы', href: '/channels', icon: Cable }
+    ]
+  },
+  {
+    label: 'Автоматизация',
+    items: [
+      { label: 'Сценарии', href: '/automations', icon: Workflow },
+      { label: 'Шаблоны', href: '/templates', icon: Grid },
+      { label: 'AI-агенты', href: '/ai-agents', icon: Sparkles }
+    ]
+  },
+  {
+    label: 'Продажи и общение',
+    items: [
+      { label: 'Inbox', href: '/inbox', icon: MessageSquare },
+      { label: 'Контакты', href: '/contacts', icon: Users },
+      { label: 'CRM-сделки', href: '/crm', icon: BarChart3 },
+      { label: 'Рассылки', href: '/broadcasts', icon: Send }
+    ]
+  },
+  {
+    label: 'Результаты',
+    items: [
+      { label: 'Аналитика', href: '/analytics', icon: BarChart3 },
+      { label: 'Обучение', href: '/education', icon: GraduationCap }
+    ]
+  }
+];
+
+const bottomItems: NavItem[] = [
+  { label: 'Настройки', href: '/settings', icon: Settings }
+];
+
+const quickMobileItems: NavItem[] = [
+  { label: 'Обзор', href: '/dashboard', icon: Home },
+  { label: 'Сценарии', href: '/automations', icon: Workflow },
+  { label: 'Inbox', href: '/inbox', icon: MessageSquare },
+  { label: 'CRM', href: '/crm', icon: BarChart3 },
+  { label: 'Ещё', href: '#mobile-menu', icon: Menu }
+];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const navItems = [
-    { label: 'Главная', href: '/dashboard', icon: Home },
-    { label: 'Автоматизации', href: '/automations', icon: Workflow },
-    { label: 'AI-Агенты', href: '/ai-agents', icon: Sparkles },
-    { label: 'Шаблоны', href: '/templates', icon: Grid },
-    { label: 'Virale AI', href: '/ai-agents', icon: Eye },
-    { label: 'Inbox', href: '/inbox', icon: MessageSquare },
-    { label: 'Контакты', href: '/contacts', icon: Users },
-    { label: 'CRM Сделки', href: '/crm', icon: BarChart3 },
-    { label: 'Рассылки', href: '/broadcasts', icon: Send },
-    { label: 'Мини-курс', href: '/education', icon: GraduationCap },
-    { label: 'Настройки', href: '/settings', icon: Settings }
-  ];
+  const isActive = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+
+  const renderNavLink = (item: NavItem, mobile = false) => {
+    const Icon = item.icon;
+    const active = isActive(item.href);
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        title={item.label}
+        onClick={() => mobile && setMobileNavOpen(false)}
+        className={`group flex items-center gap-3 rounded-xl font-bold transition-all ${
+          mobile
+            ? 'px-3.5 py-3 text-sm'
+            : 'h-11 justify-center px-0 text-sm xl:justify-start xl:px-3'
+        } ${
+          active
+            ? 'bg-[#1E5CFB] text-white shadow-sm'
+            : 'text-[#6F7178] hover:bg-[#F1F3F8] hover:text-[#111217]'
+        }`}
+      >
+        <Icon className="h-5 w-5 shrink-0" />
+        <span className={mobile ? '' : 'hidden xl:inline'}>{item.label}</span>
+      </Link>
+    );
+  };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-white text-[#000000] font-body">
-      {/* Mobile Top Header */}
-      <header className="md:hidden sticky top-0 z-50 bg-white border-b border-[#E7E7E7] px-4 py-3 flex items-center justify-between shadow-subtle">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs">
-            VA
-          </div>
-          <Link href="/dashboard" className="font-display-extended font-extrabold text-lg text-[#000000]">
-            VIRALE AI
-          </Link>
-        </div>
-
+    <div className="min-h-screen bg-[#F7F8FB] text-[#111217] font-body">
+      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between border-b border-[#E5E7EC] bg-white px-4 py-3">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1E5CFB] to-[#25B7ED] text-xs font-extrabold text-white shadow-sm">VA</span>
+          <span className="text-lg font-extrabold tracking-[-0.04em]">VIRALE AI</span>
+        </Link>
         <button
+          id="mobile-menu"
           onClick={() => setMobileNavOpen(!mobileNavOpen)}
           aria-label={mobileNavOpen ? 'Закрыть навигацию' : 'Открыть навигацию'}
           aria-expanded={mobileNavOpen}
-          className="p-2 rounded-lg text-[#000000] hover:bg-[#F2F2F7] transition"
+          className="rounded-xl p-2 text-[#111217] hover:bg-[#F1F3F8]"
         >
-          {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </header>
 
-      {/* Mobile Drawer */}
       {mobileNavOpen && (
-        <div className="md:hidden bg-white border-b border-[#E7E7E7] px-4 py-4 space-y-1 animate-in slide-in-from-top-2 duration-150 z-40">
-          {navItems.map(item => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setMobileNavOpen(false)}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
-                  isActive
-                    ? 'bg-[#1E5CFB] text-white'
-                    : 'text-[#737378] hover:text-[#000000] hover:bg-[#F2F2F7]'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+        <div className="md:hidden fixed inset-x-0 top-[65px] bottom-0 z-40 overflow-y-auto border-b border-[#E5E7EC] bg-white p-4 shadow-xl">
+          <Link href="/settings" onClick={() => setMobileNavOpen(false)} className="mb-5 flex items-center gap-3 rounded-2xl border border-[#E5E7EC] bg-[#F7F8FB] p-3.5">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#261930] text-xs font-extrabold text-[#BEFF53]">VS</span>
+            <span><strong className="block text-sm">Virale Studio</strong><span className="text-xs text-[#777A83]">Демо-пространство</span></span>
+          </Link>
+          <nav className="space-y-5">
+            {navSections.map(section => (
+              <div key={section.label}>
+                <p className="mb-2 px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#9A9DA5]">{section.label}</p>
+                <div className="space-y-1">{section.items.map(item => renderNavLink(item, true))}</div>
+              </div>
+            ))}
+            <div className="border-t border-[#E5E7EC] pt-4">{bottomItems.map(item => renderNavLink(item, true))}</div>
+          </nav>
         </div>
       )}
 
-      {/* Desktop Left Narrow Vertical Sidebar */}
-      <aside className="hidden md:flex w-16 border-r border-[#E7E7E7] bg-white flex-col justify-between items-center py-4 sticky top-0 h-screen select-none shrink-0 z-40">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow-sm mb-2" title="Virale AI">
-            VA
-          </div>
-
-          <nav className="flex flex-col items-center gap-1.5">
-            {navItems.map(item => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  title={item.label}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                    isActive
-                      ? 'bg-[#1E5CFB] text-white shadow-sm'
-                      : 'text-[#737378] hover:text-[#000000] hover:bg-[#F2F2F7]'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                </Link>
-              );
-            })}
-          </nav>
+      <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-[76px] xl:w-[264px] flex-col border-r border-[#E5E7EC] bg-white transition-[width]">
+        <div className="flex h-[76px] items-center justify-center border-b border-[#E5E7EC] px-3 xl:justify-start xl:px-5">
+          <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#1E5CFB] to-[#25B7ED] text-xs font-extrabold text-white shadow-sm">VA</span>
+            <span className="hidden xl:block truncate text-lg font-extrabold tracking-[-0.045em]">VIRALE AI</span>
+          </Link>
         </div>
 
-        <div className="w-9 h-9 rounded-full bg-sky-400 text-white flex items-center justify-center font-bold text-xs shadow-sm cursor-pointer">
-          V
+        <Link href="/settings" className="mx-3 mt-4 hidden items-center gap-3 rounded-2xl border border-[#E5E7EC] bg-[#F7F8FB] p-3 hover:border-[#C9CED8] xl:flex">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#261930] text-xs font-extrabold text-[#BEFF53]">VS</span>
+          <span className="min-w-0"><strong className="block truncate text-sm">Virale Studio</strong><span className="block truncate text-[11px] text-[#777A83]">Демо-пространство</span></span>
+        </Link>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+          {navSections.map(section => (
+            <div key={section.label}>
+              <p className="mb-2 hidden px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#9A9DA5] xl:block">{section.label}</p>
+              <div className="space-y-1">{section.items.map(item => renderNavLink(item))}</div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="border-t border-[#E5E7EC] p-3 space-y-2">
+          {bottomItems.map(item => renderNavLink(item))}
+          <div className="hidden items-center gap-3 rounded-xl px-2 py-2 xl:flex">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25B7ED] text-xs font-extrabold text-white">V</span>
+            <span className="min-w-0"><strong className="block truncate text-xs">Владелец</strong><span className="block truncate text-[10px] text-[#8B8E96]">Демо-режим</span></span>
+          </div>
         </div>
       </aside>
 
-      {/* Main App Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white">
-        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-[1397px] mx-auto w-full">
+      <div className="md:pl-[76px] xl:pl-[264px] min-w-0">
+        <main className="mx-auto w-full max-w-[1600px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 xl:p-10">
           {children}
         </main>
       </div>
 
-      {/* Mobile Bottom Quick Bar for Phone */}
-      <div className="md:hidden sticky bottom-0 z-50 bg-white border-t border-[#E7E7E7] px-2 py-2 flex items-center justify-around shadow-lg">
-        {navItems.slice(0, 5).map(item => {
+      <nav className="md:hidden fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-[#E5E7EC] bg-white px-1 py-1.5 shadow-[0_-8px_24px_rgba(25,30,45,0.08)]">
+        {quickMobileItems.map(item => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+          const more = item.href === '#mobile-menu';
+          const active = !more && isActive(item.href);
+          if (more) {
+            return (
+              <button key={item.label} onClick={() => setMobileNavOpen(true)} className="flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[9px] font-bold text-[#73767E]">
+                <Icon className="h-5 w-5" /><span>{item.label}</span>
+              </button>
+            );
+          }
           return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`p-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${
-                isActive ? 'text-[#1E5CFB]' : 'text-[#737378]'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              <span className="truncate max-w-[55px]">{item.label}</span>
+            <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[9px] font-bold ${active ? 'text-[#1E5CFB]' : 'text-[#73767E]'}`}>
+              <Icon className="h-5 w-5" /><span>{item.label}</span>
             </Link>
           );
         })}
-      </div>
+      </nav>
 
-      {/* Floating Intercom/Support Chat Widget */}
-      <button 
-        title="Поддержка Virale AI"
-        className="fixed bottom-16 md:bottom-6 right-4 md:right-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#1E5CFB] text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform z-30"
+      <Link
+        href="/inbox"
+        title="Открыть Inbox"
+        className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-[#1E5CFB] text-white shadow-lg transition-transform hover:scale-105 md:bottom-6 md:right-6 md:h-14 md:w-14"
       >
-        <MessageCircle className="w-5 h-5 md:w-6 md:h-6 fill-white" />
-      </button>
+        <MessageCircle className="h-5 w-5 fill-white md:h-6 md:w-6" />
+      </Link>
     </div>
   );
 }
