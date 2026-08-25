@@ -20,7 +20,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 1. Create a managed PostgreSQL database and enable automated backups/PITR.
 2. Add production environment variables in Vercel.
 3. Run `pnpm --filter @chatplace/database exec prisma migrate deploy --schema prisma/schema.prisma` against production.
-4. Deploy `main` to Vercel. The deployment registers `/api/internal/cron/automations` every minute.
+4. Add the same `CRON_SECRET` to Vercel and the GitHub repository, then deploy `main`. GitHub Actions calls `/api/internal/cron/automations` every five minutes; this keeps the Hobby deployment compatible without exposing the queue endpoint.
 5. Check `/api/health`; it must return HTTP 200 with `database: ok`.
 6. Register a real account, connect a disposable Telegram bot, publish a small scenario and confirm Inbox → outbox → automation → reply.
 7. Create one opted-in test contact, schedule a Telegram broadcast and confirm that the delivery reaches `SENT` in Analytics.
@@ -46,7 +46,7 @@ Never put provider tokens into the repository. Telegram bot tokens are entered p
 ## Queue incident response
 
 - Analytics shows pending/retrying automation events, broadcast deliveries and failures for the last 24 hours.
-- Verify that Vercel Cron is enabled and `CRON_SECRET` matches.
+- Verify that the GitHub Actions workflow `Process automation queue` is enabled and `CRON_SECRET` matches Vercel.
 - Inspect the failed node and delivery error. A temporary Telegram error is retried up to five times with exponential backoff.
 - Do not manually replay a webhook before checking the event/run idempotency key.
 - External webhook steps send the automation step id in `Idempotency-Key`. The receiving CRM must store and honour that key; otherwise a network failure after acceptance can still create a duplicate.

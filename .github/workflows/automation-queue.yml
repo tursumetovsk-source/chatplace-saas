@@ -1,0 +1,27 @@
+name: Process automation queue
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: virale-ai-automation-queue
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Run durable automation and broadcast queue
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --retry 2 --retry-all-errors \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            https://virale-ai.vercel.app/api/internal/cron/automations
