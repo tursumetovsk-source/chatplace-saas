@@ -8,6 +8,12 @@ const nextConfig = {
     '@chatplace/database',
     '@chatplace/ui'
   ],
+  // Prisma is generated in the workspace root by pnpm. Next's file tracer does
+  // not discover the native query engine through the transpiled database
+  // package automatically, so include it in every server function bundle.
+  outputFileTracingIncludes: {
+    '/*': ['../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**/*']
+  },
   reactStrictMode: true,
   async headers() {
     return [{
