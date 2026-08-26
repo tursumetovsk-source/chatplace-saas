@@ -25,26 +25,9 @@ interface ConnectedChannel {
   _count: { conversations: number };
 }
 
-interface MetaLoginResponse {
-  status?: string;
-  authResponse?: { code?: string };
-}
-
 interface MetaSignupSession {
   waba_id?: string;
   phone_number_id?: string;
-}
-
-interface FacebookSDK {
-  init: (options: { appId: string; autoLogAppEvents: boolean; xfbml: boolean; version: string }) => void;
-  login: (callback: (response: MetaLoginResponse) => void, options: Record<string, unknown>) => void;
-}
-
-declare global {
-  interface Window {
-    FB?: FacebookSDK;
-    fbAsyncInit?: () => void;
-  }
 }
 
 const channelItems: ChannelItem[] = [
@@ -69,7 +52,6 @@ export default function ChannelsPage() {
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
-  const [metaSignupReady, setMetaSignupReady] = useState(false);
   const [metaDirectFallback, setMetaDirectFallback] = useState(false);
   const metaSignupCode = useRef('');
   const metaSignupSession = useRef<MetaSignupSession | null>(null);
@@ -89,36 +71,6 @@ export default function ChannelsPage() {
     setLoading(true);
     void loadChannels().catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить каналы')).finally(() => setLoading(false));
   }, [mode]);
-
-  useEffect(() => {
-    if (mode !== 'account' || !metaAppId || !metaConfigId) return;
-    const initialize = () => {
-      if (!window.FB) return;
-      window.FB.init({ appId: metaAppId, autoLogAppEvents: true, xfbml: false, version: 'v22.0' });
-      setMetaSignupReady(true);
-    };
-    if (window.FB) {
-      initialize();
-    } else {
-      const previousInit = window.fbAsyncInit;
-      window.fbAsyncInit = () => {
-        previousInit?.();
-        initialize();
-      };
-      let script = document.getElementById('facebook-jssdk') as HTMLScriptElement | null;
-      if (!script) {
-        script = document.createElement('script');
-        script.id = 'facebook-jssdk';
-        script.async = true;
-        script.defer = true;
-        script.crossOrigin = 'anonymous';
-        script.src = 'https://connect.facebook.net/en_US/sdk.js';
-        script.onerror = () => setError('Meta SDK заблокирован браузером. Разрешите connect.facebook.net и всплывающие окна для virale-ai.vercel.app, затем обновите страницу.');
-        document.body.appendChild(script);
-      }
-    }
-    return () => { window.fbAsyncInit = undefined; };
-  }, [mode, metaAppId, metaConfigId]);
 
   const activeChannel = (provider: ChannelItem['provider']) => channels.find(channel => channel.provider === provider && channel.status === 'ACTIVE');
 
@@ -209,48 +161,13 @@ export default function ChannelsPage() {
   };
 
   const launchEmbeddedSignup = () => {
-    if (!metaConfigId) {
+    if (!metaAppId || !metaConfigId) {
       setError('Не настроен Meta Embedded Signup. Проверьте NEXT_PUBLIC_META_CONFIG_ID в Vercel.');
       return;
     }
-    if (!window.FB || typeof window.FB.login !== 'function') {
-      setError('Meta SDK не загрузился. Разрешите connect.facebook.net и всплывающие окна для virale-ai.vercel.app, затем обновите страницу.');
-      return;
-    }
-    setNotice('Откроется окно Meta. Выберите «Подключить существующий аккаунт WhatsApp Business» и подтвердите синхронизацию в приложении WhatsApp.');
-    let loginCallbackReceived = false;
-    window.FB.login((response) => {
-      loginCallbackReceived = true;
-      const code = response.authResponse?.code?.trim() || '';
-      if (!code) {
-        setMetaDirectFallback(true);
-        setError(response.status === 'unknown'
-          ? 'Meta не подтвердила подключение. Завершите окно Meta до конца или откройте резервный запуск ниже.'
-          : 'Meta не вернула код. Откройте резервный запуск ниже и завершите окно Meta до конца.');
-        return;
-      }
-      metaSignupCode.current = code;
-      const session = metaSignupSession.current;
-      if (session) void finishEmbeddedSignup(code, session);
-    }, {
-      config_id: metaConfigId,
-      response_type: 'code',
-      override_default_response_type: true,
-      extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }
-    });
-    window.setTimeout(() => {
-      if (!loginCallbackReceived) {
-        setMetaDirectFallback(true);
-        setError('Окно Meta не открылось. Разрешите всплывающие окна или используйте резервный запуск ниже.');
-      }
-    }, 4000);
-  };
-
-  const launchMetaDirectFallback = () => {
-    if (!metaAppId || !metaConfigId) return;
     setMetaDirectFallback(false);
     setError('');
-    setNotice('Открылось отдельное окно Meta. Завершите подключение WhatsApp Business и не закрывайте его до возврата на Söyles AI.');
+    setNotice('Открылось окно Meta. Выберите «Подключить существующий аккаунт WhatsApp Business» и не закрывайте его до возврата на Söyles AI.');
     const oauthUrl = new URL('https://www.facebook.com/v22.0/dialog/oauth');
     oauthUrl.searchParams.set('client_id', metaAppId);
     oauthUrl.searchParams.set('config_id', metaConfigId);
@@ -401,8 +318,8 @@ export default function ChannelsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={() => !loading && setShowWhatsApp(false)}>
           <form onSubmit={connectWhatsApp} onMouseDown={event => event.stopPropagation()} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between gap-4"><div className="flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 text-white"><MessageCircle className="h-5 w-5" /></span><div><h2 className="text-xl font-extrabold">Подключить WhatsApp</h2><p className="mt-1 text-xs text-[#73767E]">WhatsApp Cloud API · текстовые сообщения и статусы</p></div></div><button type="button" disabled={loading} onClick={() => setShowWhatsApp(false)} className="rounded-full p-2 hover:bg-zinc-100"><X className="h-4 w-4" /></button></div>
-            {error && <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold leading-relaxed text-red-700" role="alert"><p>{error}</p>{metaDirectFallback && <button type="button" onClick={launchMetaDirectFallback} className="mt-3 rounded-lg bg-red-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-red-800">Открыть Meta напрямую</button>}</div>}
-            {metaConfigId ? <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-extrabold uppercase tracking-[0.1em] text-emerald-800">Рекомендуется для вашего номера</p><p className="mt-2 text-sm leading-relaxed text-emerald-950">Coexistence оставляет WhatsApp Business App на телефоне и подключает тот же номер к Söyles AI. История и новые сообщения синхронизируются в Inbox.</p><button type="button" disabled={loading || !metaSignupReady} onClick={launchEmbeddedSignup} className="mt-4 w-full rounded-xl bg-emerald-600 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-700 disabled:opacity-50">{metaSignupReady ? 'Подключить текущий номер через Meta' : 'Загрузка Meta…'}</button></div> : <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950"><strong>Coexistence ещё не настроен в Meta.</strong><p className="mt-1 text-xs">Сначала создайте конфигурацию Embedded Signup и добавьте её ID в NEXT_PUBLIC_META_CONFIG_ID. Ниже остаётся ручное подключение отдельного Cloud API номера.</p></div>}
+            {error && <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold leading-relaxed text-red-700" role="alert"><p>{error}</p>{metaDirectFallback && <button type="button" onClick={launchEmbeddedSignup} className="mt-3 rounded-lg bg-red-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-red-800">Повторить открытие Meta</button>}</div>}
+            {metaConfigId ? <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-extrabold uppercase tracking-[0.1em] text-emerald-800">Рекомендуется для вашего номера</p><p className="mt-2 text-sm leading-relaxed text-emerald-950">Coexistence оставляет WhatsApp Business App на телефоне и подключает тот же номер к Söyles AI. История и новые сообщения синхронизируются в Inbox.</p><button type="button" disabled={loading} onClick={launchEmbeddedSignup} className="mt-4 w-full rounded-xl bg-emerald-600 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-700 disabled:opacity-50">Подключить текущий номер через Meta</button></div> : <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950"><strong>Coexistence ещё не настроен в Meta.</strong><p className="mt-1 text-xs">Сначала создайте конфигурацию Embedded Signup и добавьте её ID в NEXT_PUBLIC_META_CONFIG_ID. Ниже остаётся ручное подключение отдельного Cloud API номера.</p></div>}
             <div className="my-5 flex items-center gap-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#92959D]"><span className="h-px flex-1 bg-zinc-200" /> или отдельный Cloud API номер <span className="h-px flex-1 bg-zinc-200" /></div>
             <ol className="mt-6 space-y-3 rounded-2xl bg-[#F7F8FB] p-4 text-sm text-[#565961]"><li><strong className="text-[#0C0C0C]">1.</strong> В Meta App → WhatsApp добавьте рабочий Phone Number</li><li><strong className="text-[#0C0C0C]">2.</strong> Скопируйте постоянный access token и Phone Number ID</li><li><strong className="text-[#0C0C0C]">3.</strong> После подключения подпишитесь на поле messages в Webhooks</li></ol>
             <label className="mt-5 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">WhatsApp access token</span><input type="password" autoComplete="off" required value={whatsappForm.token} onChange={event => setWhatsappForm(current => ({ ...current, token: event.target.value }))} placeholder="EAAB..." className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" /></label>
