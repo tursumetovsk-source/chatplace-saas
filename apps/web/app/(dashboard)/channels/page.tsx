@@ -229,6 +229,9 @@ export default function ChannelsPage() {
       if (session) void finishEmbeddedSignup(code, session);
     }, {
       config_id: metaConfigId,
+      // Keep the WhatsApp permissions explicit as a fallback for SDK versions
+      // that ignore config_id until a supported permission is present.
+      scope: 'whatsapp_business_management,whatsapp_business_messaging',
       response_type: 'code',
       override_default_response_type: true,
       extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }
@@ -382,3 +385,4 @@ export default function ChannelsPage() {
     </div>
   );
 }
+
