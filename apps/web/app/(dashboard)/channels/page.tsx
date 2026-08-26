@@ -35,7 +35,7 @@ interface MetaSignupSession {
 }
 
 interface FacebookSDK {
-  init: (options: { appId: string; autoLogAppEvents: boolean; xfbml: boolean; version: string }) => void;
+  init: (options: { appId: string; autoLogAppEvents: boolean; cookie?: boolean; xfbml: boolean; version: string }) => void;
   login: (callback: (response: MetaLoginResponse) => void, options: Record<string, unknown>) => void;
 }
 
@@ -92,7 +92,7 @@ export default function ChannelsPage() {
     if (mode !== 'account' || !metaAppId || !metaConfigId) return;
     const initialize = () => {
       if (!window.FB) return;
-      window.FB.init({ appId: metaAppId, autoLogAppEvents: true, xfbml: false, version: 'v22.0' });
+      window.FB.init({ appId: metaAppId, autoLogAppEvents: true, cookie: true, xfbml: false, version: 'v22.0' });
       setMetaSignupReady(true);
     };
     if (window.FB) {
@@ -111,6 +111,7 @@ export default function ChannelsPage() {
         script.defer = true;
         script.crossOrigin = 'anonymous';
         script.src = 'https://connect.facebook.net/en_US/sdk.js';
+        script.onerror = () => setError('Meta SDK заблокирован браузером. Разрешите connect.facebook.net и всплывающие окна для virale-ai.vercel.app, затем обновите страницу.');
         document.body.appendChild(script);
       }
     }
@@ -206,12 +207,19 @@ export default function ChannelsPage() {
   };
 
   const launchEmbeddedSignup = () => {
-    if (!window.FB || !metaConfigId) return;
+    if (!metaConfigId) {
+      setError('Не настроен Meta Embedded Signup. Проверьте NEXT_PUBLIC_META_CONFIG_ID в Vercel.');
+      return;
+    }
+    if (!window.FB || typeof window.FB.login !== 'function') {
+      setError('Meta SDK не загрузился. Разрешите connect.facebook.net и всплывающие окна для virale-ai.vercel.app, затем обновите страницу.');
+      return;
+    }
     setNotice('Откроется окно Meta. Выберите «Подключить существующий аккаунт WhatsApp Business» и подтвердите синхронизацию в приложении WhatsApp.');
     window.FB.login((response) => {
       const code = response.authResponse?.code?.trim() || '';
       if (!code) {
-        setError('Регистрация WhatsApp в Meta отменена или не завершена.');
+        setError('Meta не вернула код. Разрешите всплывающие окна для virale-ai.vercel.app и повторите подключение.');
         return;
       }
       metaSignupCode.current = code;
