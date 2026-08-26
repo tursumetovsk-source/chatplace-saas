@@ -36,7 +36,7 @@ interface MetaSignupSession {
 }
 
 interface FacebookSDK {
-  init: (options: { appId: string; autoLogAppEvents: boolean; cookie?: boolean; xfbml: boolean; version: string }) => void;
+  init: (options: { appId: string; autoLogAppEvents: boolean; xfbml: boolean; version: string }) => void;
   login: (callback: (response: MetaLoginResponse) => void, options: Record<string, unknown>) => void;
 }
 
@@ -94,7 +94,7 @@ export default function ChannelsPage() {
     if (mode !== 'account' || !metaAppId || !metaConfigId) return;
     const initialize = () => {
       if (!window.FB) return;
-      window.FB.init({ appId: metaAppId, autoLogAppEvents: true, cookie: true, xfbml: false, version: 'v22.0' });
+      window.FB.init({ appId: metaAppId, autoLogAppEvents: true, xfbml: false, version: 'v22.0' });
       setMetaSignupReady(true);
     };
     if (window.FB) {
@@ -415,4 +415,3 @@ export default function ChannelsPage() {
     </div>
   );
 }
-
