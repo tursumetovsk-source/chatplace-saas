@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FormEvent, useEffect, useState } from 'react';
+import React, { FormEvent, useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Cable, Check, ExternalLink, Instagram, MessageCircle, Send, ShieldCheck, Video, X } from 'lucide-react';
 import { useAccountMode } from '../../../lib/use-account-mode';
@@ -25,6 +25,27 @@ interface ConnectedChannel {
   _count: { conversations: number };
 }
 
+interface MetaLoginResponse {
+  authResponse?: { code?: string };
+}
+
+interface MetaSignupSession {
+  waba_id?: string;
+  phone_number_id?: string;
+}
+
+interface FacebookSDK {
+  init: (options: { appId: string; autoLogAppEvents: boolean; xfbml: boolean; version: string }) => void;
+  login: (callback: (response: MetaLoginResponse) => void, options: Record<string, unknown>) => void;
+}
+
+declare global {
+  interface Window {
+    FB?: FacebookSDK;
+    fbAsyncInit?: () => void;
+  }
+}
+
 const channelItems: ChannelItem[] = [
   { id: 'instagram', provider: 'INSTAGRAM', name: 'Instagram', description: 'Комментарии и Direct через Instagram Graph API', requirement: 'Business Account, ID профиля и access token', availability: 'Доступно сейчас', icon: Instagram, color: 'from-pink-500 to-purple-600' },
   { id: 'telegram', provider: 'TELEGRAM', name: 'Telegram', description: 'Сообщения боту сразу появляются в Inbox', requirement: 'Bot Token от @BotFather', availability: 'Доступно сейчас', icon: Send, color: 'from-sky-400 to-blue-600' },
@@ -47,6 +68,12 @@ export default function ChannelsPage() {
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [metaSignupReady, setMetaSignupReady] = useState(false);
+  const metaSignupCode = useRef('');
+  const metaSignupSession = useRef<MetaSignupSession | null>(null);
+  const metaSignupSubmitting = useRef(false);
+  const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID?.trim() || '';
+  const metaConfigId = process.env.NEXT_PUBLIC_META_CONFIG_ID?.trim() || '';
 
   const loadChannels = async () => {
     const response = await fetch('/api/channels', { cache: 'no-store' });
@@ -60,6 +87,35 @@ export default function ChannelsPage() {
     setLoading(true);
     void loadChannels().catch(cause => setError(cause instanceof Error ? cause.message : 'Не удалось загрузить каналы')).finally(() => setLoading(false));
   }, [mode]);
+
+  useEffect(() => {
+    if (mode !== 'account' || !metaAppId || !metaConfigId) return;
+    const initialize = () => {
+      if (!window.FB) return;
+      window.FB.init({ appId: metaAppId, autoLogAppEvents: true, xfbml: false, version: 'v22.0' });
+      setMetaSignupReady(true);
+    };
+    if (window.FB) {
+      initialize();
+    } else {
+      const previousInit = window.fbAsyncInit;
+      window.fbAsyncInit = () => {
+        previousInit?.();
+        initialize();
+      };
+      let script = document.getElementById('facebook-jssdk') as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'facebook-jssdk';
+        script.async = true;
+        script.defer = true;
+        script.crossOrigin = 'anonymous';
+        script.src = 'https://connect.facebook.net/en_US/sdk.js';
+        document.body.appendChild(script);
+      }
+    }
+    return () => { window.fbAsyncInit = undefined; };
+  }, [mode, metaAppId, metaConfigId]);
 
   const activeChannel = (provider: ChannelItem['provider']) => channels.find(channel => channel.provider === provider && channel.status === 'ACTIVE');
 
@@ -120,6 +176,73 @@ export default function ChannelsPage() {
       setLoading(false);
     }
   };
+
+  const finishEmbeddedSignup = async (code: string, session: MetaSignupSession) => {
+    if (metaSignupSubmitting.current || !code || !session.waba_id) return;
+    metaSignupSubmitting.current = true;
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/channels/whatsapp/embedded-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, wabaId: session.waba_id, phoneNumberId: session.phone_number_id || undefined })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Не удалось подключить WhatsApp через Meta');
+      const connected = data.channel as ConnectedChannel;
+      setChannels(current => [connected, ...current.filter(channel => channel.id !== connected.id)]);
+      setWhatsappWebhook(data.webhook as { url: string; verifyToken: string });
+      setShowWhatsApp(false);
+      setNotice('WhatsApp подключён в режиме coexistence. Текущий номер остаётся в приложении WhatsApp Business, а новые диалоги появятся в Inbox.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось подключить WhatsApp через Meta');
+    } finally {
+      metaSignupSubmitting.current = false;
+      metaSignupCode.current = '';
+      metaSignupSession.current = null;
+      setLoading(false);
+    }
+  };
+
+  const launchEmbeddedSignup = () => {
+    if (!window.FB || !metaConfigId) return;
+    setNotice('Откроется окно Meta. Выберите «Подключить существующий аккаунт WhatsApp Business» и подтвердите синхронизацию в приложении WhatsApp.');
+    window.FB.login((response) => {
+      const code = response.authResponse?.code?.trim() || '';
+      if (!code) {
+        setError('Регистрация WhatsApp в Meta отменена или не завершена.');
+        return;
+      }
+      metaSignupCode.current = code;
+      const session = metaSignupSession.current;
+      if (session) void finishEmbeddedSignup(code, session);
+    }, {
+      config_id: metaConfigId,
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }
+    });
+  };
+
+  useEffect(() => {
+    if (mode !== 'account' || !metaAppId || !metaConfigId) return;
+    const onMessage = (event: MessageEvent) => {
+      if (!event.origin.endsWith('facebook.com')) return;
+      let data: { type?: string; event?: string; data?: MetaSignupSession };
+      try { data = JSON.parse(typeof event.data === 'string' ? event.data : '') as typeof data; } catch { return; }
+      if (data.type !== 'WA_EMBEDDED_SIGNUP' || !data.data?.waba_id) return;
+      if (data.event && !data.event.startsWith('FINISH')) {
+        setNotice('Регистрация WhatsApp остановлена до подтверждения.');
+        return;
+      }
+      metaSignupSession.current = data.data;
+      const code = metaSignupCode.current;
+      if (code) void finishEmbeddedSignup(code, data.data);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [mode, metaAppId, metaConfigId]);
 
   const connectInstagram = async (event: FormEvent) => {
     event.preventDefault();
@@ -232,6 +355,8 @@ export default function ChannelsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={() => !loading && setShowWhatsApp(false)}>
           <form onSubmit={connectWhatsApp} onMouseDown={event => event.stopPropagation()} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between gap-4"><div className="flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 text-white"><MessageCircle className="h-5 w-5" /></span><div><h2 className="text-xl font-extrabold">Подключить WhatsApp</h2><p className="mt-1 text-xs text-[#73767E]">WhatsApp Cloud API · текстовые сообщения и статусы</p></div></div><button type="button" disabled={loading} onClick={() => setShowWhatsApp(false)} className="rounded-full p-2 hover:bg-zinc-100"><X className="h-4 w-4" /></button></div>
+            {metaConfigId ? <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-extrabold uppercase tracking-[0.1em] text-emerald-800">Рекомендуется для вашего номера</p><p className="mt-2 text-sm leading-relaxed text-emerald-950">Coexistence оставляет WhatsApp Business App на телефоне и подключает тот же номер к Söyles AI. История и новые сообщения синхронизируются в Inbox.</p><button type="button" disabled={loading || !metaSignupReady} onClick={launchEmbeddedSignup} className="mt-4 w-full rounded-xl bg-emerald-600 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-700 disabled:opacity-50">{metaSignupReady ? 'Подключить текущий номер через Meta' : 'Загрузка Meta…'}</button></div> : <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950"><strong>Coexistence ещё не настроен в Meta.</strong><p className="mt-1 text-xs">Сначала создайте конфигурацию Embedded Signup и добавьте её ID в NEXT_PUBLIC_META_CONFIG_ID. Ниже остаётся ручное подключение отдельного Cloud API номера.</p></div>}
+            <div className="my-5 flex items-center gap-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#92959D]"><span className="h-px flex-1 bg-zinc-200" /> или отдельный Cloud API номер <span className="h-px flex-1 bg-zinc-200" /></div>
             <ol className="mt-6 space-y-3 rounded-2xl bg-[#F7F8FB] p-4 text-sm text-[#565961]"><li><strong className="text-[#0C0C0C]">1.</strong> В Meta App → WhatsApp добавьте рабочий Phone Number</li><li><strong className="text-[#0C0C0C]">2.</strong> Скопируйте постоянный access token и Phone Number ID</li><li><strong className="text-[#0C0C0C]">3.</strong> После подключения подпишитесь на поле messages в Webhooks</li></ol>
             <label className="mt-5 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">WhatsApp access token</span><input type="password" autoComplete="off" required value={whatsappForm.token} onChange={event => setWhatsappForm(current => ({ ...current, token: event.target.value }))} placeholder="EAAB..." className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" /></label>
             <label className="mt-4 block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-[#73767E]">Phone Number ID</span><input inputMode="numeric" required value={whatsappForm.externalId} onChange={event => setWhatsappForm(current => ({ ...current, externalId: event.target.value }))} placeholder="123456789012345" className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-emerald-500" /></label>
