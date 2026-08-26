@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ArrowRight,
@@ -28,6 +28,14 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'sign-up' | 'sign-in'>('sign-up');
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('code')?.trim();
+    if (!code || !window.opener) return;
+    window.opener.postMessage({ type: 'META_OAUTH_CODE', code }, window.location.origin);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    window.close();
+  }, []);
 
   const openAuth = (mode: 'sign-up' | 'sign-in') => {
     setAuthMode(mode);
@@ -632,3 +640,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
