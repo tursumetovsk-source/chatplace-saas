@@ -26,6 +26,7 @@ interface ConnectedChannel {
 }
 
 interface MetaLoginResponse {
+  status?: string;
   authResponse?: { code?: string };
 }
 
@@ -69,6 +70,7 @@ export default function ChannelsPage() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [metaSignupReady, setMetaSignupReady] = useState(false);
+  const [metaDirectFallback, setMetaDirectFallback] = useState(false);
   const metaSignupCode = useRef('');
   const metaSignupSession = useRef<MetaSignupSession | null>(null);
   const metaSignupSubmitting = useRef(false);
@@ -221,7 +223,10 @@ export default function ChannelsPage() {
       loginCallbackReceived = true;
       const code = response.authResponse?.code?.trim() || '';
       if (!code) {
-        setError('Meta не вернула код. Разрешите всплывающие окна для virale-ai.vercel.app и повторите подключение.');
+        setMetaDirectFallback(true);
+        setError(response.status === 'unknown'
+          ? 'Meta не подтвердила подключение. Завершите окно Meta до конца или откройте резервный запуск ниже.'
+          : 'Meta не вернула код. Откройте резервный запуск ниже и завершите окно Meta до конца.');
         return;
       }
       metaSignupCode.current = code;
@@ -237,16 +242,44 @@ export default function ChannelsPage() {
       extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }
     });
     window.setTimeout(() => {
-      if (!loginCallbackReceived) setError('Окно Meta не открылось. Разрешите всплывающие окна и загрузку connect.facebook.net для virale-ai.vercel.app, затем обновите страницу.');
+      if (!loginCallbackReceived) {
+        setMetaDirectFallback(true);
+        setError('Окно Meta не открылось. Разрешите всплывающие окна или используйте резервный запуск ниже.');
+      }
     }, 4000);
+  };
+
+  const launchMetaDirectFallback = () => {
+    if (!metaAppId || !metaConfigId) return;
+    setMetaDirectFallback(false);
+    setError('');
+    setNotice('Открылось отдельное окно Meta. Завершите подключение WhatsApp Business и не закрывайте его до возврата на Söyles AI.');
+    const oauthUrl = new URL('https://www.facebook.com/v22.0/dialog/oauth');
+    oauthUrl.searchParams.set('client_id', metaAppId);
+    oauthUrl.searchParams.set('config_id', metaConfigId);
+    oauthUrl.searchParams.set('response_type', 'code');
+    oauthUrl.searchParams.set('override_default_response_type', 'true');
+    oauthUrl.searchParams.set('redirect_uri', `${window.location.origin}/`);
+    oauthUrl.searchParams.set('extras', JSON.stringify({ setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }));
+    const popup = window.open(oauthUrl.toString(), 'soyles-meta-embedded-signup', 'width=720,height=760,menubar=no,toolbar=no,resizable=yes');
+    if (!popup) {
+      setMetaDirectFallback(true);
+      setError('Браузер заблокировал окно Meta. Разрешите всплывающие окна для virale-ai.vercel.app и повторите.');
+    }
   };
 
   useEffect(() => {
     if (mode !== 'account' || !metaAppId || !metaConfigId) return;
     const onMessage = (event: MessageEvent) => {
+      let data: { type?: string; event?: string; code?: string; data?: MetaSignupSession };
+      try { data = typeof event.data === 'string' ? JSON.parse(event.data) as typeof data : event.data as typeof data; } catch { return; }
+      if (event.origin === window.location.origin && data.type === 'META_OAUTH_CODE' && data.code) {
+        metaSignupCode.current = data.code.trim();
+        const session = metaSignupSession.current;
+        if (session) void finishEmbeddedSignup(metaSignupCode.current, session);
+        return;
+      }
       if (!event.origin.endsWith('facebook.com')) return;
-      let data: { type?: string; event?: string; data?: MetaSignupSession };
-      try { data = JSON.parse(typeof event.data === 'string' ? event.data : '') as typeof data; } catch { return; }
       if (data.type !== 'WA_EMBEDDED_SIGNUP' || !data.data?.waba_id) return;
       if (data.event && !data.event.startsWith('FINISH')) {
         setNotice('Регистрация WhatsApp остановлена до подтверждения.');
@@ -371,7 +404,7 @@ export default function ChannelsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={() => !loading && setShowWhatsApp(false)}>
           <form onSubmit={connectWhatsApp} onMouseDown={event => event.stopPropagation()} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between gap-4"><div className="flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 text-white"><MessageCircle className="h-5 w-5" /></span><div><h2 className="text-xl font-extrabold">Подключить WhatsApp</h2><p className="mt-1 text-xs text-[#73767E]">WhatsApp Cloud API · текстовые сообщения и статусы</p></div></div><button type="button" disabled={loading} onClick={() => setShowWhatsApp(false)} className="rounded-full p-2 hover:bg-zinc-100"><X className="h-4 w-4" /></button></div>
-            {error && <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold leading-relaxed text-red-700" role="alert">{error}</div>}
+            {error && <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold leading-relaxed text-red-700" role="alert"><p>{error}</p>{metaDirectFallback && <button type="button" onClick={launchMetaDirectFallback} className="mt-3 rounded-lg bg-red-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-red-800">Открыть Meta напрямую</button>}</div>}
             {metaConfigId ? <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-extrabold uppercase tracking-[0.1em] text-emerald-800">Рекомендуется для вашего номера</p><p className="mt-2 text-sm leading-relaxed text-emerald-950">Coexistence оставляет WhatsApp Business App на телефоне и подключает тот же номер к Söyles AI. История и новые сообщения синхронизируются в Inbox.</p><button type="button" disabled={loading || !metaSignupReady} onClick={launchEmbeddedSignup} className="mt-4 w-full rounded-xl bg-emerald-600 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-700 disabled:opacity-50">{metaSignupReady ? 'Подключить текущий номер через Meta' : 'Загрузка Meta…'}</button></div> : <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950"><strong>Coexistence ещё не настроен в Meta.</strong><p className="mt-1 text-xs">Сначала создайте конфигурацию Embedded Signup и добавьте её ID в NEXT_PUBLIC_META_CONFIG_ID. Ниже остаётся ручное подключение отдельного Cloud API номера.</p></div>}
             <div className="my-5 flex items-center gap-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#92959D]"><span className="h-px flex-1 bg-zinc-200" /> или отдельный Cloud API номер <span className="h-px flex-1 bg-zinc-200" /></div>
             <ol className="mt-6 space-y-3 rounded-2xl bg-[#F7F8FB] p-4 text-sm text-[#565961]"><li><strong className="text-[#0C0C0C]">1.</strong> В Meta App → WhatsApp добавьте рабочий Phone Number</li><li><strong className="text-[#0C0C0C]">2.</strong> Скопируйте постоянный access token и Phone Number ID</li><li><strong className="text-[#0C0C0C]">3.</strong> После подключения подпишитесь на поле messages в Webhooks</li></ol>
