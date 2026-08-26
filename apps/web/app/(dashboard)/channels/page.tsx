@@ -216,7 +216,9 @@ export default function ChannelsPage() {
       return;
     }
     setNotice('Откроется окно Meta. Выберите «Подключить существующий аккаунт WhatsApp Business» и подтвердите синхронизацию в приложении WhatsApp.');
+    let loginCallbackReceived = false;
     window.FB.login((response) => {
+      loginCallbackReceived = true;
       const code = response.authResponse?.code?.trim() || '';
       if (!code) {
         setError('Meta не вернула код. Разрешите всплывающие окна для virale-ai.vercel.app и повторите подключение.');
@@ -231,6 +233,9 @@ export default function ChannelsPage() {
       override_default_response_type: true,
       extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' }
     });
+    window.setTimeout(() => {
+      if (!loginCallbackReceived) setError('Окно Meta не открылось. Разрешите всплывающие окна и загрузку connect.facebook.net для virale-ai.vercel.app, затем обновите страницу.');
+    }, 4000);
   };
 
   useEffect(() => {
